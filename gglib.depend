@@ -1,0 +1,466 @@
+# depslib dependency file v1.0
+1382315477 source:c:\users\egbogor\projects\gglib\main.cpp
+	<iostream>
+	<string>
+	<locale>
+	"gg/types.hpp"
+	"gg/var.hpp"
+	"c_console.hpp"
+	"c_taskmgr.hpp"
+	"c_eventmgr.hpp"
+
+1378279475 source:c:\users\egbogor\projects\gglib\src\exception.cpp
+	"src/exception.hpp"
+
+1381549687 source:c:\users\egbogor\projects\gglib\src\var.cpp
+	"gg/var.hpp"
+
+1379976424 c:\users\egbogor\projects\gglib\src\var.hpp
+	"src/types.hpp"
+	"src/util.hpp"
+	<typeindex>
+	<vector>
+
+1379975885 c:\users\egbogor\projects\gglib\src\types.hpp
+	<cstdint>
+	<memory>
+	<exception>
+
+1378278921 c:\users\egbogor\projects\gglib\src\exception.hpp
+	<string>
+	"src/types.hpp"
+
+1382315477 source:c:\users\gabe\projects\gglib\main.cpp
+	<iostream>
+	<string>
+	<locale>
+	"gg/types.hpp"
+	"gg/var.hpp"
+	"c_console.hpp"
+	"c_taskmgr.hpp"
+	"c_eventmgr.hpp"
+
+1379976424 c:\users\gabe\projects\gglib\src\var.hpp
+	"src/types.hpp"
+	"src/util.hpp"
+	<typeindex>
+	<vector>
+
+1379975885 c:\users\gabe\projects\gglib\src\types.hpp
+	<cstdint>
+	<memory>
+	<exception>
+
+1378762478 c:\users\gabe\projects\gglib\src\exception.hpp
+	<string>
+	"src/types.hpp"
+
+1378762478 source:c:\users\gabe\projects\gglib\src\exception.cpp
+	"src/exception.hpp"
+
+1381549687 source:c:\users\gabe\projects\gglib\src\var.cpp
+	"gg/var.hpp"
+
+1378646800 source:c:\users\gabe\projects\gglib\src\util\simplex.cpp
+	<math.h>
+	"src/util/simplex.hpp"
+
+1378561337 c:\users\gabe\projects\gglib\src\util\simplex.h
+
+1379286403 source:c:\users\gabe\projects\gglib\src\util\convert.cpp
+	"src/util/convert.hpp"
+	"src/exception.hpp"
+	<sstream>
+	<stdlib.h>
+
+1378561831 c:\users\gabe\projects\gglib\src\util\convert.hpp
+	"src/var.hpp"
+
+1379542885 c:\users\gabe\projects\gglib\src\util\simplex.hpp
+
+1378762478 source:c:\users\gabe\projects\gglib\src\event.cpp
+
+1378762805 source:c:\users\gabe\projects\gglib\src\task.cpp
+
+1378762478 source:c:\users\gabe\projects\gglib\src\util\hash.cpp
+
+1379281549 source:c:\users\gabe\projects\gglib\src\util\timer.cpp
+	"src/util/timer.hpp"
+
+1379281529 c:\users\gabe\projects\gglib\src\util\timer.hpp
+	<chrono>
+	"src/types.hpp"
+
+1379976436 c:\users\gabe\projects\gglib\src\util.hpp
+	<iostream>
+	<sstream>
+	<functional>
+	<type_traits>
+
+1379976436 c:\users\egbogor\projects\gglib\src\util.hpp
+	<iostream>
+	<sstream>
+	<functional>
+	<type_traits>
+
+1382292857 source:c:\users\egbogor\projects\gglib\src\c_timer.cpp
+	"c_timer.hpp"
+
+1382292857 c:\users\egbogor\projects\gglib\src\c_timer.hpp
+	<chrono>
+	"gg/timer.hpp"
+
+1382292857 c:\users\egbogor\projects\gglib\include\gg\timer.hpp
+	"gg/types.hpp"
+
+1382362524 c:\users\egbogor\projects\gglib\include\gg\types.hpp
+	<cstdint>
+	<memory>
+	<exception>
+
+1382362524 c:\users\gabe\projects\gglib\include\gg\types.hpp
+	<cstdint>
+	<memory>
+	<exception>
+
+1382044813 c:\users\gabe\projects\gglib\include\gg\var.hpp
+	<vector>
+	"gg/types.hpp"
+	"gg/util.hpp"
+
+1382044341 c:\users\gabe\projects\gglib\include\gg\util.hpp
+	<iostream>
+	<sstream>
+	<locale>
+	<functional>
+	<type_traits>
+	"gg/types.hpp"
+
+1382292857 source:c:\users\gabe\projects\gglib\src\c_timer.cpp
+	"c_timer.hpp"
+
+1382292857 c:\users\gabe\projects\gglib\src\c_timer.hpp
+	<chrono>
+	"gg/timer.hpp"
+
+1382292857 c:\users\gabe\projects\gglib\include\gg\timer.hpp
+	"gg/types.hpp"
+
+1382542418 source:c:\users\gabe\projects\gglib\src\c_console.cpp
+	<vector>
+	"gg/util.hpp"
+	"c_console.hpp"
+
+1382542418 c:\users\gabe\projects\gglib\src\c_console.hpp
+	<iostream>
+	<sstream>
+	<list>
+	<windows.h>
+	<commctrl.h>
+	<uxtheme.h>
+	"gg/types.hpp"
+	"gg/console.hpp"
+	"c_taskmgr.hpp"
+
+1382542189 c:\users\gabe\projects\gglib\include\gg\console.hpp
+	<string>
+	<sstream>
+	"gg/types.hpp"
+	"gg/var.hpp"
+
+1382044813 c:\users\egbogor\projects\gglib\include\gg\var.hpp
+	<vector>
+	"gg/types.hpp"
+	"gg/util.hpp"
+
+1382044341 c:\users\egbogor\projects\gglib\include\gg\util.hpp
+	<iostream>
+	<sstream>
+	<locale>
+	<functional>
+	<type_traits>
+	"gg/types.hpp"
+
+1382362348 c:\users\egbogor\projects\gglib\src\c_console.hpp
+	<iostream>
+	<sstream>
+	<list>
+	<windows.h>
+	<commctrl.h>
+	<uxtheme.h>
+	"gg/types.hpp"
+	"gg/console.hpp"
+	"c_taskmgr.hpp"
+
+1382362082 c:\users\egbogor\projects\gglib\include\gg\console.hpp
+	<string>
+	<sstream>
+	"gg/types.hpp"
+	"gg/var.hpp"
+
+1382452247 source:c:\users\egbogor\projects\gglib\src\c_console.cpp
+	<vector>
+	"gg/util.hpp"
+	"c_console.hpp"
+
+1381453430 source:c:\users\gabe\projects\gglib\src\c_taskman.cpp
+	<iostream>
+	"c_taskman.hpp"
+
+1381354224 c:\users\gabe\projects\gglib\src\c_taskman.hpp
+	<list>
+	<map>
+	<string>
+	"tinythread.h"
+	"gg/taskman.hpp"
+	"c_timer.hpp"
+
+1381354253 c:\users\gabe\projects\gglib\include\gg\taskman.hpp
+	<string>
+	<list>
+	"gg/types.hpp"
+
+1381453430 source:c:\users\egbogor\projects\gglib\src\c_taskman.cpp
+	<iostream>
+	"c_taskman.hpp"
+
+1381354224 c:\users\egbogor\projects\gglib\src\c_taskman.hpp
+	<list>
+	<map>
+	<string>
+	"tinythread.h"
+	"gg/taskman.hpp"
+	"c_timer.hpp"
+
+1381354253 c:\users\egbogor\projects\gglib\include\gg\taskman.hpp
+	<string>
+	<list>
+	"gg/types.hpp"
+
+1336420248 c:\users\gabe\projects\gglib\ext\tinythread.h
+	<windows.h>
+	<pthread.h>
+	<signal.h>
+	<sched.h>
+	<unistd.h>
+	<ostream>
+
+1336420248 source:c:\users\gabe\projects\gglib\ext\tinythread.cpp
+	<exception>
+	"tinythread.h"
+	<unistd.h>
+	<map>
+	<process.h>
+
+1336420248 c:\users\gabe\projects\gglib\ext\tinythread++\tinythread.h
+	<windows.h>
+	<pthread.h>
+	<signal.h>
+	<sched.h>
+	<unistd.h>
+	<ostream>
+
+1266855670 source:c:\users\gabe\projects\gglib\ext\simplesockets\activesocket.cpp
+	"ActiveSocket.h"
+
+1266855670 c:\users\gabe\projects\gglib\ext\simplesockets\activesocket.h
+	"SimpleSocket.h"
+
+1266855670 c:\users\gabe\projects\gglib\ext\simplesockets\simplesocket.h
+	<sys/stat.h>
+	<stdlib.h>
+	<stdio.h>
+	<stdarg.h>
+	<errno.h>
+	<sys/socket.h>
+	<netinet/in.h>
+	<arpa/inet.h>
+	<netinet/tcp.h>
+	<netinet/ip.h>
+	<netdb.h>
+	<linux/if_packet.h>
+	<linux/if_packet.h>
+	<linux/if_ether.h>
+	<linux/if.h>
+	<sys/sendfile.h>
+	<sys/time.h>
+	<sys/uio.h>
+	<unistd.h>
+	<fcntl.h>
+	<io.h>
+	<winsock2.h>
+	<Ws2tcpip.h>
+	"Host.h"
+	"StatTimer.h"
+
+1266855670 c:\users\gabe\projects\gglib\ext\simplesockets\host.h
+	<limits.h>
+
+1266855670 c:\users\gabe\projects\gglib\ext\simplesockets\stattimer.h
+	<string.h>
+	<Winsock2.h>
+	<time.h>
+	<stdio.h>
+	<sys/time.h>
+	"Host.h"
+
+1266855670 source:c:\users\gabe\projects\gglib\ext\simplesockets\passivesocket.cpp
+	"PassiveSocket.h"
+
+1266855670 c:\users\gabe\projects\gglib\ext\simplesockets\passivesocket.h
+	"ActiveSocket.h"
+
+1266855670 source:c:\users\gabe\projects\gglib\ext\simplesockets\simplesocket.cpp
+	"SimpleSocket.h"
+
+1336420248 source:c:\users\gabe\projects\gglib\ext\tinythread++\tinythread.cpp
+	<exception>
+	"tinythread.h"
+	<unistd.h>
+	<map>
+	<process.h>
+
+1381356889 source:c:\users\gabe\projects\gglib\src\util.cpp
+	<vector>
+	<assert.h>
+	"gg/util.hpp"
+
+1266855670 source:c:\users\egbogor\projects\gglib\ext\simplesockets\activesocket.cpp
+	"ActiveSocket.h"
+
+1266855670 c:\users\egbogor\projects\gglib\ext\simplesockets\activesocket.h
+	"SimpleSocket.h"
+
+1266855670 c:\users\egbogor\projects\gglib\ext\simplesockets\simplesocket.h
+	<sys/stat.h>
+	<stdlib.h>
+	<stdio.h>
+	<stdarg.h>
+	<errno.h>
+	<sys/socket.h>
+	<netinet/in.h>
+	<arpa/inet.h>
+	<netinet/tcp.h>
+	<netinet/ip.h>
+	<netdb.h>
+	<linux/if_packet.h>
+	<linux/if_packet.h>
+	<linux/if_ether.h>
+	<linux/if.h>
+	<sys/sendfile.h>
+	<sys/time.h>
+	<sys/uio.h>
+	<unistd.h>
+	<fcntl.h>
+	<io.h>
+	<winsock2.h>
+	<Ws2tcpip.h>
+	"Host.h"
+	"StatTimer.h"
+
+1266855670 c:\users\egbogor\projects\gglib\ext\simplesockets\host.h
+	<limits.h>
+
+1266855670 c:\users\egbogor\projects\gglib\ext\simplesockets\stattimer.h
+	<string.h>
+	<Winsock2.h>
+	<time.h>
+	<stdio.h>
+	<sys/time.h>
+	"Host.h"
+
+1266855670 source:c:\users\egbogor\projects\gglib\ext\simplesockets\passivesocket.cpp
+	"PassiveSocket.h"
+
+1266855670 c:\users\egbogor\projects\gglib\ext\simplesockets\passivesocket.h
+	"ActiveSocket.h"
+
+1266855670 source:c:\users\egbogor\projects\gglib\ext\simplesockets\simplesocket.cpp
+	"SimpleSocket.h"
+
+1336420248 source:c:\users\egbogor\projects\gglib\ext\tinythread++\tinythread.cpp
+	<exception>
+	"tinythread.h"
+	<unistd.h>
+	<map>
+	<process.h>
+
+1336420248 c:\users\egbogor\projects\gglib\ext\tinythread++\tinythread.h
+	<windows.h>
+	<pthread.h>
+	<signal.h>
+	<sched.h>
+	<unistd.h>
+	<ostream>
+
+1381356889 source:c:\users\egbogor\projects\gglib\src\util.cpp
+	<vector>
+	<assert.h>
+	"gg/util.hpp"
+
+1382044608 c:\users\gabe\projects\gglib\src\c_taskmgr.hpp
+	<list>
+	<map>
+	<string>
+	"tinythread.h"
+	"gg/taskmgr.hpp"
+	"c_timer.hpp"
+
+1382044608 c:\users\gabe\projects\gglib\include\gg\taskmgr.hpp
+	<string>
+	<list>
+	"gg/types.hpp"
+
+1382540433 source:c:\users\gabe\projects\gglib\src\c_taskmgr.cpp
+	<iostream>
+	"c_taskmgr.hpp"
+
+1382044777 source:c:\users\gabe\projects\gglib\src\c_eventmgr.cpp
+	"c_eventmgr.hpp"
+
+1382044341 c:\users\gabe\projects\gglib\src\c_eventmgr.hpp
+	"tinythread.h"
+	"gg/eventmgr.hpp"
+	"c_taskmgr.hpp"
+
+1382044341 c:\users\gabe\projects\gglib\include\gg\eventmgr.hpp
+	<list>
+	<map>
+	<string>
+	<initializer_list>
+	"gg/types.hpp"
+	"gg/var.hpp"
+
+1382044608 c:\users\egbogor\projects\gglib\src\c_taskmgr.hpp
+	<list>
+	<map>
+	<string>
+	"tinythread.h"
+	"gg/taskmgr.hpp"
+	"c_timer.hpp"
+
+1382044608 c:\users\egbogor\projects\gglib\include\gg\taskmgr.hpp
+	<string>
+	<list>
+	"gg/types.hpp"
+
+1382044341 c:\users\egbogor\projects\gglib\src\c_eventmgr.hpp
+	"tinythread.h"
+	"gg/eventmgr.hpp"
+	"c_taskmgr.hpp"
+
+1382044341 c:\users\egbogor\projects\gglib\include\gg\eventmgr.hpp
+	<list>
+	<map>
+	<string>
+	<initializer_list>
+	"gg/types.hpp"
+	"gg/var.hpp"
+
+1382044777 source:c:\users\egbogor\projects\gglib\src\c_eventmgr.cpp
+	"c_eventmgr.hpp"
+
+1382044608 source:c:\users\egbogor\projects\gglib\src\c_taskmgr.cpp
+	<iostream>
+	"c_taskmgr.hpp"
+

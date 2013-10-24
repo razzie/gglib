@@ -1,0 +1,19 @@
+Check system resources: hard drive space, memory, input and output devices.
+
+Check the CPU speed.
+
+Initalize your main random number generator.
+
+Load programmer's options for debugging purposes.
+
+Initalize your memory cache.
+
+Create your window.
+
+Initalize the audio system.
+
+Load the player's game options and saved game files.
+
+Create your drawing surface.
+
+Perform initalization for game systems: physics, AI, and so on.
