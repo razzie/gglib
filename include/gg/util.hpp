@@ -1,5 +1,5 @@
-#ifndef UTIL_HPP_INCLUDED
-#define UTIL_HPP_INCLUDED
+#ifndef GG_UTIL_HPP_INCLUDED
+#define GG_UTIL_HPP_INCLUDED
 
 #include <iostream>
 #include <sstream>
@@ -133,4 +133,4 @@ namespace util
 };
 };
 
-#endif // UTIL_HPP_INCLUDED
+#endif // GG_UTIL_HPP_INCLUDED

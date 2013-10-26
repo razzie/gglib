@@ -1,5 +1,5 @@
-#ifndef EVENTMGR_HPP_INCLUDED
-#define EVENTMGR_HPP_INCLUDED
+#ifndef GG_EVENTMGR_HPP_INCLUDED
+#define GG_EVENTMGR_HPP_INCLUDED
 
 #include <list>
 #include <map>
@@ -68,4 +68,4 @@ namespace gg
     };
 };
 
-#endif // EVENTMGR_HPP_INCLUDED
+#endif // GG_EVENTMGR_HPP_INCLUDED

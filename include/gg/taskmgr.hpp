@@ -1,5 +1,5 @@
-#ifndef TASKMAN_HPP_INCLUDED
-#define TASKMAN_HPP_INCLUDED
+#ifndef GG_TASKMGR_HPP_INCLUDED
+#define GG_TASKMGR_HPP_INCLUDED
 
 #include <list>
 #include "gg/types.hpp"
@@ -54,4 +54,4 @@ namespace gg
     };
 };
 
-#endif // TASKMAN_HPP_INCLUDED
+#endif // GG_TASKMGR_HPP_INCLUDED

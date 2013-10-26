@@ -1,5 +1,5 @@
-#ifndef TIMER_HPP_INCLUDED
-#define TIMER_HPP_INCLUDED
+#ifndef GG_TIMER_HPP_INCLUDED
+#define GG_TIMER_HPP_INCLUDED
 
 #include "gg/types.hpp"
 #include "gg/refcounted.hpp"
@@ -16,4 +16,4 @@ namespace gg
     };
 };
 
-#endif // TIMER_HPP_INCLUDED
+#endif // GG_TIMER_HPP_INCLUDED

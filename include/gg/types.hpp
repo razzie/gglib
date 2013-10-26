@@ -1,5 +1,5 @@
-#ifndef TYPES_HPP_INCLUDED
-#define TYPES_HPP_INCLUDED
+#ifndef GG_TYPES_HPP_INCLUDED
+#define GG_TYPES_HPP_INCLUDED
 
 #include <cstdint>
 #include <string>
@@ -25,4 +25,4 @@ namespace gg
     };
 };
 
-#endif // TYPES_HPP_INCLUDED
+#endif // GG_TYPES_HPP_INCLUDED
