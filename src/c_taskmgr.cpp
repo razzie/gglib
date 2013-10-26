@@ -1,4 +1,6 @@
 #include <iostream>
+#include <functional>
+#include "gg/exception.hpp"
 #include "c_taskmgr.hpp"
 
 using namespace gg;

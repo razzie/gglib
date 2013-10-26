@@ -3,9 +3,9 @@
 
 #include <list>
 #include <map>
-#include <string>
 #include <initializer_list>
 #include "gg/types.hpp"
+#include "gg/refcounted.hpp"
 #include "gg/var.hpp"
 
 namespace gg

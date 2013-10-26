@@ -1,7 +1,6 @@
 #ifndef CCONSOLE_H_INCLUDED
 #define CCONSOLE_H_INCLUDED
 
-//#include <mutex>
 #include <iostream>
 #include <sstream>
 #include <list>
@@ -10,7 +9,6 @@
 #include <windows.h>
 #include <commctrl.h>
 #include <uxtheme.h>
-//#include "tinythread.h"
 #include "gg/types.hpp"
 #include "gg/console.hpp"
 #include "c_taskmgr.hpp"

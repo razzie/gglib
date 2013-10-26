@@ -1,9 +1,9 @@
-#ifndef CONSOLE_HPP_INCLUDED
-#define CONSOLE_HPP_INCLUDED
+#ifndef GG_CONSOLE_HPP_INCLUDED
+#define GG_CONSOLE_HPP_INCLUDED
 
 #include <string>
 #include <sstream>
-#include "gg/types.hpp"
+#include "gg/refcounted.hpp"
 #include "gg/var.hpp"
 
 namespace gg
@@ -44,4 +44,4 @@ namespace gg
     };
 };
 
-#endif // CONSOLE_HPP_INCLUDED
+#endif // GG_CONSOLE_HPP_INCLUDED

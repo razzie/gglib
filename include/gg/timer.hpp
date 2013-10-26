@@ -2,6 +2,7 @@
 #define TIMER_HPP_INCLUDED
 
 #include "gg/types.hpp"
+#include "gg/refcounted.hpp"
 
 namespace gg
 {

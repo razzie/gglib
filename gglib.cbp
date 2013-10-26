@@ -62,6 +62,8 @@
 		<Unit filename="ext/tinythread++/tinythread.h" />
 		<Unit filename="include/gg/console.hpp" />
 		<Unit filename="include/gg/eventmgr.hpp" />
+		<Unit filename="include/gg/exception.hpp" />
+		<Unit filename="include/gg/refcounted.hpp" />
 		<Unit filename="include/gg/taskmgr.hpp" />
 		<Unit filename="include/gg/timer.hpp" />
 		<Unit filename="include/gg/types.hpp" />

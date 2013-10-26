@@ -61,7 +61,7 @@ int main()
     {
         //std::cout << gg::util::has_insert_op<console_controller>::value << std::endl;
 
-        std::cout << gg::varlist {console_controller(), "lofasz", 123, 5.5f, false} << std::endl;
+        std::cout << gg::varlist {"lofasz", 123, 5.5f, false} << std::endl;
 
         std::cout << gg::var("abc").get<std::string>() << std::endl;
     }

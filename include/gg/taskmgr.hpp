@@ -1,9 +1,9 @@
 #ifndef TASKMAN_HPP_INCLUDED
 #define TASKMAN_HPP_INCLUDED
 
-#include <string>
 #include <list>
 #include "gg/types.hpp"
+#include "gg/refcounted.hpp"
 
 namespace gg
 {

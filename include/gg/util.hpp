@@ -7,6 +7,7 @@
 #include <functional>
 #include <type_traits>
 #include "gg/types.hpp"
+#include "gg/exception.hpp"
 
 namespace gg
 {
