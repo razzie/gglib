@@ -1,6 +1,7 @@
 #ifndef GG_SCRIPTENG_HPP_INCLUDED
 #define GG_SCRIPTENG_HPP_INCLUDED
 
+#include <iostream>
 #include "gg/types.hpp"
 #include "gg/var.hpp"
 
@@ -23,10 +24,17 @@ namespace gg
             var m_value;
         };
 
-        virtual void add_command(std::string cmd, std::initializer_list<arg_type> args) = 0;
+        typedef bool(*callback)(std::vector<arg>);
+
+        virtual void add_command(std::string cmd,
+                                 std::initializer_list<arg_type> args,
+                                 callback cb) = 0;
         virtual void remove_command(std::string cmd) = 0;
-        virtual bool exec(std::string cmd, std::initializer_list<arg> args) const = 0;
-        virtual bool parse_and_exec(std::string cmd_line) const = 0;
+        virtual bool exec(std::string cmd,
+                          std::initializer_list<arg> args,
+                          std::ostream& output = std::cout) const = 0;
+        virtual bool parse_and_exec(std::string cmd_line,
+                                    std::ostream& output = std::cout) const = 0;
     };
 };
 

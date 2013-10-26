@@ -334,10 +334,16 @@ void c_console::clear()
 {
     DEBUG_MUTEX
     //std::lock_guard<std::mutex> guard(m_mutex);
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    std::list<c_output*> tmp_outp;
+
+    m_mutex.lock();
+    std::swap(tmp_outp, m_outp);
+    m_mutex.unlock();
 
     //m_outp.clear();
-    for (auto it=m_outp.begin(); it!=m_outp.end(); it=m_outp.erase(it))
+    for (auto it=tmp_outp.begin(); it!=tmp_outp.end(); it=tmp_outp.erase(it))
     {
         (*it)->drop();
     }

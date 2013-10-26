@@ -6,6 +6,7 @@
 #include <initializer_list>
 #include "gg/scripteng.hpp"
 #include "gg/console.hpp"
+#include "tinythread.h"
 
 namespace gg
 {
@@ -24,17 +25,26 @@ namespace gg
         };
 
     private:
-        std::map<std::string, std::vector<arg_type>> m_commands;
+        tthread::mutex m_mutex;
+        std::map<std::string, std::pair<std::vector<arg_type>, callback>> m_commands;
         console_controller* m_ctrl;
 
     public:
         c_script_engine();
         ~c_script_engine();
-        void add_command(std::string cmd, std::initializer_list<arg_type> args);
+        void add_command(std::string cmd,
+                         std::initializer_list<arg_type> args,
+                         callback cb);
         void remove_command(std::string cmd);
-        bool exec(std::string cmd, std::initializer_list<arg> args) const;
-        bool parse_and_exec(std::string cmd_line) const;
+        bool exec(std::string cmd,
+                  std::initializer_list<arg> args,
+                  std::ostream& output = std::cout) const;
+        bool parse_and_exec(std::string cmd_line,
+                            std::ostream& output = std::cout) const;
         console_controller* get_console_controller();
+
+    private:
+        bool is_valid_cmd_name(std::string cmd) const;
     };
 };
 
