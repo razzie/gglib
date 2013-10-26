@@ -64,6 +64,7 @@
 		<Unit filename="include/gg/eventmgr.hpp" />
 		<Unit filename="include/gg/exception.hpp" />
 		<Unit filename="include/gg/refcounted.hpp" />
+		<Unit filename="include/gg/scripteng.hpp" />
 		<Unit filename="include/gg/taskmgr.hpp" />
 		<Unit filename="include/gg/timer.hpp" />
 		<Unit filename="include/gg/types.hpp" />
@@ -79,6 +80,8 @@
 		</Unit>
 		<Unit filename="src/c_eventmgr.cpp" />
 		<Unit filename="src/c_eventmgr.hpp" />
+		<Unit filename="src/c_scripteng.cpp" />
+		<Unit filename="src/c_scripteng.hpp" />
 		<Unit filename="src/c_taskmgr.cpp" />
 		<Unit filename="src/c_taskmgr.hpp" />
 		<Unit filename="src/c_timer.cpp" />
