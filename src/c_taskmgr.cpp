@@ -42,27 +42,11 @@ namespace gg
 
 c_thread::c_thread(std::string name)
  : m_name(name)
- //, m_thread(&c_thread::mainloop, this)
  , m_thread(
     [](void* o) { static_cast<c_thread*>(o)->mainloop(); },
     static_cast<void*>(this) )
 {
 }
-
-/*c_thread::c_thread(c_thread&& th)
- : m_name(std::move(th.m_name))
- , m_thread(&c_thread::mainloop, this)
- , m_finished(th.m_finished)
-{
-    th.exit_and_join();
-
-    th.m_task_pool_mutex.lock();
-    std::swap(m_tasks, th.m_tasks);
-    std::swap(m_task_pool, th.m_task_pool);
-    th.m_task_pool_mutex.unlock();
-
-    m_cond.notify_all();
-}*/
 
 c_thread::~c_thread()
 {
@@ -109,8 +93,6 @@ void c_thread::exit_and_join()
 
 void c_thread::wait_for_cond()
 {
-    //std::unique_lock<std::mutex> guard(m_cond_mutex);
-    //m_cond.wait(guard);
     tthread::lock_guard<tthread::mutex> guard(m_cond_mutex);
     m_cond.wait(m_cond_mutex);
 }

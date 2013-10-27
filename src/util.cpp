@@ -4,7 +4,65 @@
 
 using namespace gg;
 
-std::string util::narrow(std::wstring const& s, std::locale loc)
+std::string util::trim(std::string s, std::locale loc)
+{
+    auto s_begin = s.begin(), s_end = s.end();
+    decltype(s.begin()) it_first, it_last;
+
+    for (auto it = s_begin; it != s_end; it++)
+    {
+        if (!std::isspace(*it, loc))
+        {
+            it_first = it;
+            break;
+        }
+    }
+
+    for (auto it = s_end; it != s_begin; it--)
+    {
+        if (!std::isspace(*it, loc))
+        {
+            it_last = it;
+            break;
+        }
+    }
+
+    std::string re;
+    re.append(it_first, it_last);
+
+    return re;
+}
+
+std::wstring util::trim(std::wstring ws, std::locale loc)
+{
+    auto ws_begin = ws.begin(), ws_end = ws.end();
+    decltype(ws.begin()) it_first, it_last;
+
+    for (auto it = ws_begin; it != ws_end; it++)
+    {
+        if (!std::isspace(*it, loc))
+        {
+            it_first = it;
+            break;
+        }
+    }
+
+    for (auto it = ws_end; it != ws_begin; it--)
+    {
+        if (!std::isspace(*it, loc))
+        {
+            it_last = it;
+            break;
+        }
+    }
+
+    std::wstring re;
+    re.append(it_first, it_last);
+
+    return re;
+}
+
+std::string util::narrow(std::wstring s, std::locale loc)
 {
     std::vector<char> result(4*s.size() + 1);
     wchar_t const* fromNext;
@@ -23,7 +81,7 @@ std::string util::narrow(std::wstring const& s, std::locale loc)
     return &result[0];
 }
 
-std::wstring util::widen(std::string const& s, std::locale loc)
+std::wstring util::widen(std::string s, std::locale loc)
 {
     std::vector<wchar_t> result(s.size() + 1);
     char const* fromNext;
@@ -40,4 +98,43 @@ std::wstring util::widen(std::string const& s, std::locale loc)
     *toNext = L'\0';
 
     return &result[0];
+}
+
+bool util::is_integer(std::string s)
+{
+    if (s.size() == 0) return false;
+
+    auto it = s.begin(), end = s.end();
+
+    if (!isdigit(*it) && *it != '-') return false;
+    ++it;
+
+    for (; it != end; it++)
+    {
+        if (!isdigit(*it)) return false;
+    }
+
+    return true;
+}
+
+bool util::is_float(std::string s)
+{
+    if (s.size() == 0) return false;
+
+    auto it = s.begin(), end = s.end();
+    bool point_used = false;
+
+    if (!isdigit(*it) && *it != '-' && *it != '.') return false;
+    if (*it == '.') point_used = true;
+    ++it;
+
+    for (; it != end; it++)
+    {
+        if ((!isdigit(*it) && *it != '.') ||
+            (*it == '.' && point_used)) return false;
+
+        if (*it == '.') point_used = true;
+    }
+
+    return true;
 }

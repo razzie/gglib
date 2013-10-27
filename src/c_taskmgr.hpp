@@ -4,9 +4,6 @@
 #include <list>
 #include <map>
 #include <string>
-//#include <thread>
-//#include <mutex>
-//#include <condition_variable>
 #include "tinythread.h"
 #include "gg/taskmgr.hpp"
 #include "c_timer.hpp"
@@ -22,10 +19,10 @@ namespace gg
         };
 
         std::string m_name;
-        /*std*/tthread::thread m_thread;
-        /*std*/tthread::condition_variable m_cond;
-        mutable /*std*/tthread::mutex m_cond_mutex;
-        mutable /*std*/tthread::mutex m_task_pool_mutex;
+        tthread::thread m_thread;
+        tthread::condition_variable m_cond;
+        mutable tthread::mutex m_cond_mutex;
+        mutable tthread::mutex m_task_pool_mutex;
         std::list<task_helper> m_tasks;
         std::list<task_helper> m_task_pool;
         bool m_finished = false;

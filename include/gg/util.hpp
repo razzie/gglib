@@ -17,11 +17,14 @@ namespace util
     /*
      * string & wstring helpers
      */
-    std::string narrow(std::wstring const& s,
-                       std::locale loc = std::locale());
+    std::string trim(std::string, std::locale = std::locale());
+    std::wstring trim(std::wstring, std::locale = std::locale());
 
-    std::wstring widen(std::string const& s,
-                       std::locale loc = std::locale());
+    std::string narrow(std::wstring, std::locale = std::locale());
+    std::wstring widen(std::string, std::locale = std::locale());
+
+    bool is_integer(std::string);
+    bool is_float(std::string);
 
 
     /*

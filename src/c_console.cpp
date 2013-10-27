@@ -77,23 +77,6 @@ LRESULT CALLBACK c_console::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
     }
 }
 
-#define DEBUG_MUTEX debug_mutex __dm( \
-            std::string(typeid(*this).name()) + "::" + __FUNCTION__);
-
-class debug_mutex
-{
-    std::string m_fn;
-public:
-    debug_mutex(std::string fn) : m_fn(fn)
-    {
-        std::cout << m_fn << "::lock" << std::endl;
-    }
-    ~debug_mutex()
-    {
-        std::cout << m_fn << "::unlock" << std::endl;
-    }
-};
-
 
 c_console::c_output::c_output(c_output&& o)
  : m_console(o.m_console)/*, m_stream(std::move(o.m_stream))*/
@@ -109,7 +92,6 @@ c_console::c_output::c_output(c_console& con, gg::color clr, bool r, bool v)
 
 c_console::c_output::~c_output()
 {
-    DEBUG_MUTEX
     m_mutex.lock();
     m_console.remove_output(this);
     m_mutex.unlock();
@@ -132,9 +114,8 @@ void c_console::c_output::hide()
 
 void c_console::c_output::set_color(gg::color c)
 {
-    DEBUG_MUTEX
-    //std::lock_guard<std::mutex> guard(m_mutex);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
     m_color = c;
 }
 
@@ -145,43 +126,39 @@ gg::color c_console::c_output::get_color() const
 
 void c_console::c_output::align_left()
 {
-    DEBUG_MUTEX
-    //std::lock_guard<std::mutex> guard(m_mutex);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
     m_right = false;
 }
 
 void c_console::c_output::align_right()
 {
-    DEBUG_MUTEX
-    //std::lock_guard<std::mutex> guard(m_mutex);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
     m_right = true;
 }
 
 bool c_console::c_output::is_empty() const
 {
-    DEBUG_MUTEX
-    //std::lock_guard<std::mutex> guard(m_mutex);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
     return (m_stream.rdbuf()->in_avail() == 0);
 }
 
 console::output& c_console::c_output::operator<< (const gg::var& v)
 {
-    DEBUG_MUTEX
-    //std::lock_guard<std::mutex> guard(m_mutex);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
     m_stream << v.to_stream();
-    //m_console.force_update();
+    m_console.force_update();
+
     return *this;
 }
 
 std::string c_console::c_output::get_string() const
 {
-    DEBUG_MUTEX
-    //std::lock_guard<std::mutex> guard(m_mutex);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
     return m_stream.str();
 }
 
@@ -224,7 +201,6 @@ c_console::~c_console()
 
 void c_console::set_controller(controller* ctrl)
 {
-    //std::lock_guard<std::mutex> guard(m_mutex);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     if (m_ctrl != nullptr) m_ctrl->drop();
@@ -238,8 +214,6 @@ console::controller* c_console::get_controller() const
 
 void c_console::open()
 {
-    DEBUG_MUTEX
-    //std::lock_guard<std::mutex> guard(m_mutex);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     if (m_open) return; // already opened
@@ -270,8 +244,6 @@ void c_console::open()
 
 void c_console::close()
 {
-    DEBUG_MUTEX
-    //std::lock_guard<std::mutex> guard(m_mutex);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     if (!m_open) return;
@@ -305,8 +277,6 @@ bool c_console::run(uint32_t)
 
 console::output* c_console::create_output()
 {
-    DEBUG_MUTEX
-    //std::lock_guard<std::mutex> guard(m_mutex);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     c_output* out = new c_output(*this);
@@ -316,8 +286,6 @@ console::output* c_console::create_output()
 
 void c_console::remove_output(console::output* o)
 {
-    DEBUG_MUTEX
-    //std::lock_guard<std::mutex> guard(m_mutex);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     for (auto it=m_outp.begin(); it!=m_outp.end(); it++)
@@ -332,17 +300,12 @@ void c_console::remove_output(console::output* o)
 
 void c_console::clear()
 {
-    DEBUG_MUTEX
-    //std::lock_guard<std::mutex> guard(m_mutex);
-    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
     std::list<c_output*> tmp_outp;
 
     m_mutex.lock();
     std::swap(tmp_outp, m_outp);
     m_mutex.unlock();
 
-    //m_outp.clear();
     for (auto it=tmp_outp.begin(); it!=tmp_outp.end(); it=tmp_outp.erase(it))
     {
         (*it)->drop();
@@ -686,11 +649,11 @@ bool c_console::cmd_async_exec_task::run(uint32_t)
     }
     catch (std::exception& e)
     {
-        std::cerr << "exception caught while executing command: " << e.what() << std::endl;
+        *m_exec_outp << "\nexception: " << e.what();
     }
     catch (...)
     {
-        std::cerr << "unknown exception caught while executing command" << std::endl;
+        *m_exec_outp << "\nexception: unknown";
     }
 
     m_cmd_outp->drop();

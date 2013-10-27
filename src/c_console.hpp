@@ -101,7 +101,7 @@ private:
     {
         friend class c_console;
 
-        mutable /*std*/tthread::mutex m_mutex;
+        mutable tthread::mutex m_mutex;
         c_console& m_console;
         std::stringstream m_stream;
         gg::color m_color;
@@ -160,7 +160,7 @@ private:
 
 /* private variables */
 private:
-    /*std*/tthread::mutex m_mutex;
+    tthread::mutex m_mutex;
     std::string m_name;
 	bool m_open;
 	std::list<c_output*> m_outp;
