@@ -22,7 +22,7 @@ std::string util::trim(std::string s, std::locale loc)
     {
         if (!std::isspace(*it, loc))
         {
-            it_last = it;
+            it_last = it - 1;
             break;
         }
     }
@@ -51,7 +51,7 @@ std::wstring util::trim(std::wstring ws, std::locale loc)
     {
         if (!std::isspace(*it, loc))
         {
-            it_last = it;
+            it_last = it - 1;
             break;
         }
     }

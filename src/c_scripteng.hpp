@@ -2,8 +2,6 @@
 #define C_SCRIPTENG_HPP_INCLUDED
 
 #include <map>
-#include <vector>
-#include <initializer_list>
 #include "gg/scripteng.hpp"
 #include "gg/console.hpp"
 #include "tinythread.h"
@@ -25,19 +23,27 @@ namespace gg
         };
 
     private:
+        struct command
+        {
+            std::string m_name;
+            std::vector<arg::type> m_args;
+            callback m_cb;
+        };
+
+    private:
         tthread::mutex m_mutex;
-        std::map<std::string, std::pair<std::vector<arg_type>, callback>> m_commands;
+        std::map<std::string, command> m_commands;
         console_controller* m_ctrl;
 
     public:
         c_script_engine();
         ~c_script_engine();
         void add_command(std::string cmd,
-                         std::initializer_list<arg_type> args,
+                         std::vector<arg::type> args,
                          callback cb);
         void remove_command(std::string cmd);
         bool exec(std::string cmd,
-                  std::initializer_list<arg> args,
+                  std::vector<arg> args,
                   std::ostream& output = std::cout) const;
         bool parse_and_exec(std::string cmd_line,
                             std::ostream& output = std::cout) const;
@@ -45,6 +51,7 @@ namespace gg
 
     private:
         bool is_valid_cmd_name(std::string cmd) const;
+        command* find_command(std::string cmd);
     };
 };
 

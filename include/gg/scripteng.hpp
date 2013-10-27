@@ -2,6 +2,7 @@
 #define GG_SCRIPTENG_HPP_INCLUDED
 
 #include <iostream>
+#include <vector>
 #include "gg/types.hpp"
 #include "gg/var.hpp"
 
@@ -13,25 +14,29 @@ namespace gg
         virtual ~script_engine() {}
 
     public:
-        enum arg_type
-        {
-            NONE, ANY, INT, FLOAT, STRING, VARARG
-        };
-
         struct arg
         {
-            arg_type m_type;
+            enum class type
+            {
+                NONE, ANY, INT, FLOAT, STRING, VARARG
+            };
+
+            type m_type;
             var m_value;
+
+            int get_int() { return m_value.get<int>(); }
+            float get_float() { return m_value.get<float>(); }
+            std::string get_string() { return m_value.get<std::string>(); }
         };
 
         typedef bool(*callback)(std::vector<arg>);
 
         virtual void add_command(std::string cmd,
-                                 std::initializer_list<arg_type> args,
+                                 std::vector<arg::type> args,
                                  callback cb) = 0;
         virtual void remove_command(std::string cmd) = 0;
         virtual bool exec(std::string cmd,
-                          std::initializer_list<arg> args,
+                          std::vector<arg> args,
                           std::ostream& output = std::cout) const = 0;
         virtual bool parse_and_exec(std::string cmd_line,
                                     std::ostream& output = std::cout) const = 0;

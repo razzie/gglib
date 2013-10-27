@@ -150,7 +150,7 @@ console::output& c_console::c_output::operator<< (const gg::var& v)
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     m_stream << v.to_stream();
-    m_console.force_update();
+    //m_console.force_update();
 
     return *this;
 }
@@ -612,8 +612,9 @@ void c_console::paint(const render_context* ctx)
 
 void c_console::force_update()
 {
-    InvalidateRect(m_hWnd, NULL, TRUE);
-    UpdateWindow(m_hWnd);
+    //InvalidateRect(m_hWnd, NULL, TRUE);
+    //UpdateWindow(m_hWnd);
+    SendMessage(m_hWnd, WM_PAINT, 0, 0);
 }
 
 c_console::cmd_async_exec_task::cmd_async_exec_task(
