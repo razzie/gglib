@@ -238,6 +238,7 @@ void c_console::open()
 
 	ShowWindow(m_hWnd, SW_SHOW);
 	UpdateWindow(m_hWnd);
+	//SendMessage(m_hWnd, WM_PAINT, 0, 0);
 
 	//m_thread.add_task(grab(this));
 }
@@ -314,6 +315,15 @@ void c_console::clear()
 
 LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
+    /*if (!m_mutex.try_lock())
+    {
+        SendMessage(m_hWnd, uMsg, wParam, lParam);
+        return 0;
+    }*/
+
+    //m_mutex.unlock();
+    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
 	switch(uMsg)
     {
 		case WM_CREATE:

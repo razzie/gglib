@@ -14,7 +14,7 @@ namespace gg
     public:
         virtual ~reference_counted() {}
         void grab() const { m_mut.lock(); ++m_ref; m_mut.unlock(); }
-        void drop() const { m_mut.lock(); if (--m_ref == 0) delete this; m_mut.unlock(); }
+        void drop() const { m_mut.lock(); if (--m_ref == 0) delete this; else m_mut.unlock(); }
         uint32_t get_ref_count() const { return m_ref; }
     };
 
