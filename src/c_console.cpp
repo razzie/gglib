@@ -150,7 +150,7 @@ console::output& c_console::c_output::operator<< (const gg::var& v)
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     m_stream << v.to_stream();
-    //m_console.force_update();
+    m_console.update();
 
     return *this;
 }
@@ -181,7 +181,8 @@ c_console::c_console(std::string name, controller* ctrl)
 	InitCommonControlsEx(&iccex);
 
 	ZeroMemory(&m_wndClassEx, sizeof(WNDCLASSEX));
-	m_wndClassEx.cbSize = sizeof(WNDCLASSEX);
+	m_wndClassEx.cbSize        = sizeof(WNDCLASSEX);
+	m_wndClassEx.style         = CS_DBLCLKS;
 	m_wndClassEx.lpfnWndProc   = WndProc;
 	m_wndClassEx.cbWndExtra    = sizeof(LONG);
 	m_wndClassEx.hInstance     = m_hInst;
@@ -201,7 +202,7 @@ c_console::~c_console()
 
 void c_console::set_controller(controller* ctrl)
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     if (m_ctrl != nullptr) m_ctrl->drop();
     m_ctrl = ctrl;
@@ -214,7 +215,7 @@ console::controller* c_console::get_controller() const
 
 void c_console::open()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     if (m_open) return; // already opened
     m_open = true;
@@ -237,15 +238,16 @@ void c_console::open()
     m_hFont = CreateFontIndirect(&lfont);
 
 	ShowWindow(m_hWnd, SW_SHOW);
-	UpdateWindow(m_hWnd);
-	//SendMessage(m_hWnd, WM_PAINT, 0, 0);
+	//UpdateWindow(m_hWnd);
+	//PostMessage(m_hWnd, WM_PAINT, 0, 0);
+	update();
 
 	//m_thread.add_task(grab(this));
 }
 
 void c_console::close()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     if (!m_open) return;
     m_open = false;
@@ -259,7 +261,7 @@ bool c_console::is_opened() const
     return m_open;
 }
 
-bool c_console::run(uint32_t)
+bool c_console::run()
 {
     MSG Msg;
 
@@ -276,9 +278,21 @@ bool c_console::run(uint32_t)
     return false;
 }
 
+bool c_console::run(uint32_t)
+{
+    return ( !run() );
+}
+
+void c_console::update()
+{
+    InvalidateRect(m_hWnd, NULL, TRUE);
+    //UpdateWindow(m_hWnd);
+    PostMessage(m_hWnd, WM_PAINT, 0, 0);
+}
+
 console::output* c_console::create_output()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     c_output* out = new c_output(*this);
     m_outp.push_back(out);
@@ -287,7 +301,7 @@ console::output* c_console::create_output()
 
 void c_console::remove_output(console::output* o)
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     for (auto it=m_outp.begin(); it!=m_outp.end(); it++)
     {
@@ -317,12 +331,12 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
     /*if (!m_mutex.try_lock())
     {
-        SendMessage(m_hWnd, uMsg, wParam, lParam);
+        PostMessage(m_hWnd, uMsg, wParam, lParam);
         return 0;
-    }*/
+    }
 
-    //m_mutex.unlock();
-    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    m_mutex.unlock();*/
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
 	switch(uMsg)
     {
@@ -330,7 +344,7 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			break;
 
         case WM_SIZE:
-            force_update();
+            update();
             break;
 
         case WM_ERASEBKGND:
@@ -381,7 +395,7 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
                     }
                     break;
             }
-            force_update();
+            update();
             break;
 
         case WM_KEYDOWN:
@@ -395,7 +409,7 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
                     if (m_cmdpos < m_cmd.length()) m_cmdpos++;
                     break;
             }
-            force_update();
+            update();
             break;
 
         case WM_QUIT:
@@ -618,13 +632,6 @@ void c_console::paint(const render_context* ctx)
     return;
 
     #undef DRAWTEXT
-}
-
-void c_console::force_update()
-{
-    //InvalidateRect(m_hWnd, NULL, TRUE);
-    //UpdateWindow(m_hWnd);
-    SendMessage(m_hWnd, WM_PAINT, 0, 0);
 }
 
 c_console::cmd_async_exec_task::cmd_async_exec_task(

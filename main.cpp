@@ -93,7 +93,7 @@ int main()
 
     gg::c_console con("test console", new console_controller());
     con.open();
-    while (con.run(0));
+    while (con.run());
 
 
     delete taskmgr;

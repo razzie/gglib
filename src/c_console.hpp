@@ -81,7 +81,9 @@ public:
     void open();
     void close();
     bool is_opened() const;
-    bool run(uint32_t unused);
+    bool run(); // normal run function, returns false if failed to run
+    bool run(uint32_t unused); // inherited from gg::task, returns the opposite of run()
+	void update();
     output* create_output();
     void remove_output(output*);
     void clear();
@@ -160,7 +162,7 @@ private:
 
 /* private variables */
 private:
-    tthread::mutex m_mutex;
+    tthread::recursive_mutex m_mutex;
     std::string m_name;
 	bool m_open;
 	std::list<c_output*> m_outp;
@@ -187,7 +189,6 @@ private:
                   int align = alignment::TP_BOTTOM, COLORREF color = TEXTCOLOR_SYSTEM);
 	LRESULT handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam);
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	void force_update();
 	void cmd_async_exec();
 	void cmd_complete();
 };
