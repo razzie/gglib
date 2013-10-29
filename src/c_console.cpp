@@ -329,13 +329,6 @@ void c_console::clear()
 
 LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    /*if (!m_mutex.try_lock())
-    {
-        PostMessage(m_hWnd, uMsg, wParam, lParam);
-        return 0;
-    }
-
-    m_mutex.unlock();*/
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
 	switch(uMsg)
@@ -365,6 +358,15 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
             return DefWindowProc(m_hWnd, WM_NCLBUTTONDBLCLK, HTCAPTION, lParam);
 
         case WM_CHAR:
+            // handling CTRL + C
+            if (/*GetKeyState(VK_CONTROL) && wParam == 'c'*/ wParam == 3) // EndOfText
+            {
+                m_cmd.clear();
+                m_cmdpos = 0;
+                break;
+                //return 0;
+            }
+            // handling currently typed command
             switch (wParam)
             {
                 case VK_RETURN:
