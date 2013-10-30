@@ -158,7 +158,7 @@ namespace gg
                 throw std::runtime_error("casting empty var");
 
             if (!util::has_extract_op<T>::value)
-                throw std::runtime_error("unsupported cast");
+                throw std::runtime_error("unable to cast");
 
             T result;
             std::stringstream ss;
@@ -184,6 +184,49 @@ namespace gg
     };
 
     typedef std::vector<var> varlist;
+
+    namespace util
+    {
+        /*
+         * Dynamic function argument list
+         */
+        template <typename R, typename... Args>
+        R callfunc (std::function<R(Args...)> func, varlist vl);
+
+        template <typename R>
+        R callfunc (std::function<R()> func, varlist vl)
+        {
+            if (vl.size() > 0)
+                throw std::runtime_error("argument list too long");
+
+            return func();
+        }
+
+        template <typename R, typename Arg0, typename... Args>
+        R callfunc (std::function<R(Arg0, Args...)> func, varlist vl)
+        {
+            if (vl.size() == 0)
+                throw std::runtime_error("argument list too short");
+
+            Arg0 arg0 = vl[0].get<Arg0>;
+            vl.erase(vl.begin());
+            std::function<R(Args... args)> lambda =
+                [=](Args... args) -> R { return func(arg0, args...); };
+
+            return callfunc (lambda, vl);
+        }
+
+        template <typename R, typename... Args>
+        std::function<var(varlist)> adaptfunc (R(*func)(Args...))
+        {
+            std::function<R(Args...)> stdfunc = func;
+            std::function<var(varlist)> result =
+                ([=](varlist vl) -> var {
+                 return var(callfunc(stdfunc, vl));
+                 });
+            return result;
+        }
+    };
 };
 
 std::ostream& operator<< (std::ostream& o, const gg::var::view& vw);

@@ -11,7 +11,6 @@
 
 namespace gg
 {
-class var;
 namespace util
 {
     /*

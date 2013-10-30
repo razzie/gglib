@@ -91,6 +91,9 @@ int main()
     drop_test( gg::auto_drop(taskmgr->create_wait_task(5000)) );
 
 
+    //gg::util::callfunc([](int a, int b) -> int { return a+b; }, gg::varlist {(int)3, (int)8});
+
+
     gg::c_console con("test console", new console_controller());
     con.open();
     while (con.run());
