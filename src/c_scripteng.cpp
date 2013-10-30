@@ -1,5 +1,5 @@
 #include <cctype>
-#include "gg/exception.hpp"
+#include <stdexcept>
 #include "c_scripteng.hpp"
 
 using namespace gg;
@@ -37,7 +37,7 @@ void c_script_engine::add_command(std::string cmd,
                                   callback cb)
 {
     if (m_commands.count(cmd) == 1)
-        throw gg::exception("command already registered");
+        throw std::runtime_error("command already registered");
 
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 

@@ -1,8 +1,6 @@
 #ifndef C_EVENTMGR_HPP_INCLUDED
 #define C_EVENTMGR_HPP_INCLUDED
 
-//#include <map>
-//#include <mutex>
 #include "tinythread.h"
 #include "gg/eventmgr.hpp"
 #include "c_taskmgr.hpp"
@@ -17,7 +15,7 @@ namespace gg
 
         std::string m_name;
         std::list<event_listener*> m_listeners;
-        /*std*/tthread::mutex m_mutex;
+        tthread::mutex m_mutex;
         c_event_manager* m_parent_mgr;
 
     public:

@@ -50,7 +50,6 @@ c_event_type::c_event_type(c_event_type&& e)
 
 c_event_type::~c_event_type()
 {
-    //std::lock_guard<std::mutex> guard(m_mutex);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     for (auto it=m_listeners.begin();
@@ -68,7 +67,6 @@ std::string c_event_type::get_name() const
 
 void c_event_type::add_listener(event_listener* l)
 {
-    //std::lock_guard<std::mutex> guard(m_mutex);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     l->grab();
@@ -83,7 +81,6 @@ void c_event_type::add_listener(event_callback cb)
 
 void c_event_type::remove_listener(event_listener* l)
 {
-    //std::lock_guard<std::mutex> guard(m_mutex);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     m_listeners.remove_if([l](event_listener* elem) -> bool
@@ -113,7 +110,7 @@ c_event_type* c_event_manager::create_event_type(std::string name)
     auto ret = m_evt_types.insert( std::make_pair(name, c_event_type(name,this)) );
 
     if (!ret.second)
-        throw gg::exception("failed to create event type");
+        throw std::runtime_error("failed to create event type");
 
     return &ret.first->second;
 }
@@ -135,7 +132,7 @@ event_listener* c_event_manager::create_event_listener(event_callback cb) const
 void c_event_manager::push_event(event* evt)
 {
     if (nullptr == this->get_event_type(evt->get_name()))
-        throw gg::exception("unknown event type");
+        throw std::runtime_error("unknown event type");
 
     m_thread.add_task( new event_task(this,evt) );
 }
@@ -145,9 +142,8 @@ bool c_event_manager::trigger_event(event* evt)
     c_event_type* evt_type = this->get_event_type(evt->get_name());
 
     if (nullptr == evt_type)
-        throw gg::exception("unknown event type");
+        throw std::runtime_error("unknown event type");
 
-    //std::lock_guard<std::mutex> guard(evt_type->m_mutex);
     tthread::lock_guard<tthread::mutex> guard(evt_type->m_mutex);
 
     auto_drop evt_releaser(evt); // it will call evt->drop() when this function returns

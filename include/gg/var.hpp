@@ -137,10 +137,10 @@ namespace gg
         const T& get() const
         {
             if (m_var == nullptr)
-                throw gg::exception("casting empty var");
+                throw std::runtime_error("casting empty var");
 
             if (m_var->get_type() != typeid(T))
-                throw gg::exception("casting var to different type");
+                throw std::runtime_error("casting var to different type");
 
             return *static_cast<const T*>(m_var->get_ptr());
         }
@@ -155,10 +155,10 @@ namespace gg
         T cast() const
         {
             if (m_var == nullptr)
-                throw gg::exception("casting empty var");
+                throw std::runtime_error("casting empty var");
 
             if (!util::has_extract_op<T>::value)
-                throw gg::exception("unsupported cast");
+                throw std::runtime_error("unsupported cast");
 
             T result;
             std::stringstream ss;

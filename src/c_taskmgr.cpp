@@ -1,6 +1,6 @@
 #include <iostream>
 #include <functional>
-#include "gg/exception.hpp"
+#include <stdexcept>
 #include "c_taskmgr.hpp"
 
 using namespace gg;
@@ -193,7 +193,7 @@ gg::thread* c_task_manager::create_thread(std::string name)
     auto ret = m_threads.insert( std::make_pair(name, new c_thread(name)) );
 
     if (!ret.second)
-        throw gg::exception("failed to create thread");
+        throw std::runtime_error("failed to create thread");
 
     return ret.first->second;
 }

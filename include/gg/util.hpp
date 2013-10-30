@@ -6,8 +6,8 @@
 #include <locale>
 #include <functional>
 #include <type_traits>
+#include <stdexcept>
 #include "gg/types.hpp"
-#include "gg/exception.hpp"
 
 namespace gg
 {
@@ -122,7 +122,7 @@ namespace util
         if (!has_insert_op<From>::value
             || !has_extract_op<To>::value)
         {
-            throw gg::exception("unsupported cast");
+            throw std::runtime_error("unable to cast");
         }
 
         To result;
