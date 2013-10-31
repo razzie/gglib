@@ -53,6 +53,15 @@ void drop_test(const gg::reference_counted* o)
     std::cout << "[drop_test] ref count: " << o->get_ref_count() << std::endl;
 }
 
+class add_class
+{
+public:
+    int add(int a, int b)
+    {
+        return a + b;
+    }
+};
+
 int main()
 {
     setlocale(LC_ALL, "");
@@ -91,7 +100,9 @@ int main()
     drop_test( gg::auto_drop(taskmgr->create_wait_task(5000)) );
 
 
-    //gg::util::callfunc([](int a, int b) -> int { return a+b; }, gg::varlist {(int)3, (int)8});
+    add_class aa;
+    std::function<int(int,int)> add_func = std::bind(&add_class::add, &aa, std::placeholders::_1, std::placeholders::_2);
+    std::cout << gg::util::callfunc(add_func, gg::varlist {(int)3, (int)8} ) << std::endl;
 
 
     gg::c_console con("test console", new console_controller());

@@ -98,13 +98,13 @@ namespace gg
 
         var(const var& _v)
         {
-            if (m_var != nullptr) delete m_var;
+            //if (m_var != nullptr) delete m_var;
             m_var = _v.m_var->clone();
         }
 
         var(var&& _v)
         {
-            if (m_var != nullptr) delete m_var;
+            //if (m_var != nullptr) delete m_var;
             std::swap(m_var, _v.m_var);
         }
 
@@ -122,6 +122,22 @@ namespace gg
         ~var()
         {
             if (m_var != nullptr) delete m_var;
+        }
+
+        var& operator= (const var& _v)
+        {
+            if (m_var != nullptr) { delete m_var; m_var = nullptr; }
+            m_var = _v.m_var->clone();
+
+            return *this;
+        }
+
+        var& operator= (var&& _v)
+        {
+            if (m_var != nullptr) { delete m_var; m_var = nullptr; }
+            std::swap(m_var, _v.m_var);
+
+            return *this;
         }
 
         template<class T>
@@ -208,7 +224,7 @@ namespace gg
             if (vl.size() == 0)
                 throw std::runtime_error("argument list too short");
 
-            Arg0 arg0 = vl[0].get<Arg0>;
+            Arg0 arg0 = vl[0].get<Arg0>();
             vl.erase(vl.begin());
             std::function<R(Args... args)> lambda =
                 [=](Args... args) -> R { return func(arg0, args...); };
