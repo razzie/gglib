@@ -97,7 +97,7 @@ int main()
     eventmgr->push_event( new gg::event("aaa_event", {{"num", 123}, {"text", "lofasz!"}}) );
 
 
-    drop_test( gg::auto_drop(taskmgr->create_wait_task(5000)) );
+    drop_test( gg::auto_drop<gg::task>(taskmgr->create_wait_task(5000)) );
 
 
     add_class aa;
@@ -105,7 +105,7 @@ int main()
     std::cout << gg::util::callfunc(add_func, gg::varlist {(int)3, (int)8} ) << std::endl;
 
 
-    gg::c_console con("test console", new console_controller());
+    gg::c_console con("test console", gg::auto_drop<console_controller>(new console_controller()) );
     con.open();
     while (con.run());
 

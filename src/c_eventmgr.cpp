@@ -146,7 +146,7 @@ bool c_event_manager::trigger_event(event* evt)
 
     tthread::lock_guard<tthread::mutex> guard(evt_type->m_mutex);
 
-    auto_drop evt_releaser(evt); // it will call evt->drop() when this function returns
+    auto_drop<event> evt_releaser(evt); // it will call evt->drop() when this function returns
 
     for (auto l=evt_type->m_listeners.begin(); l!=evt_type->m_listeners.end(); l++)
     {

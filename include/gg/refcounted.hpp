@@ -52,16 +52,16 @@ namespace gg
         return (refc == 1) ? nullptr : static_cast<const T*>(o);
     }
 
+    template<class T,
+             class = typename std::enable_if<std::is_base_of<reference_counted, T>::value>::type >
     class auto_drop
     {
-        const reference_counted* m_obj;
+        T* m_obj;
 
     public:
-        auto_drop(const reference_counted* o) : m_obj(o) {}
+        auto_drop(T* o) : m_obj(o) {}
         ~auto_drop() { m_obj->drop(); }
-
-        template<class T, class = typename std::enable_if<std::is_base_of<reference_counted,T>::value>::type >
-        operator const T*() const { return dynamic_cast<const T*>(m_obj); }
+        operator T*() { return m_obj; }
     };
 };
 
