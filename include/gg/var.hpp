@@ -173,6 +173,9 @@ namespace gg
             if (m_var == nullptr)
                 throw std::runtime_error("casting empty var");
 
+            if (m_var->get_type() == typeid(T))
+                return *static_cast<const T*>(m_var->get_ptr());
+
             if (!util::has_extract_op<T>::value)
                 throw std::runtime_error("unable to cast");
 
@@ -224,7 +227,7 @@ namespace gg
             if (vl.size() == 0)
                 throw std::runtime_error("argument list too short");
 
-            Arg0 arg0 = vl[0].get<Arg0>();
+            Arg0 arg0 = vl[0].cast<Arg0>();
             vl.erase(vl.begin());
             std::function<R(Args... args)> lambda =
                 [=](Args... args) -> R { return func(arg0, args...); };
@@ -233,14 +236,20 @@ namespace gg
         }
 
         template <typename R, typename... Args>
-        std::function<var(varlist)> adaptfunc (R(*func)(Args...))
+        std::function<var(varlist)> adaptfunc (std::function<R(Args...)> stdfunc)
         {
-            std::function<R(Args...)> stdfunc = func;
             std::function<var(varlist)> result =
                 ([=](varlist vl) -> var {
                  return var(callfunc(stdfunc, vl));
                  });
             return result;
+        }
+
+        template <typename R, typename... Args>
+        std::function<var(varlist)> adaptfunc (R(*func)(Args...))
+        {
+            std::function<R(Args...)> stdfunc = func;
+            return adaptfunc(stdfunc);
         }
     };
 };

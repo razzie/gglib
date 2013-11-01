@@ -27,6 +27,66 @@ namespace util
 
 
     /*
+     * remove class of member function pointer
+     */
+    template<typename T>
+    struct remove_class { };
+
+    template<typename C, typename R, typename... Args>
+    struct remove_class<R(C::*)(Args...)> { using type = R(Args...); };
+
+    template<typename C, typename R, typename... Args>
+    struct remove_class<R(C::*)(Args...) const> { using type = R(Args...); };
+
+    template<typename C, typename R, typename... Args>
+    struct remove_class<R(C::*)(Args...) volatile> { using type = R(Args...); };
+
+    template<typename C, typename R, typename... Args>
+    struct remove_class<R(C::*)(Args...) const volatile> { using type = R(Args...); };
+
+
+    /*
+     * get signature of lambda
+     */
+    template<typename T>
+    struct get_signature_impl { using type = typename remove_class<
+        decltype(&std::remove_reference<T>::type::operator())>::type; };
+
+    template<typename R, typename... Args>
+    struct get_signature_impl<R(Args...)> { using type = R(Args...); };
+
+    template<typename R, typename... Args>
+    struct get_signature_impl<R(&)(Args...)> { using type = R(Args...); };
+
+    template<typename R, typename... Args>
+    struct get_signature_impl<R(*)(Args...)> { using type = R(Args...); };
+
+    template<typename T>
+    using get_signature = typename get_signature_impl<T>::type;
+
+
+    /*
+     * make_function
+     */
+    template<typename F>
+    std::function<get_signature<F>> make_function(F &&f)
+    {
+        return std::function<get_signature<F>>( std::forward<F>(f) );
+    }
+
+    template<typename R>
+    std::function<R()> make_function(R(*func)())
+    {
+        return std::function<R()> (func);
+    }
+
+    template<typename R, typename... Args>
+    std::function<R(Args...)> make_function(R(*func)(Args...))
+    {
+        return std::function<R(Args...)> (func);
+    }
+
+    /*
      * SFINAE helpers
      */
     template<class T> T& lvalue_of_type();
