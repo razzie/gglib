@@ -664,8 +664,8 @@ bool c_console::cmd_async_exec_task::run(uint32_t)
         else
             m_cmd_outp->set_color({100,0,0});
 
-        //if (m_exec_outp->is_empty()) m_exec_outp->hide();
-        if (m_exec_outp->is_empty()) m_exec_outp->drop();
+        if (m_exec_outp->is_empty()) m_exec_outp->hide();
+        //if (m_exec_outp->is_empty()) m_exec_outp->drop();
     }
     catch (std::exception& e)
     {
@@ -710,8 +710,8 @@ void c_console::cmd_complete()
     {
         c_output* o = static_cast<c_output*>(create_output());
         m_ctrl->complete(m_cmd, *o);
-        //if (o->is_empty()) o->hide();
-        if (o->is_empty()) o->drop();
+        if (o->is_empty()) o->hide();
+        //if (o->is_empty()) o->drop();
     }
     m_cmdpos = m_cmd.length();
 }

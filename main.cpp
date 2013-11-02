@@ -7,6 +7,7 @@
 #include "c_console.hpp"
 #include "c_taskmgr.hpp"
 #include "c_eventmgr.hpp"
+#include "managed_cout.hpp"
 
 gg::c_task_manager* taskmgr = nullptr;
 gg::c_event_manager* eventmgr = nullptr;
@@ -118,6 +119,16 @@ int main()
 
     gg::c_console con("test console", gg::auto_drop<console_controller>(new console_controller()) );
     con.open();
+
+    gg::managed_cout::get_instance()->enable();
+    {
+        gg::console::output* o = con.create_output();
+        //gg::auto_drop<gg::console::output> drop_o(o);
+        gg::managed_cout::hook h(*o);
+        std::cout << "Hello world hooked!" << std::endl;
+    }
+
+
     while (con.run());
 
 

@@ -85,6 +85,8 @@
 		<Unit filename="src/c_taskmgr.hpp" />
 		<Unit filename="src/c_timer.cpp" />
 		<Unit filename="src/c_timer.hpp" />
+		<Unit filename="src/managed_cout.cpp" />
+		<Unit filename="src/managed_cout.hpp" />
 		<Unit filename="src/util.cpp" />
 		<Unit filename="src/var.cpp" />
 		<Extensions>
