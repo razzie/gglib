@@ -25,7 +25,7 @@ namespace gg
         /*
          * var_impl<T> implements var_impl_base abstract class
          */
-        template<class T>
+        template<typename T>
         class var_impl : public var_impl_base
         {
             T m_var;
@@ -108,7 +108,7 @@ namespace gg
             std::swap(m_var, _v.m_var);
         }
 
-        template<class T>
+        template<typename T>
         var(T t)
         {
             m_var = new var_impl<T>(t);
@@ -140,7 +140,7 @@ namespace gg
             return *this;
         }
 
-        template<class T>
+        template<typename T>
         var& operator= (const T& t)
         {
             if (m_var != nullptr) delete m_var;
@@ -149,7 +149,7 @@ namespace gg
             return *this;
         }
 
-        template<class T>
+        template<typename T>
         const T& get() const
         {
             if (m_var == nullptr)
@@ -161,13 +161,13 @@ namespace gg
             return *static_cast<const T*>(m_var->get_ptr());
         }
 
-        template<class T>
+        template<typename T>
         operator T() const
         {
             return this->get<T>();
         }
 
-        template<class T>
+        template<typename T>
         T cast() const
         {
             if (m_var == nullptr)
@@ -200,20 +200,27 @@ namespace gg
             else
                 return typeid(void);
         }
+
+        bool is_empty() const
+        {
+            return (m_var == nullptr);
+        }
     };
 
     typedef std::vector<var> varlist;
 
+    typedef std::function<var(varlist)> dynamic_function;
+
     namespace util
     {
         /*
-         * Dynamic function argument list
+         * Call function with dynamic argument list
          */
-        template <typename R, typename... Args>
-        R callfunc (std::function<R(Args...)> func, varlist vl);
+        template<typename R, typename... Args>
+        R call_function(std::function<R(Args...)> func, varlist vl);
 
-        template <typename R>
-        R callfunc (std::function<R()> func, varlist vl)
+        template<typename R>
+        R call_function(std::function<R()> func, varlist vl)
         {
             if (vl.size() > 0)
                 throw std::runtime_error("argument list too long");
@@ -221,8 +228,8 @@ namespace gg
             return func();
         }
 
-        template <typename R, typename Arg0, typename... Args>
-        R callfunc (std::function<R(Arg0, Args...)> func, varlist vl)
+        template<typename R, typename Arg0, typename... Args>
+        R call_function(std::function<R(Arg0, Args...)> func, varlist vl)
         {
             if (vl.size() == 0)
                 throw std::runtime_error("argument list too short");
@@ -232,24 +239,35 @@ namespace gg
             std::function<R(Args... args)> lambda =
                 [=](Args... args) -> R { return func(arg0, args...); };
 
-            return callfunc (lambda, vl);
+            return call_function(lambda, vl);
         }
 
-        template <typename R, typename... Args>
-        std::function<var(varlist)> adaptfunc (std::function<R(Args...)> stdfunc)
+
+        /*
+         * make_dynamic_function
+         */
+        template<typename R, typename... Args>
+        dynamic_function make_dynamic_function(std::function<R(Args...)> stdfunc)
         {
-            std::function<var(varlist)> result =
-                ([=](varlist vl) -> var {
-                 return var(callfunc(stdfunc, vl));
-                 });
+            dynamic_function result =
+                [=](varlist vl) -> var
+                {
+                    return var(call_function(stdfunc, vl));
+                };
             return result;
         }
 
-        template <typename R, typename... Args>
-        std::function<var(varlist)> adaptfunc (R(*func)(Args...))
+        template<typename R, typename... Args>
+        dynamic_function make_dynamic_function(R(*func)(Args...))
         {
             std::function<R(Args...)> stdfunc = func;
-            return adaptfunc(stdfunc);
+            return make_dynamic_function(stdfunc);
+        }
+
+        template<typename F>
+        dynamic_function make_dynamic_function(F&& f)
+        {
+            return make_dynamic_function(make_function(f));
         }
     };
 };

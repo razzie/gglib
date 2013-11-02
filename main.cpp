@@ -102,16 +102,18 @@ int main()
 
     add_class aa;
     std::function<int(int,int)> add_func = std::bind(&add_class::add, &aa, std::placeholders::_1, std::placeholders::_2);
-    std::cout << gg::util::callfunc(add_func, gg::varlist {(int)3, (int)8} ) << std::endl;
+    std::cout << gg::util::call_function(add_func, gg::varlist {(int)3, (int)8} ) << std::endl;
 
     /*int(*add_func2)(int,int) = [](int a, int b)->int { return a+b; };
-    gg::var add_func2_result = gg::util::callfunc(gg::util::adaptfunc(add_func2), gg::varlist {(int)3, (int)8} );
+    gg::var add_func2_result = gg::util::call_function(gg::util::adaptfunc(add_func2), gg::varlist {(int)3, (int)8} );
     std::cout << add_func2_result.to_stream() << std::endl;*/
 
-    std::cout << gg::util::callfunc(
+    std::cout << gg::util::call_function(
                     gg::util::make_function([](int a, int b)->int { return a+b; }),
                     gg::varlist { (int)3, (int)8 })
               << std::endl;
+
+    //std::cout << gg::util::call_function([](int a, int b)->int { return a+b; }, gg::varlist { (int)3, (int)8 }) << std::endl;
 
 
     gg::c_console con("test console", gg::auto_drop<console_controller>(new console_controller()) );

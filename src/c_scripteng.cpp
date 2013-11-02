@@ -32,19 +32,17 @@ c_script_engine::~c_script_engine()
 {
 }
 
-void c_script_engine::add_command(std::string cmd,
-                                  std::vector<script_engine::arg::type> args,
-                                  callback cb)
+void c_script_engine::add_function(std::string cmd, dynamic_function func)
 {
     if (m_commands.count(cmd) == 1)
         throw std::runtime_error("command already registered");
 
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    m_commands.insert( std::make_pair(cmd, command {cmd, args, cb}) );
+    m_commands.insert( std::make_pair(cmd, func) );
 }
 
-void c_script_engine::remove_command(std::string cmd)
+void c_script_engine::remove_function(std::string cmd)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
@@ -54,22 +52,29 @@ void c_script_engine::remove_command(std::string cmd)
         m_commands.erase(pos);
 }
 
-bool c_script_engine::exec(std::string cmd,
-                           std::vector<script_engine::arg> args,
-                           std::ostream& output) const
+var c_script_engine::exec(std::string cmd, varlist vl, std::ostream& output) const
 {
 
 }
 
-bool c_script_engine::parse_and_exec(std::string cmd_line,
-                                     std::ostream& output) const
+var c_script_engine::exec(std::string cmd, varlist vl, console::output& output) const
 {
 
 }
 
-c_script_engine::console_controller* c_script_engine::get_console_controller()
+var c_script_engine::parse_and_exec(std::string cmd_line, std::ostream& output) const
 {
-    return m_ctrl;
+
+}
+
+var c_script_engine::parse_and_exec(std::string cmd_line, console::output& output) const
+{
+
+}
+
+console::controller* c_script_engine::get_console_controller()
+{
+    return static_cast<console::controller*>(m_ctrl);
 }
 
 bool c_script_engine::is_valid_cmd_name(std::string cmd) const
@@ -83,16 +88,4 @@ bool c_script_engine::is_valid_cmd_name(std::string cmd) const
         if (!std::isalnum(*it) && (*it) != '_') return false;
 
     return true;
-}
-
-c_script_engine::command* c_script_engine::find_command(std::string cmd)
-{
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-    auto pos = m_commands.find(cmd);
-
-    if (pos == m_commands.end())
-        return nullptr;
-    else
-        return &pos->second;
 }

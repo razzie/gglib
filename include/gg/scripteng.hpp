@@ -5,6 +5,7 @@
 #include <vector>
 #include "gg/types.hpp"
 #include "gg/var.hpp"
+#include "gg/console.hpp"
 
 namespace gg
 {
@@ -14,32 +15,31 @@ namespace gg
         virtual ~script_engine() {}
 
     public:
-        struct arg
+        virtual void add_function(std::string cmd, dynamic_function func) = 0;
+        virtual void remove_function(std::string cmd) = 0;
+
+        template<typename R, typename... Args>
+        void add_function(std::string cmd, std::function<R(Args...)> func)
         {
-            enum class type
-            {
-                NONE, ANY, INT, FLOAT, STRING, VARARG
-            };
+            this->add_function(cmd, util::make_dynamic_function(func));
+        }
 
-            type m_type;
-            var m_value;
+        template<typename R, typename... Args>
+        void add_function(std::string cmd, R(*func)(Args...))
+        {
+            this->add_function(cmd, util::make_dynamic_function(func));
+        }
 
-            int get_int() { return m_value.get<int>(); }
-            float get_float() { return m_value.get<float>(); }
-            std::string get_string() { return m_value.get<std::string>(); }
-        };
+        template<typename F>
+        void add_function(std::string cmd, F&& func)
+        {
+            this->add_function(cmd, util::make_dynamic_function(func));
+        }
 
-        typedef bool(*callback)(std::vector<arg>);
-
-        virtual void add_command(std::string cmd,
-                                 std::vector<arg::type> args,
-                                 callback cb) = 0;
-        virtual void remove_command(std::string cmd) = 0;
-        virtual bool exec(std::string cmd,
-                          std::vector<arg> args,
-                          std::ostream& output = std::cout) const = 0;
-        virtual bool parse_and_exec(std::string cmd_line,
-                                    std::ostream& output = std::cout) const = 0;
+        virtual var exec(std::string cmd, varlist vl, std::ostream& output = std::cout) const = 0;
+        virtual var exec(std::string cmd, varlist vl, console::output& output) const = 0;
+        virtual var parse_and_exec(std::string cmd_line, std::ostream& output = std::cout) const = 0;
+        virtual var parse_and_exec(std::string cmd_line, console::output& output) const = 0;
     };
 };
 

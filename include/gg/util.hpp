@@ -89,8 +89,8 @@ namespace util
     /*
      * SFINAE helpers
      */
-    template<class T> T& lvalue_of_type();
-    template<class T> T  rvalue_of_type();
+    template<typename T> T& lvalue_of_type();
+    template<typename T> T  rvalue_of_type();
 
     namespace sfinae
     {
@@ -102,29 +102,29 @@ namespace util
     /*
      * ostream insertion helpers
      */
-    template<class T>
+    template<typename T>
     struct has_insert_op
     {
-        template<class U>
+        template<typename U>
         static sfinae::yes test(char(*)[sizeof(
             lvalue_of_type<std::ostream>() << rvalue_of_type<U>()
         )]);
 
-        template<class U>
+        template<typename U>
         static sfinae::no test(...);
 
         enum { value = ( sizeof(sfinae::yes) == sizeof(test<T>(0)) ) };
         typedef std::integral_constant<bool, value> type;
     };
 
-    template<class T>
+    template<typename T>
     void ostream_insert(std::ostream& o, const T& t,
         typename std::enable_if<has_insert_op<T>::value>::type* = 0)
     {
         o << t;
     }
 
-    template<class T>
+    template<typename T>
     void ostream_insert(std::ostream& o, const T& t,
         typename std::enable_if<!has_insert_op<T>::value>::type* = 0)
     {
@@ -135,29 +135,29 @@ namespace util
     /*
      * istream extraction helpers
      */
-    template<class T>
+    template<typename T>
     struct has_extract_op
     {
-        template<class U>
+        template<typename U>
         static sfinae::yes test(char(*)[sizeof(
             lvalue_of_type<std::istream>() >> rvalue_of_type<U>()
         )]);
 
-        template<class U>
+        template<typename U>
         static sfinae::no test(...);
 
         enum { value = ( sizeof(sfinae::yes) == sizeof(test<T>(0)) ) };
         typedef std::integral_constant<bool, value> type;
     };
 
-    template<class T>
+    template<typename T>
     void istream_extract(std::istream& o, T& t,
         typename std::enable_if<has_extract_op<T>::value>::type* = 0)
     {
         o >> t;
     }
 
-    template<class T>
+    template<typename T>
     void istream_extract(std::istream& o, T& t,
         typename std::enable_if<!has_extract_op<T>::value>::type* = 0)
     {
@@ -167,14 +167,14 @@ namespace util
     /*
      * cast utilities
      */
-    template<class From, class To>
+    template<typename From, typename To>
     typename std::enable_if<std::is_convertible<From, To>::value, To>::type
     cast(const From& from)
     {
         return To(from);
     }
 
-    template<class From, class To>
+    template<typename From, typename To>
     typename std::enable_if<!std::is_convertible<From, To>::value, To>::type
     cast(const From& from)
     {
