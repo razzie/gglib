@@ -3,6 +3,7 @@
 #include <locale>
 #include "gg/types.hpp"
 #include "gg/var.hpp"
+#include "gg/varutil.hpp"
 
 #include "c_console.hpp"
 #include "c_taskmgr.hpp"

@@ -2,9 +2,9 @@
 #define GG_SCRIPTENG_HPP_INCLUDED
 
 #include <iostream>
-#include <vector>
 #include "gg/types.hpp"
 #include "gg/var.hpp"
+#include "gg/varutil.hpp"
 #include "gg/console.hpp"
 
 namespace gg
@@ -36,10 +36,10 @@ namespace gg
             this->add_function(cmd, util::make_dynamic_function(func));
         }
 
-        virtual var exec(std::string cmd, varlist vl, std::ostream& output = std::cout) const = 0;
-        virtual var exec(std::string cmd, varlist vl, console::output& output) const = 0;
-        virtual var parse_and_exec(std::string cmd_line, std::ostream& output = std::cout) const = 0;
-        virtual var parse_and_exec(std::string cmd_line, console::output& output) const = 0;
+        virtual bool exec(std::string cmd, varlist vl, std::ostream& output = std::cout, var* ret = nullptr) const = 0;
+        virtual bool exec(std::string cmd, varlist vl, console::output& output, var* ret = nullptr) const = 0;
+        virtual bool parse_and_exec(std::string expr, std::ostream& output = std::cout, var* ret = nullptr) const = 0;
+        virtual bool parse_and_exec(std::string expr, console::output& output, var* ret = nullptr) const = 0;
     };
 };
 

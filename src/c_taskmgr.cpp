@@ -141,9 +141,11 @@ void c_thread::mainloop()
 
             if (result) // run() returned 'true', so let's remove it
             {
-                // adding child tasks to the pool
                 auto subs = it->m_task->get_children();
-                for (auto sub_it=subs.begin(); sub_it!=subs.end(); sub_it++)
+                auto sub_it = subs.begin(), sub_end = subs.end();
+
+                // adding child tasks to the pool
+                for (; sub_it != sub_end; ++sub_it)
                 {
                     m_task_pool.push_back({*sub_it, new c_timer()});
                 }

@@ -303,7 +303,8 @@ void c_console::remove_output(console::output* o)
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
-    for (auto it=m_outp.begin(); it!=m_outp.end(); it++)
+    auto it = m_outp.begin(), end = m_outp.end();
+    for (; it != end; ++it)
     {
         if (*it == o)
         {
@@ -496,7 +497,7 @@ RECT c_console::calc_caret_rect(const render_context* ctx, std::string text, int
     SIZE s;
     char c;
 
-    for (; it != end && (pos == -1 || curr_pos < pos); it++, curr_pos++)
+    for (; it != end && (pos == -1 || curr_pos < pos); ++it, ++curr_pos)
     {
         c = *it;
         GetTextExtentPoint32(ctx->secondary, &c, 1, &s);
@@ -536,7 +537,7 @@ int c_console::wrap_text(const render_context* ctx, std::string& text, const REC
     //height = s.cy;
     height = ctx->cheight;
 
-    for (; it != end; it++)
+    for (; it != end; ++it)
     {
         c = *it;
         GetTextExtentPoint32(ctx->secondary, &c, 1, &s);
@@ -625,7 +626,7 @@ void c_console::paint(const render_context* ctx)
     caret.bottom += pos.bottom + 2;
     FrameRect(ctx->secondary, &caret, (HBRUSH)GetStockObject(WHITE_BRUSH));
 
-    for (; it != end && pos.bottom > 0; it++)
+    for (; it != end && pos.bottom > 0; ++it)
     {
         DRAWTEXT((**it));
     }

@@ -9,7 +9,7 @@ std::string util::trim(std::string s, std::locale loc)
     auto s_begin = s.begin(), s_end = s.end();
     decltype(s.begin()) it_first, it_last;
 
-    for (auto it = s_begin; it != s_end; it++)
+    for (auto it = s_begin; it != s_end; ++it)
     {
         if (!std::isspace(*it, loc))
         {
@@ -18,7 +18,7 @@ std::string util::trim(std::string s, std::locale loc)
         }
     }
 
-    for (auto it = s_end; it != s_begin; it--)
+    for (auto it = s_end; it != s_begin; --it)
     {
         if (!std::isspace(*it, loc))
         {
@@ -38,7 +38,7 @@ std::wstring util::trim(std::wstring ws, std::locale loc)
     auto ws_begin = ws.begin(), ws_end = ws.end();
     decltype(ws.begin()) it_first, it_last;
 
-    for (auto it = ws_begin; it != ws_end; it++)
+    for (auto it = ws_begin; it != ws_end; ++it)
     {
         if (!std::isspace(*it, loc))
         {
@@ -47,7 +47,7 @@ std::wstring util::trim(std::wstring ws, std::locale loc)
         }
     }
 
-    for (auto it = ws_end; it != ws_begin; it--)
+    for (auto it = ws_end; it != ws_begin; --it)
     {
         if (!std::isspace(*it, loc))
         {
@@ -109,7 +109,7 @@ bool util::is_integer(std::string s)
     if (!isdigit(*it) && *it != '-') return false;
     ++it;
 
-    for (; it != end; it++)
+    for (; it != end; ++it)
     {
         if (!isdigit(*it)) return false;
     }
@@ -128,7 +128,7 @@ bool util::is_float(std::string s)
     if (*it == '.') point_used = true;
     ++it;
 
-    for (; it != end; it++)
+    for (; it != end; ++it)
     {
         if ((!isdigit(*it) && *it != '.') ||
             (*it == '.' && point_used)) return false;

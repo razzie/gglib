@@ -71,6 +71,7 @@
 			<Option weight="60" />
 		</Unit>
 		<Unit filename="include/gg/var.hpp" />
+		<Unit filename="include/gg/varutil.hpp" />
 		<Unit filename="include/gglib.hpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="src/c_console.cpp" />
