@@ -69,27 +69,28 @@ namespace gg
 
         const var_impl_base* m_var = nullptr;
 
-        void extract_to(std::ostream& o) const
-        {
-            if (m_var != nullptr)
-                m_var->extract_to(o);
-            else
-                o << "(empty)";
-        }
-
     public:
         /*
          * view class for ostream insertion operator support
          */
         class view
         {
+            friend std::ostream& operator<< (std::ostream& o, const gg::var::view& vw);
+
             const var& m_var;
+
         public:
             view(const var& var) : m_var(var) {}
             view(const view& vw) : m_var(vw.m_var) {}
             ~view() {}
-            void extract_to(std::ostream& o) const { m_var.extract_to(o); }
         };
+
+        inline friend std::ostream& operator<< (std::ostream& o, const gg::var::view& vw)
+        {
+            if (vw.m_var.m_var == nullptr) o << "(empty)";
+            else vw.m_var.m_var->extract_to(o);
+            return o;
+        }
 
         /*
          * var public method implementations
@@ -98,13 +99,11 @@ namespace gg
 
         var(const var& _v)
         {
-            //if (m_var != nullptr) delete m_var;
             m_var = _v.m_var->clone();
         }
 
         var(var&& _v)
         {
-            //if (m_var != nullptr) delete m_var;
             std::swap(m_var, _v.m_var);
         }
 
@@ -272,7 +271,6 @@ namespace gg
     };
 };
 
-std::ostream& operator<< (std::ostream& o, const gg::var::view& vw);
 std::ostream& operator<< (std::ostream& o, const gg::varlist& vl);
 
 #endif // VAR_HPP_INCLUDED

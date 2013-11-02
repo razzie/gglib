@@ -2,12 +2,6 @@
 
 using namespace gg;
 
-std::ostream& operator<< (std::ostream& o, const gg::var::view& vw)
-{
-    vw.extract_to(o);
-    return o;
-}
-
 std::ostream& operator<< (std::ostream& o, const gg::varlist& vl)
 {
     int i;
