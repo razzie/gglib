@@ -1,9 +1,10 @@
 #include <algorithm>
 //#include <cctype>
-#include <stdexcept>
+//#include <stdexcept>
 #include "expression.hpp"
 
 using namespace gg;
+
 
 expression::expression(expression* parent, std::string expr)
  : m_parent(parent)
@@ -33,12 +34,13 @@ expression::expression(expression* parent, std::string expr)
         if (*it == '(') --open_brackets;
 
         if (open_brackets < 0)
-            throw std::runtime_error("invalid use of ')'");
+            throw expression_error("invalid use of ')'");
 
-        if (open_brackets == 1 || !expr_mode)
+        if (open_brackets == 1 && !expr_mode)
         {
             expr_mode = true;
             expr_begin = it + 1;
+            m_name = std::string(begin, it);
             continue;
         }
 
@@ -57,15 +59,15 @@ expression::expression(expression* parent, std::string expr)
     }
 
     if (skip_next)
-        throw std::runtime_error("'\"' expected");
+        throw expression_error("'\"' expected");
 
     if (open_brackets > 0)
-        throw std::runtime_error("missing ')'");
+        throw expression_error("missing ')'");
 
-    if (begin != expr_begin)
-        m_name = std::string(begin, expr_begin - 1);
-    else
+    if (begin == expr_begin)
         m_name = expr;
+
+    std::cout << "new expression created; name: " << m_name << ", expr: " << m_expr << std::endl;
 }
 
 expression::expression(std::string expr)
@@ -80,7 +82,7 @@ expression::~expression()
 void expression::print(uint32_t level, std::ostream& o) const
 {
     for (uint32_t i = 0; i < level; ++i) o << " ";
-    o << m_name << std::endl;
+    o << m_expr << std::endl;
     for_each(m_children.begin(), m_children.end(), [&](expression_ptr e) { e->print(level+1, o); });
 }
 
@@ -107,4 +109,30 @@ const expression* expression::get_parent() const
 const std::vector<expression::expression_ptr>& expression::get_children() const
 {
     return m_children;
+}
+
+
+expression_error::expression_error(std::string error) noexcept
+ : m_error(error)
+{
+}
+
+expression_error::expression_error(const expression_error& e) noexcept
+ : m_error(e.m_error)
+{
+}
+
+expression_error& expression_error::operator= (const expression_error& e) noexcept
+{
+    m_error = e.m_error;
+    return *this;
+}
+
+expression_error::~expression_error() noexcept
+{
+}
+
+const char* expression_error::what() const noexcept
+{
+    return m_error.c_str();
 }

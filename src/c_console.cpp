@@ -235,6 +235,7 @@ void c_console::open()
     LOGFONT lfont;
 	m_hTheme = OpenThemeData(m_hWnd, L"CompositedWindow::Window");
     GetThemeFont(m_hTheme, (HDC)NULL, 0, 0, TMT_FONT, &lfont);
+    //strcpy(lfont.lfFaceName, "Consolas");
     m_hFont = CreateFontIndirect(&lfont);
 
 	ShowWindow(m_hWnd, SW_SHOW);
