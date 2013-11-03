@@ -3,29 +3,34 @@
 
 #include <string>
 #include <vector>
-//#include <exception>
-//#include "gg/types.hpp"
+#include <memory>
+#include "gg/types.hpp"
 
 namespace gg
 {
-    class expression
+    class expression final
     {
-        expression* m_parent;
-        std::string m_name;
-        std::string m_expr;
-        std::vector<expression*> m_children;
-
-    protected:
-        expression(expression* parent, std::string expr);
-
     public:
+        typedef std::shared_ptr<expression> expression_ptr;
+
         expression(std::string expr);
         ~expression();
 
-        const expression* get_parent() const;
         std::string get_name() const;
         std::string get_expression() const;
-        std::vector<expression*> get_children() const;
+        const expression* get_parent() const;
+        const std::vector<expression_ptr>& get_children() const;
+        void print(std::ostream& o = std::cout) const;
+
+    protected:
+        expression(expression* parent, std::string expr);
+        void print(uint32_t level, std::ostream& o) const;
+
+    private:
+        expression* m_parent;
+        std::string m_name;
+        std::string m_expr;
+        std::vector<expression_ptr> m_children;
     };
 };
 

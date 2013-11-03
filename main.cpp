@@ -4,11 +4,11 @@
 #include "gg/types.hpp"
 #include "gg/var.hpp"
 #include "gg/varutil.hpp"
-
 #include "c_console.hpp"
 #include "c_taskmgr.hpp"
 #include "c_eventmgr.hpp"
 #include "managed_cout.hpp"
+#include "expression.hpp"
 
 gg::c_task_manager* taskmgr = nullptr;
 gg::c_event_manager* eventmgr = nullptr;
@@ -75,6 +75,10 @@ int main()
         std::cout << gg::varlist {"lofasz", 123, 5.5f, false} << std::endl;
 
         std::cout << gg::var("abc").get<std::string>() << std::endl;
+
+
+        gg::expression e("aaa(bbb,ccc(ddd))");
+        e.print();
     }
     catch (std::exception& e)
     {
