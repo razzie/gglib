@@ -17,8 +17,8 @@ namespace gg
         public:
             console_controller(c_script_engine*);
             ~console_controller();
-            bool exec(std::string& cmd, console::output&);
-            void complete(std::string& cmd, console::output&);
+            bool exec(std::string& fn, console::output&);
+            void complete(std::string& fn, console::output&);
         };
 
         mutable tthread::mutex m_mutex;
@@ -28,19 +28,19 @@ namespace gg
     public:
         c_script_engine();
         ~c_script_engine();
-        void add_function(std::string cmd, dynamic_function func);
-        void remove_function(std::string cmd);
-        bool exec(std::string cmd, varlist vl, std::ostream& output = std::cout, var* ret = nullptr) const;
-        bool exec(std::string cmd, varlist vl, console::output& output, var* ret = nullptr) const;
+        void add_function(std::string fn, dynamic_function func);
+        void remove_function(std::string fn);
+        bool exec(std::string fn, varlist vl, std::ostream& output = std::cout, var* ret = nullptr) const;
+        bool exec(std::string fn, varlist vl, console::output& output, var* ret = nullptr) const;
         bool parse_and_exec(std::string expr, std::ostream& output = std::cout, var* ret = nullptr) const;
         bool parse_and_exec(std::string expr, console::output& output, var* ret = nullptr) const;
         console::controller* get_console_controller();
 
     private:
-        bool is_valid_cmd_name(std::string cmd) const;
-        std::vector<std::string> find_matching_commands(std::string cmd) const;
-        void auto_complete(std::string& cmd) const;
-        void auto_complete(std::string& cmd, std::vector<std::string> matches) const;
+        bool is_valid_cmd_name(std::string fn) const;
+        std::vector<std::string> find_matching_functions(std::string fn) const;
+        void auto_complete(std::string& fn) const;
+        void auto_complete(std::string& fn, std::vector<std::string> matches) const;
     };
 };
 
