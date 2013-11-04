@@ -30,29 +30,41 @@ expression::expression(expression* parent, std::string expr)
         if (*it == '"') string_mode = !string_mode;
         if (string_mode) continue;
 
-        if (*it == '(') ++open_brackets;
-        if (*it == '(') --open_brackets;
-
-        if (open_brackets < 0)
-            throw expression_error("invalid use of ')'");
-
-        if (open_brackets == 1 && !expr_mode)
+        if (*it == '(')
         {
-            expr_mode = true;
-            expr_begin = it + 1;
-            m_name = std::string(begin, it);
+            ++open_brackets;
+
+            if (open_brackets == 1 && !expr_mode)
+            {
+                expr_mode = true;
+                expr_begin = it + 1;
+                m_name = std::string(begin, it);
+                continue;
+            }
+
             continue;
         }
 
-        if ((open_brackets == 0 && expr_mode) || (*it == ','))
+        if ((*it == ')') || (*it == ','))
         {
-            if (it == expr_begin)
-                new expression (this, "");
-            else
-                new expression(this, std::string(expr_begin, it-1));
+             if (*it == ')') --open_brackets;
 
-            if (*it == ',') expr_begin = it + 1;
-            else expr_mode = false;
+            if (open_brackets < 0)
+                throw expression_error("invalid use of ')'");
+
+
+            if ((open_brackets == 0 && expr_mode) || (*it == ','))
+            {
+                if (it == expr_begin)
+                    new expression (this, "");
+                else
+                    new expression(this, std::string(expr_begin, it-1));
+
+                if (*it == ',') expr_begin = it + 1;
+                else expr_mode = false;
+
+                continue;
+            }
 
             continue;
         }
