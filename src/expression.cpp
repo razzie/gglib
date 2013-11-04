@@ -1,5 +1,5 @@
 #include <algorithm>
-//#include <cctype>
+#include <cctype>
 //#include <stdexcept>
 #include "expression.hpp"
 
@@ -9,23 +9,30 @@ using namespace gg;
 expression::expression(expression* parent, std::string expr)
  : m_parent(parent)
 {
-    if (parent != nullptr) parent->m_children.push_back(expression_ptr(this));
+    std::cout << "starting new expression; expr: " << expr << std::endl;
+
     if (expr.size() == 0) return;
 
     m_expr = expr;
 
-    auto begin = expr.begin(), end = expr.end();
     int open_brackets = 0;
     bool string_mode = false;
-    bool skip_next = false;
-    //bool expect_next = false;
-    bool expr_mode = false;
-    auto expr_begin = begin;
-
-    for (auto it = begin; it != end; ++it)
+    auto expr_begin = expr.begin();
+    enum
     {
-        if (*it == '\\') { skip_next = true; continue; }
-        if (skip_next) { skip_next = false; continue; }
+        EXPR_NONE,
+        EXPR_INCOMPLETE,
+        EXPR_COMPLETE
+    }
+    expr_mode = EXPR_NONE;
+
+    for (auto it = expr.begin(); it != expr.end(); ++it)
+    {
+        if ((*it == '\\') && (it+1 != expr.end()) && (*(it+1) == '"'))
+        {
+            it = expr.erase(it); // it will jump to ", but we want to skip it
+            continue;
+        }
 
         if (*it == '"') string_mode = !string_mode;
         if (string_mode) continue;
@@ -33,51 +40,60 @@ expression::expression(expression* parent, std::string expr)
         if (*it == '(')
         {
             ++open_brackets;
-
-            if (open_brackets == 1 && !expr_mode)
+            if (open_brackets == 1 && expr_mode == EXPR_NONE)
             {
-                expr_mode = true;
+                expr_mode = EXPR_INCOMPLETE;
                 expr_begin = it + 1;
-                m_name = std::string(begin, it);
+                m_name = std::string(expr.begin(), it);
                 continue;
             }
-
             continue;
         }
 
-        if ((*it == ')') || (*it == ','))
+        if (*it == ')')
         {
-             if (*it == ')') --open_brackets;
-
+             --open_brackets;
             if (open_brackets < 0)
                 throw expression_error("invalid use of ')'");
-
-
-            if ((open_brackets == 0 && expr_mode) || (*it == ','))
+            else if (open_brackets == 0 && expr_mode == EXPR_INCOMPLETE)
             {
                 if (it == expr_begin)
                     new expression (this, "");
                 else
                     new expression(this, std::string(expr_begin, it-1));
-
-                if (*it == ',') expr_begin = it + 1;
-                else expr_mode = false;
-
+                expr_mode = EXPR_COMPLETE;
                 continue;
             }
-
             continue;
         }
-    }
 
-    if (skip_next)
-        throw expression_error("'\"' expected");
+        if (*it == ',')
+        {
+            if (open_brackets == 0)
+                throw expression_error("',' found before expression");
+            else if (open_brackets == 1)
+            {
+                if (it == expr_begin)
+                    new expression (this, "");
+                else
+                    new expression(this, std::string(expr_begin, it-1));
+                expr_begin = it + 1;
+                continue;
+            }
+            continue;
+        }
+
+        if (expr_mode == EXPR_COMPLETE && !isspace(*it))
+            throw expression_error("character found after expression: " + *it);
+    }
 
     if (open_brackets > 0)
         throw expression_error("missing ')'");
 
-    if (begin == expr_begin)
+    if (expr_mode == EXPR_NONE)
         m_name = expr;
+
+    if (parent != nullptr) parent->m_children.push_back(expression_ptr(this));
 
     std::cout << "new expression created; name: " << m_name << ", expr: " << m_expr << std::endl;
 }
