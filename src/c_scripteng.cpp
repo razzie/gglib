@@ -3,6 +3,7 @@
 #include <algorithm>
 #include "c_scripteng.hpp"
 #include "managed_cout.hpp"
+#include "expression.hpp"
 
 using namespace gg;
 
@@ -22,7 +23,13 @@ bool c_script_engine::console_controller::exec(std::string& fn, console::output&
 
 void c_script_engine::console_controller::complete(std::string& fn, console::output&)
 {
-    // TBD
+    expression e(fn);
+    e.for_each([&](expression& e)
+    {
+        if (!e.is_leaf())
+            m_scripteng->auto_complete(e.get_name());
+    });
+    fn = e.get_expression();
 }
 
 

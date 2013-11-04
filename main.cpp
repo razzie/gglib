@@ -76,9 +76,8 @@ int main()
 
         std::cout << gg::var("abc").get<std::string>() << std::endl;
 
-
         gg::expression e("aaa(bbb,ccc(ddd))");
-        e.print();
+        std::cout << e << std::endl << e.get_expression() << std::endl;
     }
     catch (std::exception& e)
     {

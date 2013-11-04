@@ -17,21 +17,32 @@ namespace gg
         expression(std::string expr);
         ~expression();
 
+        std::string& get_name();
         std::string get_name() const;
         std::string get_expression() const;
+        expression* get_parent();
         const expression* get_parent() const;
         const std::vector<expression_ptr>& get_children() const;
-        void print(std::ostream& o = std::cout) const;
+        bool is_leaf() const;
+        void for_each(std::function<void(expression&)>);
+        void for_each(std::function<void(const expression&)>) const;
+
+        inline friend std::ostream& operator<< (std::ostream& o, const expression& e)
+        {
+            e.print(0,o);
+            return o;
+        }
 
     protected:
         expression(expression* parent, std::string expr);
         void print(uint32_t level, std::ostream& o) const;
+        void get_expression(std::string&) const;
 
     private:
         expression* m_parent;
         std::string m_name;
-        std::string m_expr;
         std::vector<expression_ptr> m_children;
+        bool m_is_leaf;
     };
 
     class expression_error : public std::exception

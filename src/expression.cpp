@@ -1,6 +1,5 @@
 #include <algorithm>
 #include <cctype>
-//#include <stdexcept>
 #include "expression.hpp"
 
 using namespace gg;
@@ -9,11 +8,7 @@ using namespace gg;
 expression::expression(expression* parent, std::string expr)
  : m_parent(parent)
 {
-    std::cout << "starting new expression; expr: " << expr << std::endl;
-
     if (expr.size() == 0) return;
-
-    m_expr = expr;
 
     int open_brackets = 0;
     bool string_mode = false;
@@ -60,7 +55,7 @@ expression::expression(expression* parent, std::string expr)
                 if (it == expr_begin)
                     new expression (this, "");
                 else
-                    new expression(this, std::string(expr_begin, it-1));
+                    new expression(this, std::string(expr_begin, it));
                 expr_mode = EXPR_COMPLETE;
                 continue;
             }
@@ -76,7 +71,7 @@ expression::expression(expression* parent, std::string expr)
                 if (it == expr_begin)
                     new expression (this, "");
                 else
-                    new expression(this, std::string(expr_begin, it-1));
+                    new expression(this, std::string(expr_begin, it));
                 expr_begin = it + 1;
                 continue;
             }
@@ -91,11 +86,11 @@ expression::expression(expression* parent, std::string expr)
         throw expression_error("missing ')'");
 
     if (expr_mode == EXPR_NONE)
-        m_name = expr;
+        this->m_name = expr;
+
+    this->m_is_leaf = (expr_mode == EXPR_NONE);
 
     if (parent != nullptr) parent->m_children.push_back(expression_ptr(this));
-
-    std::cout << "new expression created; name: " << m_name << ", expr: " << m_expr << std::endl;
 }
 
 expression::expression(std::string expr)
@@ -110,13 +105,30 @@ expression::~expression()
 void expression::print(uint32_t level, std::ostream& o) const
 {
     for (uint32_t i = 0; i < level; ++i) o << " ";
-    o << m_expr << std::endl;
-    for_each(m_children.begin(), m_children.end(), [&](expression_ptr e) { e->print(level+1, o); });
+    o << this->get_expression() << std::endl;
+    std::for_each(m_children.cbegin(), m_children.cend(), [&](expression_ptr e) { e->print(level+1, o); });
 }
 
-void expression::print(std::ostream& o) const
+bool expression::is_leaf() const
 {
-    this->print(0, o);
+    return m_is_leaf;
+}
+
+void expression::for_each(std::function<void(expression&)> func)
+{
+    func(*this);
+    std::for_each(m_children.begin(), m_children.end(), [&](expression_ptr e) { func(*e); });
+}
+
+void expression::for_each(std::function<void(const expression&)> func) const
+{
+    func(*this);
+    std::for_each(m_children.cbegin(), m_children.cend(), [&](const expression_ptr e) { func(*e); });
+}
+
+std::string& expression::get_name()
+{
+    return m_name;
 }
 
 std::string expression::get_name() const
@@ -126,7 +138,33 @@ std::string expression::get_name() const
 
 std::string expression::get_expression() const
 {
-    return m_expr;
+    std::string expr;
+    this->get_expression(expr);
+    return expr;
+}
+
+void expression::get_expression(std::string& expr) const
+{
+    expr += m_name;
+
+    if (!m_is_leaf)
+    {
+        expr += '(';
+
+        auto it = m_children.begin(), end = m_children.end();
+        for (; it != end; ++it)
+        {
+            (*it)->get_expression(expr);
+            if ((it + 1) != end) expr += ',';
+        }
+
+        expr += ')';
+    }
+}
+
+expression* expression::get_parent()
+{
+    return m_parent;
 }
 
 const expression* expression::get_parent() const
