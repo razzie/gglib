@@ -4,6 +4,7 @@
 #include <map>
 #include <vector>
 #include "gg/scripteng.hpp"
+#include "expression.hpp"
 #include "tinythread.h"
 
 namespace gg
@@ -30,17 +31,18 @@ namespace gg
         ~c_script_engine();
         void add_function(std::string fn, dynamic_function func);
         void remove_function(std::string fn);
-        bool exec(std::string fn, varlist vl, std::ostream& output = std::cout, var* ret = nullptr) const;
-        bool exec(std::string fn, varlist vl, console::output& output, var* ret = nullptr) const;
-        bool parse_and_exec(std::string expr, std::ostream& output = std::cout, var* ret = nullptr) const;
-        bool parse_and_exec(std::string expr, console::output& output, var* ret = nullptr) const;
+        optional<var> exec(std::string fn, varlist vl, std::ostream& output = std::cout) const;
+        optional<var> exec(std::string fn, varlist vl, console::output& output) const;
+        optional<var> parse_and_exec(std::string expr, std::ostream& output = std::cout) const;
+        optional<var> parse_and_exec(std::string expr, console::output& output) const;
         console::controller* get_console_controller();
 
     private:
-        bool is_valid_cmd_name(std::string fn) const;
+        bool is_valid_fn_name(std::string fn) const;
         std::vector<std::string> find_matching_functions(std::string fn) const;
         void auto_complete(std::string& fn, bool print = false) const;
         void auto_complete(std::string& fn, std::vector<std::string> matches, bool print = false) const;
+        optional<var> process_expression(const expression& e) const;
     };
 };
 

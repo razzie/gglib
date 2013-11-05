@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cctype>
 #include "expression.hpp"
+#include "gg/util.hpp"
 
 using namespace gg;
 
@@ -11,11 +12,12 @@ expression::expression(expression* parent, std::string expr)
     if (expr.size() == 0) return;
 
     int open_brackets = 0;
-    bool string_mode = false;
+    int dbl_apost_cnt = 0;
     auto expr_begin = expr.begin();
     enum
     {
         EXPR_NONE,
+        EXPR_FOUND,
         EXPR_INCOMPLETE,
         EXPR_COMPLETE
     }
@@ -29,15 +31,33 @@ expression::expression(expression* parent, std::string expr)
             continue;
         }
 
-        if (*it == '"') string_mode = !string_mode;
-        if (string_mode) continue;
+        if (*it == '"')
+        {
+            ++dbl_apost_cnt;
+            it = expr.erase(it) - 1;
+            continue;
+        }
+
+        if (dbl_apost_cnt > 2)
+            throw expression_error("too many \" marks");
+
+        if (dbl_apost_cnt == 1) // string mode
+            continue;
+
+        if (dbl_apost_cnt == 2 && expr_mode == EXPR_INCOMPLETE && !isspace(*it))
+            throw expression_error("character outside of \" marks");
+
+        if (dbl_apost_cnt == 0 && expr_mode == EXPR_INCOMPLETE && isspace(*it))
+            throw expression_error("expression with spaces should be placed between \" marks");
+
+        if (expr_mode == EXPR_FOUND && !isspace(*it)) expr_mode = EXPR_INCOMPLETE;
 
         if (*it == '(')
         {
             ++open_brackets;
             if (open_brackets == 1 && expr_mode == EXPR_NONE)
             {
-                expr_mode = EXPR_INCOMPLETE;
+                expr_mode = EXPR_FOUND;
                 expr_begin = it + 1;
                 m_name = std::string(expr.begin(), it);
                 continue;
@@ -49,8 +69,9 @@ expression::expression(expression* parent, std::string expr)
         {
              --open_brackets;
             if (open_brackets < 0)
-                throw expression_error("invalid use of ')'");
-            else if (open_brackets == 0 && expr_mode == EXPR_INCOMPLETE)
+                throw expression_error("invalid use of )");
+            else if (open_brackets == 0 &&
+                     (expr_mode == EXPR_FOUND || expr_mode == EXPR_INCOMPLETE))
             {
                 if (it == expr_begin)
                     new expression (this, "");
@@ -65,7 +86,7 @@ expression::expression(expression* parent, std::string expr)
         if (*it == ',')
         {
             if (open_brackets == 0)
-                throw expression_error("',' found before expression");
+                throw expression_error(", found before expression");
             else if (open_brackets == 1)
             {
                 if (it == expr_begin)
@@ -73,6 +94,7 @@ expression::expression(expression* parent, std::string expr)
                 else
                     new expression(this, std::string(expr_begin, it));
                 expr_begin = it + 1;
+                dbl_apost_cnt = 0;
                 continue;
             }
             continue;
@@ -82,8 +104,11 @@ expression::expression(expression* parent, std::string expr)
             throw expression_error("character found after expression: " + *it);
     }
 
+    if (dbl_apost_cnt == 1)
+        throw expression_error("missing \"");
+
     if (open_brackets > 0)
-        throw expression_error("missing ')'");
+        throw expression_error("missing )");
 
     if (expr_mode == EXPR_NONE)
         this->m_name = expr;
@@ -104,7 +129,7 @@ expression::~expression()
 
 void expression::print(uint32_t level, std::ostream& o) const
 {
-    for (uint32_t i = 0; i < level; ++i) o << " ";
+    for (uint32_t i = 0; i < level; ++i) o << "  ";
     o << this->get_expression() << std::endl;
     std::for_each(m_children.cbegin(), m_children.cend(), [&](expression_ptr e) { e->print(level+1, o); });
 }
@@ -145,19 +170,22 @@ std::string expression::get_expression() const
 
 void expression::get_expression(std::string& expr) const
 {
-    expr += m_name;
-
-    if (!m_is_leaf)
+    if (m_is_leaf)
     {
+        //if (util::contains_space(expr)) expr += '"' + m_name + '"';
+        if (!util::is_numeric(expr)) expr += '"' + m_name + '"';
+        else expr += m_name;
+    }
+    else
+    {
+        expr += m_name;
         expr += '(';
-
-        auto it = m_children.begin(), end = m_children.end();
+        auto it = m_children.cbegin(), end = m_children.cend();
         for (; it != end; ++it)
         {
             (*it)->get_expression(expr);
-            if ((it + 1) != end) expr += ',';
+            if ((it + 1) != end) expr += ", ";
         }
-
         expr += ')';
     }
 }
@@ -179,7 +207,7 @@ const std::vector<expression::expression_ptr>& expression::get_children() const
 
 
 expression_error::expression_error(std::string error) noexcept
- : m_error(error)
+ : m_error(std::string("expression error: ") + error)
 {
 }
 

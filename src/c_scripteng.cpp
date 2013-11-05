@@ -3,7 +3,6 @@
 #include <algorithm>
 #include "c_scripteng.hpp"
 #include "managed_cout.hpp"
-#include "expression.hpp"
 
 using namespace gg;
 
@@ -18,7 +17,8 @@ c_script_engine::console_controller::~console_controller()
 
 bool c_script_engine::console_controller::exec(std::string& fn, console::output& out)
 {
-    return m_scripteng->parse_and_exec(fn, out);
+    optional<var> r = m_scripteng->parse_and_exec(fn, out);
+    return (r.is_valid());
 }
 
 void c_script_engine::console_controller::complete(std::string& fn, console::output&)
@@ -61,7 +61,7 @@ void c_script_engine::remove_function(std::string fn)
         m_functions.erase(pos);
 }
 
-bool c_script_engine::exec(std::string fn, varlist vl, std::ostream& output, var* ret) const
+optional<var> c_script_engine::exec(std::string fn, varlist vl, std::ostream& output) const
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
@@ -70,15 +70,13 @@ bool c_script_engine::exec(std::string fn, varlist vl, std::ostream& output, var
     if (pos != m_functions.end())
     {
         managed_cout::hook h(output);
-        var v = pos->second(vl);
-        if (ret != nullptr) std::swap(v, *ret);
-        return true;
+        return pos->second(vl);
     }
 
-    return false;
+    return optional<var>();
 }
 
-bool c_script_engine::exec(std::string fn, varlist vl, console::output& output, var* ret) const
+optional<var> c_script_engine::exec(std::string fn, varlist vl, console::output& output) const
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
@@ -87,22 +85,22 @@ bool c_script_engine::exec(std::string fn, varlist vl, console::output& output, 
     if (pos != m_functions.end())
     {
         managed_cout::hook h(output);
-        var v = pos->second(vl);
-        if (ret != nullptr) std::swap(v, *ret);
-        return true;
+        return pos->second(vl);
     }
 
-    return false;
+    return optional<var>();
 }
 
-bool c_script_engine::parse_and_exec(std::string expr, std::ostream& output, var* ret) const
+optional<var> c_script_engine::parse_and_exec(std::string expr, std::ostream& output) const
 {
 
+    return optional<var>();
 }
 
-bool c_script_engine::parse_and_exec(std::string expr, console::output& output, var* ret) const
+optional<var> c_script_engine::parse_and_exec(std::string expr, console::output& output) const
 {
 
+    return optional<var>();
 }
 
 console::controller* c_script_engine::get_console_controller()
@@ -110,7 +108,7 @@ console::controller* c_script_engine::get_console_controller()
     return static_cast<console::controller*>(m_ctrl);
 }
 
-bool c_script_engine::is_valid_cmd_name(std::string fn) const
+bool c_script_engine::is_valid_fn_name(std::string fn) const
 {
     if (fn.size() == 0) return false;
 
@@ -161,7 +159,7 @@ void c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
 
     util::on_return o([&]
     {
-        if (print)
+        if (print && matches.size() > 1)
         {
             for_each(matches.begin(), matches.end(),
                      [&](const std::string& s)
@@ -196,5 +194,21 @@ void c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
         {
             if ((*it)[pos] != c) return;
         }
+    }
+}
+
+optional<var> c_script_engine::process_expression(const expression& e) const
+{
+    std::string val = util::trim( e.get_name() );
+
+    if (e.is_leaf())
+    {
+        return var(val);
+    }
+    else
+    {
+        if (!is_valid_fn_name(val)) return optional<var>();
+
+        varlist vl;
     }
 }

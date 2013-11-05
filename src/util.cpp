@@ -138,3 +138,24 @@ bool util::is_float(std::string s)
 
     return true;
 }
+
+bool util::is_numeric(std::string s)
+{
+    return (util::is_float(s) || util::is_integer(s));
+}
+
+bool util::contains_space(std::string s)
+{
+    auto it = s.cbegin(), end = s.cend();
+    bool found_char = false;
+    bool found_space = false;
+
+    for (; it != end; ++it)
+    {
+        if (!found_char && !isspace(*it)) found_char = true;
+        if (found_char && !found_space) found_space = true;
+        if (found_space && !isspace(*it)) return true;
+    }
+
+    return false;
+}

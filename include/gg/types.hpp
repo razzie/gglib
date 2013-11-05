@@ -14,33 +14,15 @@ namespace gg
         virtual std::string get_name() const = 0;
     };
 
-    struct buffer
+    /*struct buffer
     {
         char* m_ptr;
         std::size_t m_len;
-    };
+    };*/
 
     struct color
     {
         uint8_t R, G, B;
-    };
-
-    #define DEBUG_FUNCTION_SCOPE function_scope __fs( \
-                std::string(typeid(*this).name()) + "::" + __FUNCTION__);
-
-    class function_scope
-    {
-        std::string m_fname;
-
-    public:
-        function_scope(std::string fn) : m_fname(fn)
-        {
-            std::cout << m_fname << "::begin" << std::endl;
-        }
-        ~function_scope()
-        {
-            std::cout << m_fname << "::end" << std::endl;
-        }
     };
 };
 

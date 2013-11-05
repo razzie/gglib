@@ -3,6 +3,7 @@
 
 #include "gg/types.hpp"
 #include "gg/refcounted.hpp"
+#include "gg/optional.hpp"
 #include "gg/util.hpp"
 #include "gg/var.hpp"
 #include "gg/varutil.hpp"

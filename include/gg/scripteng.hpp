@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include "gg/types.hpp"
+#include "gg/optional.hpp"
 #include "gg/var.hpp"
 #include "gg/varutil.hpp"
 #include "gg/console.hpp"
@@ -36,10 +37,10 @@ namespace gg
             this->add_function(fn, util::make_dynamic_function(func));
         }
 
-        virtual bool exec(std::string fn, varlist vl, std::ostream& output = std::cout, var* ret = nullptr) const = 0;
-        virtual bool exec(std::string fn, varlist vl, console::output& output, var* ret = nullptr) const = 0;
-        virtual bool parse_and_exec(std::string expr, std::ostream& output = std::cout, var* ret = nullptr) const = 0;
-        virtual bool parse_and_exec(std::string expr, console::output& output, var* ret = nullptr) const = 0;
+        virtual optional<var> exec(std::string fn, varlist vl, std::ostream& output = std::cout) const = 0;
+        virtual optional<var> exec(std::string fn, varlist vl, console::output& output) const = 0;
+        virtual optional<var> parse_and_exec(std::string expr, std::ostream& output = std::cout) const = 0;
+        virtual optional<var> parse_and_exec(std::string expr, console::output& output) const = 0;
     };
 };
 

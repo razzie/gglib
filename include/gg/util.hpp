@@ -14,7 +14,7 @@ namespace gg
 namespace util
 {
     /*
-     * string & wstring helpers
+     * string related helpers
      */
     std::string trim(std::string, std::locale = std::locale());
     std::wstring trim(std::wstring, std::locale = std::locale());
@@ -24,6 +24,9 @@ namespace util
 
     bool is_integer(std::string);
     bool is_float(std::string);
+    bool is_numeric(std::string);
+
+    bool contains_space(std::string);
 
 
     /*
@@ -104,11 +107,11 @@ namespace util
     /*
      * SFINAE helpers
      */
-    template<typename T> T& lvalue_of_type();
-    template<typename T> T  rvalue_of_type();
-
     namespace sfinae
     {
+        template<typename T> T& lvalue_of_type();
+        template<typename T> T  rvalue_of_type();
+
         class yes { char c[1]; };
         class no  { char c[2]; };
     }
@@ -122,7 +125,7 @@ namespace util
     {
         template<typename U>
         static sfinae::yes test(char(*)[sizeof(
-            lvalue_of_type<std::ostream>() << rvalue_of_type<U>()
+            sfinae::lvalue_of_type<std::ostream>() << sfinae::rvalue_of_type<U>()
         )]);
 
         template<typename U>
@@ -155,7 +158,7 @@ namespace util
     {
         template<typename U>
         static sfinae::yes test(char(*)[sizeof(
-            lvalue_of_type<std::istream>() >> rvalue_of_type<U>()
+            sfinae::lvalue_of_type<std::istream>() >> sfinae::rvalue_of_type<U>()
         )]);
 
         template<typename U>
