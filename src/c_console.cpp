@@ -1,6 +1,7 @@
 #include <vector>
 #include "gg/util.hpp"
 #include "c_console.hpp"
+#include "managed_cout.hpp"
 
 using namespace gg;
 
@@ -711,6 +712,7 @@ void c_console::cmd_complete()
     if (m_ctrl != nullptr)
     {
         c_output* o = static_cast<c_output*>(create_output());
+        managed_cout::hook h(*o);
         m_ctrl->complete(m_cmd, *o);
         if (o->is_empty()) o->hide();
         //if (o->is_empty()) o->drop();

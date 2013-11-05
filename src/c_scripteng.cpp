@@ -143,13 +143,13 @@ std::vector<std::string> c_script_engine::find_matching_functions(std::string fn
     return matches;
 }
 
-void c_script_engine::auto_complete(std::string& fn) const
+void c_script_engine::auto_complete(std::string& fn, bool print) const
 {
-    auto_complete(fn, find_matching_functions(fn));
+    auto_complete(fn, find_matching_functions(fn), print);
     return;
 }
 
-void c_script_engine::auto_complete(std::string& fn, std::vector<std::string> matches) const
+void c_script_engine::auto_complete(std::string& fn, std::vector<std::string> matches, bool print) const
 {
     if (matches.size() == 0) return;
 
@@ -158,6 +158,21 @@ void c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
         fn = matches[0];
         return;
     }
+
+    util::on_return o([&]
+    {
+        if (print)
+        {
+            for_each(matches.begin(), matches.end(),
+                     [&](const std::string& s)
+                     {
+                         if (s.size() != 0)
+                         {
+                             std::cout << "> " << s << std::endl;
+                         }
+                     });
+        }
+    });
 
     size_t max_len = 0;
     size_t min_len = ~0;

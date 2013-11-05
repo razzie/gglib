@@ -39,8 +39,8 @@ namespace gg
     private:
         bool is_valid_cmd_name(std::string fn) const;
         std::vector<std::string> find_matching_functions(std::string fn) const;
-        void auto_complete(std::string& fn) const;
-        void auto_complete(std::string& fn, std::vector<std::string> matches) const;
+        void auto_complete(std::string& fn, bool print = false) const;
+        void auto_complete(std::string& fn, std::vector<std::string> matches, bool print = false) const;
     };
 };
 

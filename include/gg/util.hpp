@@ -27,6 +27,21 @@ namespace util
 
 
     /*
+     * automated function call when the scope ends
+     */
+    class on_return
+    {
+        std::function<void()> m_func;
+
+    public:
+        on_return(std::function<void()> func) : m_func(func) {}
+        on_return(const on_return&) = delete;
+        on_return(on_return&&) = delete;
+        ~on_return() { m_func(); }
+    };
+
+
+    /*
      * remove class of member function pointer
      */
     template<typename T>
