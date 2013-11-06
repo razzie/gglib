@@ -9,6 +9,8 @@ using namespace gg;
 expression::expression(expression* parent, std::string expr)
  : m_parent(parent)
 {
+    expr = util::trim(expr);
+
     if (expr.size() == 0) return;
 
     int open_brackets = 0;
@@ -59,7 +61,7 @@ expression::expression(expression* parent, std::string expr)
             {
                 expr_mode = EXPR_FOUND;
                 expr_begin = it + 1;
-                m_name = std::string(expr.begin(), it);
+                m_name = util::trim( std::string(expr.begin(), it) );
                 continue;
             }
             continue;

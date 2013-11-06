@@ -60,6 +60,7 @@
 		<Unit filename="ext/tinythread++/fast_mutex.h" />
 		<Unit filename="ext/tinythread++/tinythread.cpp" />
 		<Unit filename="ext/tinythread++/tinythread.h" />
+		<Unit filename="include/gg/application.hpp" />
 		<Unit filename="include/gg/console.hpp" />
 		<Unit filename="include/gg/eventmgr.hpp" />
 		<Unit filename="include/gg/optional.hpp" />
@@ -75,6 +76,8 @@
 		<Unit filename="include/gg/varutil.hpp" />
 		<Unit filename="include/gglib.hpp" />
 		<Unit filename="main.cpp" />
+		<Unit filename="src/c_application.cpp" />
+		<Unit filename="src/c_application.hpp" />
 		<Unit filename="src/c_console.cpp" />
 		<Unit filename="src/c_console.hpp">
 			<Option target="Release" />

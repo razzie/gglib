@@ -66,7 +66,6 @@ optional<var> c_script_engine::exec(std::string fn, varlist vl, std::ostream& ou
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     auto pos = m_functions.find(fn);
-
     if (pos != m_functions.end())
     {
         managed_cout::hook h(output);
@@ -81,7 +80,6 @@ optional<var> c_script_engine::exec(std::string fn, varlist vl, console::output&
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     auto pos = m_functions.find(fn);
-
     if (pos != m_functions.end())
     {
         managed_cout::hook h(output);
@@ -93,14 +91,14 @@ optional<var> c_script_engine::exec(std::string fn, varlist vl, console::output&
 
 optional<var> c_script_engine::parse_and_exec(std::string expr, std::ostream& output) const
 {
-
-    return optional<var>();
+    managed_cout::hook h(output);
+    return process_expression(expr);
 }
 
 optional<var> c_script_engine::parse_and_exec(std::string expr, console::output& output) const
 {
-
-    return optional<var>();
+    managed_cout::hook h(output);
+    return process_expression(expr);
 }
 
 console::controller* c_script_engine::get_console_controller()
@@ -199,16 +197,28 @@ void c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
 
 optional<var> c_script_engine::process_expression(const expression& e) const
 {
-    std::string val = util::trim( e.get_name() );
-
     if (e.is_leaf())
     {
-        return var(val);
+        return var(e.get_name());
     }
     else
     {
-        if (!is_valid_fn_name(val)) return optional<var>();
+        if (!is_valid_fn_name(e.get_name())) return optional<var>();
 
         varlist vl;
+        auto args = e.get_children();
+        auto it = args.begin(), end = args.end();
+        for (; it != end; ++it)
+        {
+            optional<var> v = process_expression(**it);
+            if (v.is_valid()) vl.push_back(v);
+            else return optional<var>();
+        }
+
+        tthread::lock_guard<tthread::mutex> guard(m_mutex);
+        auto pos = m_functions.find(e.get_name());
+        if (pos != m_functions.end()) return pos->second(vl);
     }
+
+    return optional<var>();
 }

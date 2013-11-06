@@ -7,59 +7,35 @@ using namespace gg;
 std::string util::trim(std::string s, std::locale loc)
 {
     auto s_begin = s.begin(), s_end = s.end();
-    decltype(s.begin()) it_first, it_last;
+    auto it_first = s_end, it_last = s_end;
 
     for (auto it = s_begin; it != s_end; ++it)
     {
         if (!std::isspace(*it, loc))
         {
-            it_first = it;
-            break;
+            if (it_first == s_end) it_first = it;
+            it_last = it + 1;
         }
     }
 
-    for (auto it = s_end; it != s_begin; --it)
-    {
-        if (!std::isspace(*it, loc))
-        {
-            it_last = it - 1;
-            break;
-        }
-    }
-
-    std::string re;
-    re.append(it_first, it_last);
-
-    return re;
+    return std::string(it_first, it_last);
 }
 
 std::wstring util::trim(std::wstring ws, std::locale loc)
 {
     auto ws_begin = ws.begin(), ws_end = ws.end();
-    decltype(ws.begin()) it_first, it_last;
+    auto it_first = ws_end, it_last = ws_end;
 
     for (auto it = ws_begin; it != ws_end; ++it)
     {
         if (!std::isspace(*it, loc))
         {
-            it_first = it;
-            break;
+            if (it_first == ws_end) it_first = it;
+            it_last = it + 1;
         }
     }
 
-    for (auto it = ws_end; it != ws_begin; --it)
-    {
-        if (!std::isspace(*it, loc))
-        {
-            it_last = it - 1;
-            break;
-        }
-    }
-
-    std::wstring re;
-    re.append(it_first, it_last);
-
-    return re;
+    return std::wstring(it_first, it_last);
 }
 
 std::string util::narrow(std::wstring s, std::locale loc)

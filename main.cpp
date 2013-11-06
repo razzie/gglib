@@ -76,6 +76,8 @@ int main()
 
         std::cout << gg::var("abc").get<std::string>() << std::endl;
 
+        std::cout << "trim test: [" << gg::util::trim("   abc   ") << "]" << std::endl;
+
         gg::expression e("aaa(bbb,ccc(ddd))");
         std::cout << e << std::endl << e.get_expression() << std::endl;
     }

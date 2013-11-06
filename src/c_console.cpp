@@ -297,7 +297,9 @@ console::output* c_console::create_output()
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     c_output* out = new c_output(*this);
+    out->grab();
     m_outp.push_back(out);
+
     return out;
 }
 
