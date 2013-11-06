@@ -191,6 +191,9 @@ c_console::c_console(std::string name, controller* ctrl)
 	m_wndClassEx.hbrBackground = (HBRUSH)GetStockObject(BLACK_BRUSH);
 	m_wndClassEx.lpszClassName = "CompositedWindow::Window";
 	m_wndClassEx.hIconSm       = m_wndClassEx.hIcon;
+
+	//if(!RegisterClassEx(&m_wndClassEx)) return;
+    RegisterClassEx(&m_wndClassEx);
 }
 
 c_console::~c_console()
@@ -218,7 +221,7 @@ void c_console::open()
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     if (m_open) return; // already opened
-    m_open = true;
+    //m_open = true;
 
     m_thread = new c_thread("console '" + m_name + "' thread");
 	m_thread->add_task(new c_console::main_task(this));
@@ -229,7 +232,7 @@ void c_console::close()
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     if (!m_open) return;
-    m_open = false;
+    //m_open = false;
 
     delete m_thread;
 }
@@ -240,8 +243,6 @@ void c_console::async_open()
 
     if (m_open) return; // already opened
     m_open = true;
-
-	if(!RegisterClassEx(&m_wndClassEx)) return;
 
 	m_hWnd = CreateWindowEx(WS_EX_APPWINDOW, m_wndClassEx.lpszClassName,
 		TEXT(m_name.c_str()), WS_OVERLAPPEDWINDOW, 200, 200,
@@ -283,15 +284,12 @@ bool c_console::is_opened() const
 
 bool c_console::run()
 {
-    MSG Msg;
-
     if (!m_open) return false;
 
-
+    MSG Msg;
 
     if (GetMessage(&Msg, NULL, 0, 0) != 0)
     {
-        std::cout << "lofasz!" << std::endl;
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);
 
@@ -304,8 +302,8 @@ bool c_console::run()
 void c_console::update()
 {
     InvalidateRect(m_hWnd, NULL, TRUE);
-    UpdateWindow(m_hWnd);
-    //PostMessage(m_hWnd, WM_PAINT, 0, 0);
+    //UpdateWindow(m_hWnd);
+    PostMessage(m_hWnd, WM_PAINT, 0, 0);
 }
 
 console::output* c_console::create_output()
@@ -570,6 +568,12 @@ int c_console::wrap_text(const render_context* ctx, std::string& text, const REC
             curr_width = 0;
         }
 
+        if (*it == '\n')
+        {
+            height += s.cy;
+            curr_width = 0;
+        }
+
         tmpstr.append(&c, 1);
     }
 
@@ -664,13 +668,15 @@ void c_console::cmd_async_exec()
         c_thread* t = new c_thread("async cmd exec");
         c_output* cmd_outp = static_cast<c_output*>(create_output());
         c_output* exec_outp = static_cast<c_output*>(create_output());
-        cmd_outp->grab();
-        exec_outp->grab();
-        t->add_task( new cmd_async_exec_task(m_cmd, cmd_outp, exec_outp, m_ctrl, t) );
+        //cmd_outp->grab();
+        //exec_outp->grab();
+        t->add_task( new cmd_async_exec_task(m_cmd, cmd_outp, exec_outp, this, t) );
     }
     else
     {
-        *create_output() << m_cmd;
+        output* o = create_output();
+        *o << m_cmd;
+        o->drop();
     }
 
     m_cmd.erase();
@@ -683,10 +689,19 @@ void c_console::cmd_complete()
     {
         c_output* o = static_cast<c_output*>(create_output());
         managed_cout::hook h(*o);
-        m_ctrl->complete(m_cmd, *o);
+
+        try
+        {
+            m_ctrl->complete(m_cmd, *o);
+            o->drop();
+        }
+        catch (std::exception& e) { *o << "\nexception: " << e.what(); }
+        catch (...) { *o << "\nexception: unknown"; }
+
         if (o->is_empty()) o->hide();
         //if (o->is_empty()) o->drop();
     }
+
     m_cmdpos = m_cmd.length();
 }
 
@@ -695,7 +710,6 @@ c_console::main_task::main_task(c_console* con)
  : m_con(con)
 {
     m_con->grab();
-    m_con->async_open();
 }
 
 c_console::main_task::~main_task()
@@ -706,6 +720,9 @@ c_console::main_task::~main_task()
 
 bool c_console::main_task::run(uint32_t)
 {
+    if (!m_con->is_opened())
+        m_con->async_open();
+
     return !m_con->run();
 }
 
@@ -714,18 +731,21 @@ c_console::cmd_async_exec_task::cmd_async_exec_task(
     std::string cmd,
     c_console::c_output* cmd_outp,
     c_console::c_output* exec_outp,
-    console::controller* ctrl,
+    c_console* con,
     c_thread* t)
  : m_cmd(cmd)
  , m_cmd_outp(cmd_outp)
  , m_exec_outp(exec_outp)
- , m_ctrl(ctrl)
+ , m_con(con)
+ , m_ctrl(con->get_controller())
  , m_thread(t)
 {
+    m_con->grab();
 }
 
 c_console::cmd_async_exec_task::~cmd_async_exec_task()
 {
+    m_con->drop();
 }
 
 bool c_console::cmd_async_exec_task::run(uint32_t)
@@ -742,14 +762,8 @@ bool c_console::cmd_async_exec_task::run(uint32_t)
         if (m_exec_outp->is_empty()) m_exec_outp->hide();
         //if (m_exec_outp->is_empty()) m_exec_outp->drop();
     }
-    catch (std::exception& e)
-    {
-        *m_exec_outp << "\nexception: " << e.what();
-    }
-    catch (...)
-    {
-        *m_exec_outp << "\nexception: unknown";
-    }
+    catch (std::exception& e) { *m_exec_outp << "\nexception: " << e.what(); }
+    catch (...) { *m_exec_outp << "\nexception: unknown"; }
 
     m_cmd_outp->drop();
     m_exec_outp->drop();

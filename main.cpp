@@ -9,8 +9,10 @@ int main()
     gg::console* con = app->create_console();
     con->open();
 
-    gg::thread* th = app->get_task_manager()->create_thread("test");
-    th->add_delayed_task( app->get_task_manager()->create_task([&]{ app->exit(); }), 5000);
+    app->get_script_engine()->add_function("exit_program", [&](int exit_code){ app->exit(exit_code); });
+
+    //gg::thread* th = app->get_task_manager()->create_thread("test");
+    //th->add_delayed_task( app->get_task_manager()->create_task([&]{ app->exit(); }), 5000);
 
     return app->start();
 }

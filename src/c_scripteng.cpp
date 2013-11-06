@@ -17,6 +17,20 @@ c_script_engine::console_controller::~console_controller()
 
 bool c_script_engine::console_controller::exec(std::string& fn, console::output& out)
 {
+    expression e(fn);
+
+    if (!e.is_leaf() && e.get_name().compare("exit") == 0 && e.get_children().size() == 0)
+    {
+        out.get_console().close();
+        return true;
+    }
+
+    if (!e.is_leaf() && e.get_name().compare("clear") == 0 && e.get_children().size() == 0)
+    {
+        out.get_console().clear();
+        return true;
+    }
+
     optional<var> r = m_scripteng->parse_and_exec(fn, out);
     return (r.is_valid());
 }
@@ -103,7 +117,8 @@ optional<var> c_script_engine::parse_and_exec(std::string expr, console::output&
 
 console::controller* c_script_engine::get_console_controller()
 {
-    return static_cast<console::controller*>(m_ctrl);
+    //return static_cast<console::controller*>(m_ctrl);
+    return new c_script_engine::console_controller(this);
 }
 
 bool c_script_engine::is_valid_fn_name(std::string fn) const

@@ -53,6 +53,18 @@ namespace gg
             return result;
         }
 
+        template<typename... Args>
+        dynamic_function make_dynamic_function(std::function<void(Args...)> stdfunc)
+        {
+            dynamic_function result =
+                [=](varlist vl) -> var
+                {
+                    call_function(stdfunc, vl);
+                    return var();
+                };
+            return result;
+        }
+
         template<typename R, typename... Args>
         dynamic_function make_dynamic_function(R(*func)(Args...))
         {

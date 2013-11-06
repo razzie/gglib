@@ -143,6 +143,7 @@ private:
         std::string m_cmd;
         c_output* m_cmd_outp;
         c_output* m_exec_outp;
+        c_console* m_con;
         controller* m_ctrl;
         c_thread* m_thread;
 
@@ -150,7 +151,7 @@ private:
         cmd_async_exec_task(std::string cmd,
                             c_output* cmd_outp,
                             c_output* exec_outp,
-                            controller* ctrl,
+                            c_console* con,
                             c_thread* t);
         ~cmd_async_exec_task();
         bool run(uint32_t);

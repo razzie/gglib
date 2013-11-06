@@ -51,6 +51,18 @@ c_thread::c_thread(std::string name)
 c_thread::~c_thread()
 {
     this->exit_and_join();
+
+    m_task_pool_mutex.lock();
+    m_tasks.insert(m_tasks.end(), m_task_pool.begin(), m_task_pool.end());
+    m_task_pool.clear();
+    m_task_pool_mutex.unlock();
+
+    auto it = m_tasks.begin(), end = m_tasks.end();
+    for (; it != end; ++it)
+    {
+        delete it->m_timer;
+        it->m_task->drop();
+    }
 }
 
 std::string c_thread::get_name() const
