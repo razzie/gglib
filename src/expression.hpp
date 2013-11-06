@@ -14,7 +14,9 @@ namespace gg
     public:
         typedef std::shared_ptr<expression> expression_ptr;
 
-        expression(std::string expr);
+        expression(std::string expr, bool repair_mode = false);
+        expression(const expression&) = delete;
+        expression(expression&&) = delete;
         ~expression();
 
         std::string& get_name();
@@ -34,7 +36,7 @@ namespace gg
         }
 
     protected:
-        expression(expression* parent, std::string expr);
+        expression(expression* parent, std::string expr, bool repair_mode);
         void print(uint32_t level, std::ostream& o) const;
         void get_expression(std::string&) const;
 

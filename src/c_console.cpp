@@ -2,6 +2,7 @@
 #include "gg/util.hpp"
 #include "c_console.hpp"
 #include "managed_cout.hpp"
+#include "expression.hpp"
 
 using namespace gg;
 
@@ -762,8 +763,9 @@ bool c_console::cmd_async_exec_task::run(uint32_t)
         if (m_exec_outp->is_empty()) m_exec_outp->hide();
         //if (m_exec_outp->is_empty()) m_exec_outp->drop();
     }
-    catch (std::exception& e) { *m_exec_outp << "\nexception: " << e.what(); }
-    catch (...) { *m_exec_outp << "\nexception: unknown"; }
+    catch (expression_error& e) { *m_exec_outp << e.what(); }
+    catch (std::exception& e) { *m_exec_outp << "exception: " << e.what(); }
+    catch (...) { *m_exec_outp << "exception: unknown"; }
 
     m_cmd_outp->drop();
     m_exec_outp->drop();

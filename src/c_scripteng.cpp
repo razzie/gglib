@@ -37,7 +37,7 @@ bool c_script_engine::console_controller::exec(std::string& fn, console::output&
 
 void c_script_engine::console_controller::complete(std::string& fn, console::output&)
 {
-    expression e(fn);
+    expression e(fn + '(', true);
     e.for_each([&](expression& e)
     {
         if (!e.is_leaf())

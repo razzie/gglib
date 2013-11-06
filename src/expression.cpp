@@ -6,7 +6,7 @@
 using namespace gg;
 
 
-expression::expression(expression* parent, std::string expr)
+expression::expression(expression* parent, std::string expr, bool repair_mode)
  : m_parent(parent)
 {
     expr = util::trim(expr);
@@ -40,17 +40,25 @@ expression::expression(expression* parent, std::string expr)
             continue;
         }
 
-        if (dbl_apost_cnt > 2)
-            throw expression_error("too many \" marks");
+        if (dbl_apost_cnt == 1) continue;// string mode
 
-        if (dbl_apost_cnt == 1) // string mode
-            continue;
+        if (dbl_apost_cnt > 2)
+        {
+            if (repair_mode) { it = expr.erase(it) - 1; continue; }
+            else throw expression_error("too many \" marks");
+        }
 
         if (dbl_apost_cnt == 2 && expr_mode == EXPR_INCOMPLETE && !isspace(*it))
-            throw expression_error("character outside of \" marks");
+        {
+            if (repair_mode) { it = expr.erase(it) - 1; continue; }
+            else throw expression_error("character outside of \" marks");
+        }
 
         if (dbl_apost_cnt == 0 && expr_mode == EXPR_INCOMPLETE && isspace(*it))
+        {
+            if (repair_mode) { it = expr.erase(it) - 1; continue; }
             throw expression_error("expression with spaces should be placed between \" marks");
+        }
 
         if (expr_mode == EXPR_FOUND && !isspace(*it)) expr_mode = EXPR_INCOMPLETE;
 
@@ -76,9 +84,9 @@ expression::expression(expression* parent, std::string expr)
                      (expr_mode == EXPR_FOUND || expr_mode == EXPR_INCOMPLETE))
             {
                 if (it == expr_begin)
-                    new expression (this, "");
+                    new expression (this, "", repair_mode);
                 else
-                    new expression(this, std::string(expr_begin, it));
+                    new expression(this, std::string(expr_begin, it), repair_mode);
                 expr_mode = EXPR_COMPLETE;
                 continue;
             }
@@ -92,9 +100,9 @@ expression::expression(expression* parent, std::string expr)
             else if (open_brackets == 1)
             {
                 if (it == expr_begin)
-                    new expression (this, "");
+                    new expression (this, "", repair_mode);
                 else
-                    new expression(this, std::string(expr_begin, it));
+                    new expression(this, std::string(expr_begin, it), repair_mode);
                 expr_begin = it + 1;
                 dbl_apost_cnt = 0;
                 continue;
@@ -107,10 +115,16 @@ expression::expression(expression* parent, std::string expr)
     }
 
     if (dbl_apost_cnt == 1)
-        throw expression_error("missing \"");
+    {
+        if (repair_mode) expr += '"';
+        else throw expression_error("missing \"");
+    }
 
     if (open_brackets > 0)
-        throw expression_error("missing )");
+    {
+        if (repair_mode) expr += ')';
+        else throw expression_error("missing )");
+    }
 
     if (expr_mode == EXPR_NONE)
         this->m_name = expr;
@@ -120,8 +134,8 @@ expression::expression(expression* parent, std::string expr)
     if (parent != nullptr) parent->m_children.push_back(expression_ptr(this));
 }
 
-expression::expression(std::string expr)
- : expression(nullptr, expr)
+expression::expression(std::string expr, bool repair_mode)
+ : expression(nullptr, expr, repair_mode)
 {
 }
 
