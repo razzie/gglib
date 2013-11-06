@@ -2,6 +2,7 @@
 #define GG_OPTIONAL_HPP_INCLUDED
 
 #include <utility>
+#include <stdexcept>
 
 namespace gg
 {

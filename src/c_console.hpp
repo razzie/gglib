@@ -70,7 +70,7 @@ typedef struct _DTTOPTS {
 namespace gg
 {
 
-class c_console : public console, public task
+class c_console : public console
 {
 /* public functions */
 public:
@@ -81,8 +81,7 @@ public:
     void open();
     void close();
     bool is_opened() const;
-    bool run(); // normal run function, returns false if failed to run
-    bool run(uint32_t unused); // inherited from gg::task, returns the opposite of run()
+    bool run();
 	void update();
     output* create_output();
     void remove_output(output*);
@@ -127,6 +126,18 @@ private:
         std::string get_string() const;
     };
 
+    class main_task : public task
+    {
+        c_console* m_con;
+
+    public:
+        main_task(c_console* con);
+        main_task(const main_task&) = delete;
+        main_task(main_task&&) = delete;
+        ~main_task();
+        bool run(uint32_t unused);
+    };
+
     class cmd_async_exec_task : public task
     {
         std::string m_cmd;
@@ -169,7 +180,7 @@ private:
 	std::string m_cmd;
 	size_t m_cmdpos;
 	controller* m_ctrl;
-	c_thread m_thread;
+	c_thread* m_thread;
     HINSTANCE m_hInst;
     WNDCLASSEX m_wndClassEx;
 	HWND m_hWnd;
@@ -179,6 +190,8 @@ private:
 
 /* private functions */
 private:
+    void async_open();
+    void async_close();
     bool prepare_render_context(render_context* ctx);
     void finish_render_context(render_context* ctx);
 	void paint(const render_context* ctx);

@@ -20,36 +20,36 @@ namespace gg
 
     template<class T>
     typename std::enable_if<std::is_base_of<reference_counted,T>::value>::type*
-    grab(reference_counted* o)
+    grab(T* o)
     {
         o->grab();
-        return static_cast<T*>(o);
+        return o;
     }
 
     template<class T>
     const typename std::enable_if<std::is_base_of<reference_counted,T>::value>::type*
-    grab(const reference_counted* o)
+    grab(const T* o)
     {
         o->grab();
-        return static_cast<const T*>(o);
+        return o;
     }
 
     template<class T>
     typename std::enable_if<std::is_base_of<reference_counted,T>::value>::type*
-    drop(reference_counted* o)
+    drop(T* o)
     {
         uint32_t refc = o->get_ref_count();
         o->drop();
-        return (refc == 1) ? nullptr : static_cast<T*>(o);
+        return (refc == 1) ? nullptr : o;
     }
 
     template<class T>
     const typename std::enable_if<std::is_base_of<reference_counted,T>::value>::type*
-    drop(const reference_counted* o)
+    drop(const T* o)
     {
         uint32_t refc = o->get_ref_count();
         o->drop();
-        return (refc == 1) ? nullptr : static_cast<const T*>(o);
+        return (refc == 1) ? nullptr : o;
     }
 
     template<class T,

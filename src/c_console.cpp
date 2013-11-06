@@ -169,7 +169,6 @@ c_console::c_console(std::string name, controller* ctrl)
  , m_open(false)
  , m_cmdpos(0)
  , m_ctrl(ctrl)
- , m_thread("console '" + name + "' thread")
 {
     if (m_ctrl != nullptr) m_ctrl->grab();
 
@@ -221,6 +220,27 @@ void c_console::open()
     if (m_open) return; // already opened
     m_open = true;
 
+    m_thread = new c_thread("console '" + m_name + "' thread");
+	m_thread->add_task(new c_console::main_task(this));
+}
+
+void c_console::close()
+{
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+
+    if (!m_open) return;
+    m_open = false;
+
+    delete m_thread;
+}
+
+void c_console::async_open()
+{
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+
+    if (m_open) return; // already opened
+    m_open = true;
+
 	if(!RegisterClassEx(&m_wndClassEx)) return;
 
 	m_hWnd = CreateWindowEx(WS_EX_APPWINDOW, m_wndClassEx.lpszClassName,
@@ -243,11 +263,9 @@ void c_console::open()
 	//UpdateWindow(m_hWnd);
 	//PostMessage(m_hWnd, WM_PAINT, 0, 0);
 	update();
-
-	//m_thread.add_task(grab(this));
 }
 
-void c_console::close()
+void c_console::async_close()
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
@@ -269,8 +287,11 @@ bool c_console::run()
 
     if (!m_open) return false;
 
+
+
     if (GetMessage(&Msg, NULL, 0, 0) != 0)
     {
+        std::cout << "lofasz!" << std::endl;
 		TranslateMessage(&Msg);
 		DispatchMessage(&Msg);
 
@@ -280,16 +301,11 @@ bool c_console::run()
     return false;
 }
 
-bool c_console::run(uint32_t)
-{
-    return ( !run() );
-}
-
 void c_console::update()
 {
     InvalidateRect(m_hWnd, NULL, TRUE);
-    //UpdateWindow(m_hWnd);
-    PostMessage(m_hWnd, WM_PAINT, 0, 0);
+    UpdateWindow(m_hWnd);
+    //PostMessage(m_hWnd, WM_PAINT, 0, 0);
 }
 
 console::output* c_console::create_output()
@@ -640,6 +656,60 @@ void c_console::paint(const render_context* ctx)
     #undef DRAWTEXT
 }
 
+void c_console::cmd_async_exec()
+{
+    if (m_ctrl != nullptr &&
+        m_cmd.size() > 0 && m_cmd[0] != '#')
+    {
+        c_thread* t = new c_thread("async cmd exec");
+        c_output* cmd_outp = static_cast<c_output*>(create_output());
+        c_output* exec_outp = static_cast<c_output*>(create_output());
+        cmd_outp->grab();
+        exec_outp->grab();
+        t->add_task( new cmd_async_exec_task(m_cmd, cmd_outp, exec_outp, m_ctrl, t) );
+    }
+    else
+    {
+        *create_output() << m_cmd;
+    }
+
+    m_cmd.erase();
+    m_cmdpos = 0;
+}
+
+void c_console::cmd_complete()
+{
+    if (m_ctrl != nullptr)
+    {
+        c_output* o = static_cast<c_output*>(create_output());
+        managed_cout::hook h(*o);
+        m_ctrl->complete(m_cmd, *o);
+        if (o->is_empty()) o->hide();
+        //if (o->is_empty()) o->drop();
+    }
+    m_cmdpos = m_cmd.length();
+}
+
+
+c_console::main_task::main_task(c_console* con)
+ : m_con(con)
+{
+    m_con->grab();
+    m_con->async_open();
+}
+
+c_console::main_task::~main_task()
+{
+    m_con->async_close();
+    m_con->drop();
+}
+
+bool c_console::main_task::run(uint32_t)
+{
+    return !m_con->run();
+}
+
+
 c_console::cmd_async_exec_task::cmd_async_exec_task(
     std::string cmd,
     c_console::c_output* cmd_outp,
@@ -686,38 +756,4 @@ bool c_console::cmd_async_exec_task::run(uint32_t)
 
     delete m_thread;
     return true;
-}
-
-void c_console::cmd_async_exec()
-{
-    if (m_ctrl != nullptr &&
-        m_cmd.size() > 0 && m_cmd[0] != '#')
-    {
-        c_thread* t = new c_thread("async cmd exec");
-        c_output* cmd_outp = static_cast<c_output*>(create_output());
-        c_output* exec_outp = static_cast<c_output*>(create_output());
-        cmd_outp->grab();
-        exec_outp->grab();
-        t->add_task( new cmd_async_exec_task(m_cmd, cmd_outp, exec_outp, m_ctrl, t) );
-    }
-    else
-    {
-        *create_output() << m_cmd;
-    }
-
-    m_cmd.erase();
-    m_cmdpos = 0;
-}
-
-void c_console::cmd_complete()
-{
-    if (m_ctrl != nullptr)
-    {
-        c_output* o = static_cast<c_output*>(create_output());
-        managed_cout::hook h(*o);
-        m_ctrl->complete(m_cmd, *o);
-        if (o->is_empty()) o->hide();
-        //if (o->is_empty()) o->drop();
-    }
-    m_cmdpos = m_cmd.length();
 }

@@ -7,7 +7,7 @@
 
 using namespace gg;
 
-application* create_instance(std::string name, uint32_t ver_major, uint32_t ver_minor)
+application* application::create_instance(std::string name, uint32_t ver_major, uint32_t ver_minor)
 {
     return new c_application(name, ver_major, ver_minor);
 }
