@@ -104,6 +104,7 @@ namespace util
         return std::function<R(Args...)> (func);
     }
 
+
     /*
      * SFINAE helpers
      */
@@ -158,7 +159,7 @@ namespace util
     {
         template<typename U>
         static sfinae::yes test(char(*)[sizeof(
-            sfinae::lvalue_of_type<std::istream>() >> sfinae::rvalue_of_type<U>()
+            sfinae::lvalue_of_type<std::istream>() >> sfinae::lvalue_of_type<U>()
         )]);
 
         template<typename U>

@@ -38,9 +38,8 @@ namespace gg
         }
 
         virtual optional<var> exec(std::string fn, varlist vl, std::ostream& output = std::cout) const = 0;
-        virtual optional<var> exec(std::string fn, varlist vl, console::output& output) const = 0;
         virtual optional<var> parse_and_exec(std::string expr, std::ostream& output = std::cout) const = 0;
-        virtual optional<var> parse_and_exec(std::string expr, console::output& output) const = 0;
+        virtual console::controller* get_console_controller() const = 0;
     };
 };
 

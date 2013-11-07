@@ -13,13 +13,13 @@ namespace gg
     {
         class console_controller : public console::controller
         {
-            c_script_engine* m_scripteng;
+            const c_script_engine* m_scripteng;
 
         public:
-            console_controller(c_script_engine*);
+            console_controller(const c_script_engine*);
             ~console_controller();
-            bool exec(std::string& fn, console::output&);
-            void complete(std::string& fn, console::output&);
+            bool exec(std::string& expr, console::output&);
+            void complete(std::string& expr, console::output&);
         };
 
         mutable tthread::mutex m_mutex;
@@ -35,13 +35,14 @@ namespace gg
         optional<var> exec(std::string fn, varlist vl, console::output& output) const;
         optional<var> parse_and_exec(std::string expr, std::ostream& output = std::cout) const;
         optional<var> parse_and_exec(std::string expr, console::output& output) const;
-        console::controller* get_console_controller();
+        console::controller* get_console_controller() const;
 
     private:
         bool is_valid_fn_name(std::string fn) const;
         std::vector<std::string> find_matching_functions(std::string fn) const;
         void auto_complete(std::string& fn, bool print = false) const;
         void auto_complete(std::string& fn, std::vector<std::string> matches, bool print = false) const;
+        void auto_complete_expr(std::string& expr, bool print = false) const;
         optional<var> process_expression(const expression& e) const;
     };
 };

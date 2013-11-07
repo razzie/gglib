@@ -72,22 +72,7 @@ namespace gg
 
 class c_console : public console
 {
-/* public functions */
-public:
-    c_console(std::string name, controller* ctrl);
-    ~c_console();
-    void set_controller(controller* ctrl);
-    controller* get_controller() const;
-    void open();
-    void close();
-    bool is_opened() const;
-    bool run();
-	void update();
-    output* create_output();
-    void remove_output(output*);
-    void clear();
-
-/* private structures */
+/* private structures & classes */
 private:
     enum alignment : int
     {
@@ -172,6 +157,17 @@ private:
         unsigned cheight;
     };
 
+    class set_scoped_invoker
+    {
+        console* m_con;
+
+    public:
+        set_scoped_invoker(console* con);
+        set_scoped_invoker(const set_scoped_invoker&) = delete;
+        set_scoped_invoker(set_scoped_invoker&&) = delete;
+        ~set_scoped_invoker();
+    };
+
 /* private variables */
 private:
     tthread::recursive_mutex m_mutex;
@@ -189,6 +185,9 @@ private:
 	HFONT m_hFont;
 	render_context m_rendctx;
 
+	static std::map<tthread::thread::id, std::vector<console*>> m_invokers;
+	static tthread::mutex m_invokers_mutex;
+
 /* private functions */
 private:
     void async_open();
@@ -205,6 +204,25 @@ private:
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 	void cmd_async_exec();
 	void cmd_complete();
+
+/* public functions */
+public:
+    c_console(std::string name, controller* ctrl);
+    ~c_console();
+    void set_controller(controller* ctrl);
+    controller* get_controller() const;
+    void open();
+    void close();
+    bool is_opened() const;
+    bool run();
+	void update();
+    output* create_output();
+    void remove_output(output*);
+    void clear();
+
+	static void push_invoker(console* con);
+	static void pop_invoker();
+	static console* get_invoker();
 };
 
 };

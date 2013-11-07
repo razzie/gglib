@@ -38,9 +38,9 @@ namespace gg
     protected:
         managed_cout();
         ~managed_cout();
-        void add_hook(std::ostream&);
-        void add_hook(console::output&);
-        void end_hook();
+        void push_hook(std::ostream&);
+        void push_hook(console::output&);
+        void pop_hook();
 
     public:
         static managed_cout* get_instance();
@@ -52,11 +52,11 @@ namespace gg
         class hook
         {
         public:
-            hook(std::ostream& o) { managed_cout::get_instance()->add_hook(o); }
-            hook(console::output& o) { managed_cout::get_instance()->add_hook(o); }
+            hook(std::ostream& o) { managed_cout::get_instance()->push_hook(o); }
+            hook(console::output& o) { managed_cout::get_instance()->push_hook(o); }
             hook(const hook&) = delete;
             hook(hook&&) = delete;
-            ~hook() { managed_cout::get_instance()->end_hook(); }
+            ~hook() { managed_cout::get_instance()->pop_hook(); }
         };
     };
 };

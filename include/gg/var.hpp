@@ -97,14 +97,14 @@ namespace gg
          */
         var() {}
 
-        var(const var& _v)
+        var(const var& v)
         {
-            m_var = _v.m_var->clone();
+            if (v.m_var != nullptr) m_var = v.m_var->clone();
         }
 
-        var(var&& _v)
+        var(var&& v)
         {
-            std::swap(m_var, _v.m_var);
+            std::swap(m_var, v.m_var);
         }
 
         template<typename T>
@@ -123,18 +123,18 @@ namespace gg
             if (m_var != nullptr) delete m_var;
         }
 
-        var& operator= (const var& _v)
+        var& operator= (const var& v)
         {
             if (m_var != nullptr) { delete m_var; m_var = nullptr; }
-            m_var = _v.m_var->clone();
+            if (v.m_var != nullptr) m_var = v.m_var->clone();
 
             return *this;
         }
 
-        var& operator= (var&& _v)
+        var& operator= (var&& v)
         {
-            if (m_var != nullptr) { delete m_var; m_var = nullptr; }
-            std::swap(m_var, _v.m_var);
+            //if (m_var != nullptr) { delete m_var; m_var = nullptr; }
+            std::swap(m_var, v.m_var);
 
             return *this;
         }

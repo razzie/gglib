@@ -55,7 +55,7 @@ managed_cout::~managed_cout()
 {
 }
 
-void managed_cout::add_hook(std::ostream& o)
+void managed_cout::push_hook(std::ostream& o)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
@@ -67,7 +67,7 @@ void managed_cout::add_hook(std::ostream& o)
     m_hooks[tid].push_back( cb );
 }
 
-void managed_cout::add_hook(console::output& o)
+void managed_cout::push_hook(console::output& o)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
@@ -79,7 +79,7 @@ void managed_cout::add_hook(console::output& o)
     m_hooks[tid].push_back( cb );
 }
 
-void managed_cout::end_hook()
+void managed_cout::pop_hook()
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 

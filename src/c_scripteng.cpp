@@ -6,7 +6,7 @@
 
 using namespace gg;
 
-c_script_engine::console_controller::console_controller(c_script_engine* scripteng)
+c_script_engine::console_controller::console_controller(const c_script_engine* scripteng)
  : m_scripteng(scripteng)
 {
 }
@@ -15,40 +15,42 @@ c_script_engine::console_controller::~console_controller()
 {
 }
 
-bool c_script_engine::console_controller::exec(std::string& fn, console::output& out)
+bool c_script_engine::console_controller::exec(std::string& expr, console::output& out)
 {
-    expression e(fn);
+    expression e(expr);
 
-    if (!e.is_leaf() && e.get_name().compare("exit") == 0 && e.get_children().size() == 0)
-    {
-        out.get_console().close();
-        return true;
-    }
-
-    if (!e.is_leaf() && e.get_name().compare("clear") == 0 && e.get_children().size() == 0)
-    {
-        out.get_console().clear();
-        return true;
-    }
-
-    optional<var> r = m_scripteng->parse_and_exec(fn, out);
+    optional<var> r = m_scripteng->parse_and_exec(expr, out);
     return (r.is_valid());
 }
 
-void c_script_engine::console_controller::complete(std::string& fn, console::output&)
+void c_script_engine::console_controller::complete(std::string& expr, console::output& out)
 {
-    expression e(fn + '(', true);
-    e.for_each([&](expression& e)
-    {
-        if (!e.is_leaf())
-            m_scripteng->auto_complete(e.get_name());
-    });
-    fn = e.get_expression();
+    managed_cout::hook h(out);
+    m_scripteng->auto_complete_expr(expr, true);
 }
 
 
 c_script_engine::c_script_engine()
 {
+    script_engine* eng = this;
+
+    eng->add_function("close",
+            [] {
+                console* con = console::get_invoker();
+                if (con == nullptr)
+                    std::cout << "This function can only be used from a console" << std::endl;
+                else
+                    con->close();
+            });
+
+    eng->add_function("clear",
+            [] {
+                console* con = console::get_invoker();
+                if (con == nullptr)
+                    std::cout << "This function can only be used from a console" << std::endl;
+                else
+                    con->clear();
+            });
 }
 
 c_script_engine::~c_script_engine()
@@ -115,9 +117,8 @@ optional<var> c_script_engine::parse_and_exec(std::string expr, console::output&
     return process_expression(expr);
 }
 
-console::controller* c_script_engine::get_console_controller()
+console::controller* c_script_engine::get_console_controller() const
 {
-    //return static_cast<console::controller*>(m_ctrl);
     return new c_script_engine::console_controller(this);
 }
 
@@ -144,12 +145,12 @@ std::vector<std::string> c_script_engine::find_matching_functions(std::string fn
 
     for (; it != end; ++it)
     {
-        if (fn.compare(0, cmd_len, it->first) == 0)
+        if (it->first.compare(0, cmd_len, fn) == 0)
             matches.push_back(it->first);
     }
 
-    if (matches.size() == 0)
-        throw std::runtime_error("no matching function");
+    /*if (matches.empty())
+        throw std::runtime_error("no matching function: " + fn);*/
 
     return matches;
 }
@@ -162,7 +163,7 @@ void c_script_engine::auto_complete(std::string& fn, bool print) const
 
 void c_script_engine::auto_complete(std::string& fn, std::vector<std::string> matches, bool print) const
 {
-    if (matches.size() == 0) return;
+    if (matches.empty()) return;
 
     if (matches.size() == 1)
     {
@@ -179,7 +180,7 @@ void c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
                      {
                          if (s.size() != 0)
                          {
-                             std::cout << "> " << s << std::endl;
+                             std::cout << "\n> " << s;
                          }
                      });
         }
@@ -207,6 +208,26 @@ void c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
         {
             if ((*it)[pos] != c) return;
         }
+    }
+}
+
+void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
+{
+    expression e(expr/* + '('*/, true);
+
+    if (e.is_leaf())
+    {
+        auto_complete(expr, print);
+    }
+    else
+    {
+        e.for_each([&](expression& e)
+        {
+            if (!e.is_leaf())
+                auto_complete(e.get_name(), print);
+        });
+
+        expr = e.get_expression();
     }
 }
 

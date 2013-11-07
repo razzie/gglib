@@ -4,6 +4,7 @@
 #include "c_taskmgr.hpp"
 #include "c_scripteng.hpp"
 #include "c_timer.hpp"
+#include "managed_cout.hpp"
 
 using namespace gg;
 
@@ -15,6 +16,10 @@ application* application::create_instance(std::string name, uint32_t ver_major, 
 c_application::c_application(std::string name, uint32_t ver_major, uint32_t ver_minor)
  : m_name(name), m_ver_major(ver_major), m_ver_minor(ver_minor)
 {
+    setlocale(LC_ALL, "");
+
+    try { managed_cout::get_instance()->enable(); } catch(...) {};
+
     m_eventmgr = new c_event_manager();
     m_taskmgr = new c_task_manager();
     m_scripteng = new c_script_engine();
@@ -62,7 +67,7 @@ script_engine* c_application::get_script_engine()
 
 console* c_application::create_console()
 {
-    return new c_console(m_name, m_scripteng->get_console_controller());
+    return new c_console(m_name, auto_drop<console::controller>( m_scripteng->get_console_controller() ));
 }
 
 console* c_application::create_console(std::string name)

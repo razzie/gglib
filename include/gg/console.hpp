@@ -41,6 +41,8 @@ namespace gg
         virtual bool is_opened() const = 0;
         virtual output* create_output() = 0;
         virtual void clear() = 0;
+
+        static console* get_invoker();
     };
 };
 

@@ -688,22 +688,64 @@ void c_console::cmd_complete()
 {
     if (m_ctrl != nullptr)
     {
-        c_output* o = static_cast<c_output*>(create_output());
-        managed_cout::hook h(*o);
+        output* o = create_output();
+        //managed_cout::hook h(*o);
 
         try
         {
             m_ctrl->complete(m_cmd, *o);
-            o->drop();
         }
         catch (std::exception& e) { *o << "\nexception: " << e.what(); }
         catch (...) { *o << "\nexception: unknown"; }
+
+        o->drop();
 
         if (o->is_empty()) o->hide();
         //if (o->is_empty()) o->drop();
     }
 
     m_cmdpos = m_cmd.length();
+}
+
+
+std::map<tthread::thread::id, std::vector<console*>> c_console::m_invokers;
+tthread::mutex c_console::m_invokers_mutex;
+
+console* console::get_invoker()
+{
+    return c_console::get_invoker();
+}
+
+void c_console::push_invoker(console* con)
+{
+    tthread::lock_guard<tthread::mutex> guard(c_console::m_invokers_mutex);
+    c_console::m_invokers[tthread::this_thread::get_id()].push_back(con);
+}
+
+void c_console::pop_invoker()
+{
+    tthread::lock_guard<tthread::mutex> guard(c_console::m_invokers_mutex);
+    std::vector<console*>& v = c_console::m_invokers[tthread::this_thread::get_id()];
+    if (!v.empty()) v.pop_back();
+}
+
+console* c_console::get_invoker()
+{
+    tthread::lock_guard<tthread::mutex> guard(c_console::m_invokers_mutex);
+    std::vector<console*>& v = c_console::m_invokers[tthread::this_thread::get_id()];
+    if (!v.empty()) return v[ v.size() - 1 ];
+    else return nullptr;
+}
+
+c_console::set_scoped_invoker::set_scoped_invoker(console* con)
+ : m_con(con)
+{
+    c_console::push_invoker(con);
+}
+
+c_console::set_scoped_invoker::~set_scoped_invoker()
+{
+    c_console::pop_invoker();
 }
 
 
@@ -751,6 +793,8 @@ c_console::cmd_async_exec_task::~cmd_async_exec_task()
 
 bool c_console::cmd_async_exec_task::run(uint32_t)
 {
+    set_scoped_invoker inv(m_con);
+
     *m_cmd_outp << m_cmd;
 
     try
@@ -759,13 +803,13 @@ bool c_console::cmd_async_exec_task::run(uint32_t)
             m_cmd_outp->set_color({0,100,0});
         else
             m_cmd_outp->set_color({100,0,0});
-
-        if (m_exec_outp->is_empty()) m_exec_outp->hide();
-        //if (m_exec_outp->is_empty()) m_exec_outp->drop();
     }
     catch (expression_error& e) { *m_exec_outp << e.what(); }
     catch (std::exception& e) { *m_exec_outp << "exception: " << e.what(); }
     catch (...) { *m_exec_outp << "exception: unknown"; }
+
+    if (m_exec_outp->is_empty()) { m_exec_outp->hide(); m_con->update(); }
+    //if (m_exec_outp->is_empty()) { m_exec_outp->drop(); m_con->update(); }
 
     m_cmd_outp->drop();
     m_exec_outp->drop();
