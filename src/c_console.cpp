@@ -1,7 +1,6 @@
 #include <vector>
 #include "gg/util.hpp"
 #include "c_console.hpp"
-#include "expression.hpp"
 
 using namespace gg;
 
@@ -765,7 +764,6 @@ bool c_console::cmd_async_exec_task::run(uint32_t)
             break;
         }
     }
-    catch (expression_error& e) { *m_exec_outp << e.what(); }
     catch (std::exception& e) { *m_exec_outp << "exception: " << e.what(); }
     catch (...) { *m_exec_outp << "exception: unknown"; }
 

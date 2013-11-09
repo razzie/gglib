@@ -33,9 +33,19 @@ console::controller::exec_result
     if (!expr.empty() && expr[0] == '#')
         return exec_result::NO_EXEC;
 
-    recursive_thread_global<console*>::scope invoker(&out.get_console());
-    expression e(expr);
-    optional<var> r = m_scripteng->parse_and_exec(expr, out);
+    optional<var> r;
+
+    try
+    {
+        recursive_thread_global<console*>::scope invoker(&out.get_console());
+        expression e(expr);
+        r = m_scripteng->parse_and_exec(expr, out);
+    }
+    catch (expression_error& e)
+    {
+        out << e.what();
+        return exec_result::EXEC_FAIL;
+    }
 
     return (r.is_valid() ? exec_result::EXEC_SUCCESS : exec_result::EXEC_FAIL);
 }
