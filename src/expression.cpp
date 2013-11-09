@@ -48,38 +48,44 @@ expression::expression(expression* parent, std::string expr, bool repair_mode)
             else throw expression_error("too many \" marks");
         }
 
-        if (dbl_apost_cnt == 2 && expr_mode == EXPR_INCOMPLETE && !isspace(*it))
+        if (dbl_apost_cnt == 2 && expr_mode == EXPR_INCOMPLETE && !std::isspace(*it))
         {
             if (repair_mode) { it = expr.erase(it) - 1; continue; }
             else throw expression_error("character outside of \" marks");
         }
 
-        if (dbl_apost_cnt == 0 && expr_mode == EXPR_INCOMPLETE && isspace(*it))
+        if (dbl_apost_cnt == 0 && expr_mode == EXPR_INCOMPLETE && std::isspace(*it))
         {
             if (repair_mode) { it = expr.erase(it) - 1; continue; }
             throw expression_error("expression with spaces should be placed between \" marks");
         }
 
-        if (expr_mode == EXPR_FOUND && !isspace(*it)) expr_mode = EXPR_INCOMPLETE;
+        if (expr_mode == EXPR_FOUND && !std::isspace(*it)) expr_mode = EXPR_INCOMPLETE;
 
         if (*it == '(')
         {
             ++open_brackets;
+
             if (open_brackets == 1 && expr_mode == EXPR_NONE)
             {
                 expr_mode = EXPR_FOUND;
                 expr_begin = it + 1;
                 m_name = util::trim( std::string(expr.begin(), it) );
+                if (util::contains_space(m_name))
+                    throw expression_error("expression names cannot contain space");
                 continue;
             }
+
             continue;
         }
 
         if (*it == ')')
         {
              --open_brackets;
+
             if (open_brackets < 0)
                 throw expression_error("invalid use of )");
+
             else if (open_brackets == 0 &&
                      (expr_mode == EXPR_FOUND || expr_mode == EXPR_INCOMPLETE))
             {
@@ -90,6 +96,7 @@ expression::expression(expression* parent, std::string expr, bool repair_mode)
                 expr_mode = EXPR_COMPLETE;
                 continue;
             }
+
             continue;
         }
 
@@ -97,21 +104,28 @@ expression::expression(expression* parent, std::string expr, bool repair_mode)
         {
             if (open_brackets == 0)
                 throw expression_error(", found before expression");
+
             else if (open_brackets == 1)
             {
                 if (it == expr_begin)
                     new expression (this, "", repair_mode);
                 else
                     new expression(this, std::string(expr_begin, it), repair_mode);
+
                 expr_begin = it + 1;
+                expr_mode = EXPR_FOUND;
                 dbl_apost_cnt = 0;
                 continue;
             }
+
             continue;
         }
 
-        if (expr_mode == EXPR_COMPLETE && !isspace(*it))
-            throw expression_error("character found after expression: " + *it);
+        if (expr_mode == EXPR_COMPLETE && !std::isspace(*it))
+        {
+            if (repair_mode) { it = expr.erase(it) - 1; continue; }
+            else throw expression_error("character found after expression: " + *it);
+        }
     }
 
     if (dbl_apost_cnt == 1)
@@ -126,8 +140,7 @@ expression::expression(expression* parent, std::string expr, bool repair_mode)
         else throw expression_error("missing )");
     }
 
-    if (expr_mode == EXPR_NONE)
-        this->m_name = expr;
+    if (expr_mode == EXPR_NONE) this->m_name = expr;
 
     this->m_is_leaf = (expr_mode == EXPR_NONE);
 
@@ -153,6 +166,7 @@ void expression::print(uint32_t level, std::ostream& o) const
 bool expression::is_leaf() const
 {
     return m_is_leaf;
+    //return m_children.empty();
 }
 
 void expression::for_each(std::function<void(expression&)> func)
@@ -186,10 +200,9 @@ std::string expression::get_expression() const
 
 void expression::get_expression(std::string& expr) const
 {
-    if (m_is_leaf)
+    if (is_leaf())
     {
-        //if (util::contains_space(expr)) expr += '"' + m_name + '"';
-        if (!util::is_numeric(expr)) expr += '"' + m_name + '"';
+        if (!util::is_numeric(m_name)) expr += '"' + m_name + '"';
         else expr += m_name;
     }
     else

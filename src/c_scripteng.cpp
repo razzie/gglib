@@ -3,8 +3,20 @@
 #include <algorithm>
 #include "c_scripteng.hpp"
 #include "managed_cout.hpp"
+#include "threadglobal.hpp"
 
 using namespace gg;
+
+
+GG_USE_RECURSIVE_THREAD_GLOBAL(console*)
+
+console* script_engine::get_invoker_console()
+{
+    optional<console*> con = recursive_thread_global<console*>::get();
+    if (con.is_valid()) return con;
+    else return nullptr;
+}
+
 
 c_script_engine::console_controller::console_controller(const c_script_engine* scripteng)
  : m_scripteng(scripteng)
@@ -15,17 +27,23 @@ c_script_engine::console_controller::~console_controller()
 {
 }
 
-bool c_script_engine::console_controller::exec(std::string& expr, console::output& out)
+console::controller::exec_result
+ c_script_engine::console_controller::exec(std::string& expr, console::output& out)
 {
-    expression e(expr);
+    if (!expr.empty() && expr[0] == '#')
+        return exec_result::NO_EXEC;
 
+    recursive_thread_global<console*>::scope invoker(&out.get_console());
+    expression e(expr);
     optional<var> r = m_scripteng->parse_and_exec(expr, out);
-    return (r.is_valid());
+
+    return (r.is_valid() ? exec_result::EXEC_SUCCESS : exec_result::EXEC_FAIL);
 }
 
 void c_script_engine::console_controller::complete(std::string& expr, console::output& out)
 {
     managed_cout::hook h(out);
+    out.set_color({100,100,100});
     m_scripteng->auto_complete_expr(expr, true);
 }
 
@@ -35,8 +53,8 @@ c_script_engine::c_script_engine()
     script_engine* eng = this;
 
     eng->add_function("close",
-            [] {
-                console* con = console::get_invoker();
+            [&] {
+                console* con = script_engine::get_invoker_console();
                 if (con == nullptr)
                     std::cout << "This function can only be used from a console" << std::endl;
                 else
@@ -44,8 +62,8 @@ c_script_engine::c_script_engine()
             });
 
     eng->add_function("clear",
-            [] {
-                console* con = console::get_invoker();
+            [&] {
+                console* con = script_engine::get_invoker_console();
                 if (con == nullptr)
                     std::cout << "This function can only be used from a console" << std::endl;
                 else
@@ -139,37 +157,37 @@ std::vector<std::string> c_script_engine::find_matching_functions(std::string fn
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
+    fn = util::trim(fn);
+
     std::vector<std::string> matches;
-    size_t cmd_len = fn.size();
+    size_t len = fn.size();
     auto it = m_functions.begin(), end = m_functions.end();
 
     for (; it != end; ++it)
     {
-        if (it->first.compare(0, cmd_len, fn) == 0)
+        if (it->first.compare(0, len, fn) == 0)
             matches.push_back(it->first);
     }
-
-    /*if (matches.empty())
-        throw std::runtime_error("no matching function: " + fn);*/
 
     return matches;
 }
 
-void c_script_engine::auto_complete(std::string& fn, bool print) const
+bool c_script_engine::auto_complete(std::string& fn, bool print) const
 {
-    auto_complete(fn, find_matching_functions(fn), print);
-    return;
+    return auto_complete(fn, find_matching_functions(fn), print);
 }
 
-void c_script_engine::auto_complete(std::string& fn, std::vector<std::string> matches, bool print) const
+bool c_script_engine::auto_complete(std::string& fn, std::vector<std::string> matches, bool print) const
 {
-    if (matches.empty()) return;
+    if (matches.empty()) return false;
 
     if (matches.size() == 1)
     {
         fn = matches[0];
-        return;
+        return true;
     }
+
+    fn = util::trim(fn);
 
     util::on_return o([&]
     {
@@ -196,28 +214,34 @@ void c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
                  if (len < min_len) min_len = len;
              });
 
-    size_t cmd_len = fn.size();
-    if (cmd_len == min_len || cmd_len == max_len) return;
+    size_t fn_len = fn.size();
+    //if (fn_len == min_len || fn_len == max_len) return;
+    if (fn_len == max_len) return true;
+    if (fn_len == min_len) return false;
 
     auto begin = matches.begin(), end = matches.end();
 
-    for (size_t pos = cmd_len; pos <= min_len; ++pos)
+    for (size_t pos = fn_len; pos <= min_len; ++pos)
     {
         char c = (matches[0])[pos];
         for (auto it = begin+1; it != end; ++it)
         {
-            if ((*it)[pos] != c) return;
+            if ((*it)[pos] != c) return false;
         }
+        fn += c;
     }
+
+    return true;
 }
 
 void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
 {
-    expression e(expr/* + '('*/, true);
+    expression e(expr, true);
 
     if (e.is_leaf())
     {
-        auto_complete(expr, print);
+        if ( auto_complete(expr, print) )
+            expr += "( )";
     }
     else
     {

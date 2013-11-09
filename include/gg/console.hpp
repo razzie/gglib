@@ -30,8 +30,15 @@ namespace gg
         class controller : public reference_counted
         {
         public:
+            enum class exec_result
+            {
+                EXEC_SUCCESS,
+                EXEC_FAIL,
+                NO_EXEC
+            };
+
             virtual ~controller() {}
-            virtual bool exec(std::string& cmd, output&) = 0;
+            virtual exec_result exec(std::string& cmd, output&) = 0;
             virtual void complete(std::string& cmd, output&) = 0;
         };
 
@@ -41,8 +48,6 @@ namespace gg
         virtual bool is_opened() const = 0;
         virtual output* create_output() = 0;
         virtual void clear() = 0;
-
-        static console* get_invoker();
     };
 };
 

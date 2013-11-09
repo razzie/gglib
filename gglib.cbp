@@ -94,6 +94,7 @@
 		<Unit filename="src/expression.hpp" />
 		<Unit filename="src/managed_cout.cpp" />
 		<Unit filename="src/managed_cout.hpp" />
+		<Unit filename="src/threadglobal.hpp" />
 		<Unit filename="src/util.cpp" />
 		<Unit filename="src/var.cpp" />
 		<Extensions>

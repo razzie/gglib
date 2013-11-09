@@ -78,16 +78,15 @@ std::wstring util::widen(std::string s, std::locale loc)
 
 bool util::is_integer(std::string s)
 {
-    if (s.size() == 0) return false;
+    if (s.empty()) return false;
 
     auto it = s.begin(), end = s.end();
 
-    if (!isdigit(*it) && *it != '-') return false;
-    ++it;
+    if (*it == '-') ++it;
 
     for (; it != end; ++it)
     {
-        if (!isdigit(*it)) return false;
+        if (!std::isdigit(*it)) return false;
     }
 
     return true;
@@ -95,18 +94,16 @@ bool util::is_integer(std::string s)
 
 bool util::is_float(std::string s)
 {
-    if (s.size() == 0) return false;
+    if (s.empty()) return false;
 
     auto it = s.begin(), end = s.end();
     bool point_used = false;
 
-    if (!isdigit(*it) && *it != '-' && *it != '.') return false;
-    if (*it == '.') point_used = true;
-    ++it;
+    if (*it == '-') ++it;
 
     for (; it != end; ++it)
     {
-        if ((!isdigit(*it) && *it != '.') ||
+        if ((!std::isdigit(*it) && *it != '.') ||
             (*it == '.' && point_used)) return false;
 
         if (*it == '.') point_used = true;
@@ -128,9 +125,9 @@ bool util::contains_space(std::string s)
 
     for (; it != end; ++it)
     {
-        if (!found_char && !isspace(*it)) found_char = true;
-        if (found_char && !found_space) found_space = true;
-        if (found_space && !isspace(*it)) return true;
+        if (!found_char && !std::isspace(*it)) { found_char = true; continue; }
+        if (found_char && !found_space && std::isspace(*it)) { found_space = true; continue; }
+        if (found_space && !std::isspace(*it)) return true;
     }
 
     return false;

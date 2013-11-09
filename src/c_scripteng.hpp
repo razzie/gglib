@@ -18,7 +18,7 @@ namespace gg
         public:
             console_controller(const c_script_engine*);
             ~console_controller();
-            bool exec(std::string& expr, console::output&);
+            exec_result exec(std::string& expr, console::output&);
             void complete(std::string& expr, console::output&);
         };
 
@@ -40,8 +40,8 @@ namespace gg
     private:
         bool is_valid_fn_name(std::string fn) const;
         std::vector<std::string> find_matching_functions(std::string fn) const;
-        void auto_complete(std::string& fn, bool print = false) const;
-        void auto_complete(std::string& fn, std::vector<std::string> matches, bool print = false) const;
+        bool auto_complete(std::string& fn, bool print = false) const;
+        bool auto_complete(std::string& fn, std::vector<std::string> matches, bool print = false) const;
         void auto_complete_expr(std::string& expr, bool print = false) const;
         optional<var> process_expression(const expression& e) const;
     };

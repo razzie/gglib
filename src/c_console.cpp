@@ -1,7 +1,6 @@
 #include <vector>
 #include "gg/util.hpp"
 #include "c_console.hpp"
-#include "managed_cout.hpp"
 #include "expression.hpp"
 
 using namespace gg;
@@ -669,8 +668,6 @@ void c_console::cmd_async_exec()
         c_thread* t = new c_thread("async cmd exec");
         c_output* cmd_outp = static_cast<c_output*>(create_output());
         c_output* exec_outp = static_cast<c_output*>(create_output());
-        //cmd_outp->grab();
-        //exec_outp->grab();
         t->add_task( new cmd_async_exec_task(m_cmd, cmd_outp, exec_outp, this, t) );
     }
     else
@@ -689,7 +686,6 @@ void c_console::cmd_complete()
     if (m_ctrl != nullptr)
     {
         output* o = create_output();
-        //managed_cout::hook h(*o);
 
         try
         {
@@ -705,47 +701,6 @@ void c_console::cmd_complete()
     }
 
     m_cmdpos = m_cmd.length();
-}
-
-
-std::map<tthread::thread::id, std::vector<console*>> c_console::m_invokers;
-tthread::mutex c_console::m_invokers_mutex;
-
-console* console::get_invoker()
-{
-    return c_console::get_invoker();
-}
-
-void c_console::push_invoker(console* con)
-{
-    tthread::lock_guard<tthread::mutex> guard(c_console::m_invokers_mutex);
-    c_console::m_invokers[tthread::this_thread::get_id()].push_back(con);
-}
-
-void c_console::pop_invoker()
-{
-    tthread::lock_guard<tthread::mutex> guard(c_console::m_invokers_mutex);
-    std::vector<console*>& v = c_console::m_invokers[tthread::this_thread::get_id()];
-    if (!v.empty()) v.pop_back();
-}
-
-console* c_console::get_invoker()
-{
-    tthread::lock_guard<tthread::mutex> guard(c_console::m_invokers_mutex);
-    std::vector<console*>& v = c_console::m_invokers[tthread::this_thread::get_id()];
-    if (!v.empty()) return v[ v.size() - 1 ];
-    else return nullptr;
-}
-
-c_console::set_scoped_invoker::set_scoped_invoker(console* con)
- : m_con(con)
-{
-    c_console::push_invoker(con);
-}
-
-c_console::set_scoped_invoker::~set_scoped_invoker()
-{
-    c_console::pop_invoker();
 }
 
 
@@ -793,16 +748,22 @@ c_console::cmd_async_exec_task::~cmd_async_exec_task()
 
 bool c_console::cmd_async_exec_task::run(uint32_t)
 {
-    set_scoped_invoker inv(m_con);
-
     *m_cmd_outp << m_cmd;
 
     try
     {
-        if (m_ctrl->exec(m_cmd, *m_exec_outp)) // successfull command
+        controller::exec_result r = m_ctrl->exec(m_cmd, *m_exec_outp);
+        switch (r)
+        {
+        case controller::exec_result::EXEC_SUCCESS:
             m_cmd_outp->set_color({0,100,0});
-        else
+            break;
+        case controller::exec_result::EXEC_FAIL:
             m_cmd_outp->set_color({100,0,0});
+            break;
+        default:
+            break;
+        }
     }
     catch (expression_error& e) { *m_exec_outp << e.what(); }
     catch (std::exception& e) { *m_exec_outp << "exception: " << e.what(); }

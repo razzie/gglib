@@ -19,7 +19,7 @@ namespace gg
         R call_function(std::function<R()> func, varlist vl)
         {
             if (vl.size() > 0)
-                throw std::runtime_error("argument list too long");
+                throw std::runtime_error("too long argument list");
 
             return func();
         }
@@ -28,7 +28,7 @@ namespace gg
         R call_function(std::function<R(Arg0, Args...)> func, varlist vl)
         {
             if (vl.size() == 0)
-                throw std::runtime_error("argument list too short");
+                throw std::runtime_error("too short argument list");
 
             Arg0 arg0 = vl[0].cast<Arg0>();
             vl.erase(vl.begin());

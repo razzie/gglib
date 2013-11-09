@@ -157,17 +157,6 @@ private:
         unsigned cheight;
     };
 
-    class set_scoped_invoker
-    {
-        console* m_con;
-
-    public:
-        set_scoped_invoker(console* con);
-        set_scoped_invoker(const set_scoped_invoker&) = delete;
-        set_scoped_invoker(set_scoped_invoker&&) = delete;
-        ~set_scoped_invoker();
-    };
-
 /* private variables */
 private:
     tthread::recursive_mutex m_mutex;
@@ -184,9 +173,6 @@ private:
 	HTHEME m_hTheme;
 	HFONT m_hFont;
 	render_context m_rendctx;
-
-	static std::map<tthread::thread::id, std::vector<console*>> m_invokers;
-	static tthread::mutex m_invokers_mutex;
 
 /* private functions */
 private:
@@ -219,10 +205,6 @@ public:
     output* create_output();
     void remove_output(output*);
     void clear();
-
-	static void push_invoker(console* con);
-	static void pop_invoker();
-	static console* get_invoker();
 };
 
 };
