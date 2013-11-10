@@ -19,6 +19,9 @@ int main()
     app->get_script_engine()->add_function("is_float",
             [](std::string i){ std::cout << (gg::util::is_float(i) ? "true" : "false"); });
 
+    app->get_script_engine()->add_function("add",
+            [](int a, int b){ std::cout << a << "+" << b << "=" << a+b << "  "; return a+b; });
+
 
     /*gg::thread* thr = app->get_task_manager()->create_thread("test thread");
 

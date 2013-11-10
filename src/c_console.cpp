@@ -525,6 +525,12 @@ RECT c_console::calc_caret_rect(const render_context* ctx, std::string text, int
             height += s.cy;
             curr_width = 0;
         }
+
+        if (*it == '\n')
+        {
+            height += s.cy;
+            curr_width = 0;
+        }
     }
 
     if (it == end)

@@ -21,7 +21,8 @@ expression::expression(expression* parent, std::string expr, bool repair_mode)
         EXPR_NONE,
         EXPR_FOUND,
         EXPR_INCOMPLETE,
-        EXPR_COMPLETE
+        EXPR_COMPLETE,
+        EXPR_END
     }
     expr_mode = EXPR_NONE;
 
@@ -54,11 +55,13 @@ expression::expression(expression* parent, std::string expr, bool repair_mode)
             else throw expression_error("character outside of \" marks");
         }
 
-        if (dbl_apost_cnt == 0 && expr_mode == EXPR_INCOMPLETE && std::isspace(*it))
+        if (dbl_apost_cnt == 0 && expr_mode == EXPR_COMPLETE && std::isspace(*it))
         {
             if (repair_mode) { it = expr.erase(it) - 1; continue; }
             throw expression_error("expression with spaces should be placed between \" marks");
         }
+
+        if (dbl_apost_cnt == 0 && expr_mode == EXPR_INCOMPLETE && std::isspace(*it)) expr_mode = EXPR_COMPLETE;
 
         if (expr_mode == EXPR_FOUND && !std::isspace(*it)) expr_mode = EXPR_INCOMPLETE;
 
@@ -86,14 +89,14 @@ expression::expression(expression* parent, std::string expr, bool repair_mode)
             if (open_brackets < 0)
                 throw expression_error("invalid use of )");
 
-            else if (open_brackets == 0 &&
-                     (expr_mode == EXPR_FOUND || expr_mode == EXPR_INCOMPLETE))
+            else if (open_brackets == 0 && (expr_mode == EXPR_FOUND
+                    || expr_mode == EXPR_INCOMPLETE || expr_mode == EXPR_COMPLETE))
             {
                 if (it == expr_begin)
                     new expression (this, "", repair_mode);
                 else
                     new expression(this, std::string(expr_begin, it), repair_mode);
-                expr_mode = EXPR_COMPLETE;
+                expr_mode = EXPR_END;
                 continue;
             }
 
@@ -121,7 +124,7 @@ expression::expression(expression* parent, std::string expr, bool repair_mode)
             continue;
         }
 
-        if (expr_mode == EXPR_COMPLETE && !std::isspace(*it))
+        if (expr_mode == EXPR_END && !std::isspace(*it))
         {
             if (repair_mode) { it = expr.erase(it) - 1; continue; }
             else throw expression_error("character found after expression: " + *it);
