@@ -6,7 +6,7 @@
 using namespace gg;
 
 
-expression::expression(expression* parent, std::string expr, bool repair_mode)
+expression::expression(expression* parent, std::string expr, bool auto_complete)
  : m_parent(parent)
 {
     expr = util::trim(expr);
@@ -45,19 +45,19 @@ expression::expression(expression* parent, std::string expr, bool repair_mode)
 
         if (dbl_apost_cnt > 2)
         {
-            if (repair_mode) { it = expr.erase(it) - 1; continue; }
+            if (auto_complete) { it = expr.erase(it) - 1; continue; }
             else throw expression_error("too many \" marks");
         }
 
         if (dbl_apost_cnt == 2 && expr_mode == EXPR_INCOMPLETE && !std::isspace(*it))
         {
-            if (repair_mode) { it = expr.erase(it) - 1; continue; }
+            if (auto_complete) { it = expr.erase(it) - 1; continue; }
             else throw expression_error("character outside of \" marks");
         }
 
         if (dbl_apost_cnt == 0 && expr_mode == EXPR_COMPLETE && std::isspace(*it))
         {
-            if (repair_mode) { it = expr.erase(it) - 1; continue; }
+            if (auto_complete) { it = expr.erase(it) - 1; continue; }
             throw expression_error("expression with spaces should be placed between \" marks");
         }
 
@@ -93,9 +93,9 @@ expression::expression(expression* parent, std::string expr, bool repair_mode)
                     || expr_mode == EXPR_INCOMPLETE || expr_mode == EXPR_COMPLETE))
             {
                 if (it == expr_begin)
-                    new expression (this, "", repair_mode);
+                    new expression (this, "", auto_complete);
                 else
-                    new expression(this, std::string(expr_begin, it), repair_mode);
+                    new expression(this, std::string(expr_begin, it), auto_complete);
                 expr_mode = EXPR_END;
                 continue;
             }
@@ -111,9 +111,9 @@ expression::expression(expression* parent, std::string expr, bool repair_mode)
             else if (open_brackets == 1)
             {
                 if (it == expr_begin)
-                    new expression (this, "", repair_mode);
+                    new expression (this, "", auto_complete);
                 else
-                    new expression(this, std::string(expr_begin, it), repair_mode);
+                    new expression(this, std::string(expr_begin, it), auto_complete);
 
                 expr_begin = it + 1;
                 expr_mode = EXPR_FOUND;
@@ -126,20 +126,20 @@ expression::expression(expression* parent, std::string expr, bool repair_mode)
 
         if (expr_mode == EXPR_END && !std::isspace(*it))
         {
-            if (repair_mode) { it = expr.erase(it) - 1; continue; }
+            if (auto_complete) { it = expr.erase(it) - 1; continue; }
             else throw expression_error("character found after expression: " + *it);
         }
     }
 
     if (dbl_apost_cnt == 1)
     {
-        if (repair_mode) expr += '"';
+        if (auto_complete) expr += '"';
         else throw expression_error("missing \"");
     }
 
     if (open_brackets > 0)
     {
-        if (repair_mode) expr += ')';
+        if (auto_complete) expr += ')';
         else throw expression_error("missing )");
     }
 
@@ -150,8 +150,8 @@ expression::expression(expression* parent, std::string expr, bool repair_mode)
     if (parent != nullptr) parent->m_children.push_back(expression_ptr(this));
 }
 
-expression::expression(std::string expr, bool repair_mode)
- : expression(nullptr, expr, repair_mode)
+expression::expression(std::string expr, bool auto_complete)
+ : expression(nullptr, expr, auto_complete)
 {
 }
 
