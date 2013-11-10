@@ -56,9 +56,9 @@ namespace gg
         thread* get_thread(std::string name);
 
         task* create_wait_task(uint32_t wait_time) const;
-        task* create_periodic_task(bool(*)(uint32_t)) const;
-        task* create_periodic_task(bool(*)(void)) const;
-        task* create_task(void(*)(void)) const;
+        task* create_periodic_task(std::function<bool(uint32_t)> func) const;
+        task* create_periodic_task(std::function<bool()> func) const;
+        task* create_task(std::function<void()> func) const;
     };
 };
 

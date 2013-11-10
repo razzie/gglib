@@ -18,34 +18,31 @@ namespace gg
         uint32_t get_ref_count() const { return m_ref; }
     };
 
-    template<class T>
-    typename std::enable_if<std::is_base_of<reference_counted,T>::value>::type*
-    grab(T* o)
+    template<class T,
+        class = typename std::enable_if<
+            std::is_base_of<reference_counted,T>::value
+        >::type >
+    T* grab(T* o)
     {
         o->grab();
         return o;
     }
 
-    template<class T>
-    const typename std::enable_if<std::is_base_of<reference_counted,T>::value>::type*
-    grab(const T* o)
+    template<class T,
+        class = typename std::enable_if<
+            std::is_base_of<reference_counted,T>::value
+        >::type >
+    const T* grab(const T* o)
     {
         o->grab();
         return o;
     }
 
-    template<class T>
-    typename std::enable_if<std::is_base_of<reference_counted,T>::value>::type*
-    drop(T* o)
-    {
-        uint32_t refc = o->get_ref_count();
-        o->drop();
-        return (refc == 1) ? nullptr : o;
-    }
-
-    template<class T>
-    const typename std::enable_if<std::is_base_of<reference_counted,T>::value>::type*
-    drop(const T* o)
+    template<class T,
+        class = typename std::enable_if<
+            std::is_base_of<reference_counted,T>::value
+        >::type >
+    T* drop(T* o)
     {
         uint32_t refc = o->get_ref_count();
         o->drop();
@@ -53,7 +50,20 @@ namespace gg
     }
 
     template<class T,
-             class = typename std::enable_if<std::is_base_of<reference_counted, T>::value>::type >
+        class = typename std::enable_if<
+            std::is_base_of<reference_counted,T>::value
+        >::type >
+    const T* drop(const T* o)
+    {
+        uint32_t refc = o->get_ref_count();
+        o->drop();
+        return (refc == 1) ? nullptr : o;
+    }
+
+    template<class T,
+        class = typename std::enable_if<
+            std::is_base_of<reference_counted,T>::value
+        >::type >
     class auto_drop
     {
         T* m_obj;

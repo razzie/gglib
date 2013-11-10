@@ -53,6 +53,11 @@ namespace gg
             return m_valid;
         }
 
+        void set_valid(bool valid)
+        {
+            m_valid = valid;
+        }
+
         operator T() const
         {
             if (!m_valid) throw std::runtime_error("getting value of invalid optional<>");

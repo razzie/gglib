@@ -23,18 +23,15 @@ int main()
             [](int a, int b){ std::cout << a << "+" << b << "=" << a+b << "  "; return a+b; });
 
 
-    /*gg::thread* thr = app->get_task_manager()->create_thread("test thread");
+    gg::thread* thr = app->get_task_manager()->create_thread("test thread");
 
     gg::task* t = app->get_task_manager()->create_task(
                         [&] {
                             if (!con->is_opened()) con->open();
-
-                            t->grab();
-                            thr->add_delayed_task(t, 3000);
+                            thr->add_delayed_task(grab(t), 3000);
                         });
 
-    t->grab();
-    thr->add_task(t);*/
+    thr->add_task(grab(t));
 
     return app->start();
 }

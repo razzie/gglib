@@ -48,9 +48,9 @@ namespace gg
         virtual thread* get_thread(std::string name) = 0;
 
         virtual task* create_wait_task(uint32_t wait_ms) const = 0;
-        virtual task* create_periodic_task(bool(*)(uint32_t)) const = 0;
-        virtual task* create_periodic_task(bool(*)(void)) const = 0;
-        virtual task* create_task(void(*)(void)) const = 0;
+        virtual task* create_periodic_task(std::function<bool(uint32_t)> func) const = 0;
+        virtual task* create_periodic_task(std::function<bool()> func) const = 0;
+        virtual task* create_task(std::function<void()> func) const = 0;
     };
 };
 

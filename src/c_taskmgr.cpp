@@ -226,18 +226,18 @@ task* c_task_manager::create_wait_task(uint32_t wait_time) const
     return new wait_task(wait_time);
 }
 
-task* c_task_manager::create_periodic_task(bool(*func)(uint32_t)) const
+task* c_task_manager::create_periodic_task(std::function<bool(uint32_t)> func) const
 {
     return new function_task(func);
 }
 
-task* c_task_manager::create_periodic_task(bool(*func)(void)) const
+task* c_task_manager::create_periodic_task(std::function<bool()> func) const
 {
     return new function_task(
         [func](uint32_t) -> bool { return func(); });
 }
 
-task* c_task_manager::create_task(void(*func)(void)) const
+task* c_task_manager::create_task(std::function<void()> func) const
 {
     return new function_task(
         [func](uint32_t) -> bool { func(); return true; });
