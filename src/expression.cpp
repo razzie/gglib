@@ -6,13 +6,41 @@
 using namespace gg;
 
 
-expression::expression(expression* parent, std::string expr, bool auto_complete)
+static bool is_valid_string_expr(std::string expr)
+{
+    if (expr.empty()) return false;
+
+    int dbl_apost_cnt = 0;
+    auto it = expr.begin(), end = expr.end();
+
+    for (; it != end; ++it)
+    {
+        if (*it == '"') { ++dbl_apost_cnt; continue; }
+        if (dbl_apost_cnt == 1) continue;
+        if (dbl_apost_cnt > 2) return false;
+        if (!std::isspace(*it)) return false;
+    }
+
+    return true;
+}
+
+static void make_valid_string_expr(std::string& expr)
+{
+    if (expr.empty()) { expr = "\"\""; return; }
+
+    std::string tmp = "\"";
+    std::for_each(expr.begin(), expr.end(), [&](char c){ if (c != '"') tmp += c; });
+    tmp += "\"";
+
+    std::swap(tmp, expr);
+    return;
+}
+
+
+expression::expression(expression* parent, std::string orig_expr, bool auto_complete)
  : m_parent(parent)
 {
-    expr = util::trim(expr);
-
-    std::cerr << "new expression: " << expr << std::endl;
-
+    std::string expr = util::trim(orig_expr);
     if (expr.size() == 0) return;
 
     int open_brackets = 0;
@@ -21,35 +49,44 @@ expression::expression(expression* parent, std::string expr, bool auto_complete)
     enum
     {
         EXPR_NONE,
-        EXPR_FOUND,
         EXPR_INCOMPLETE,
-        EXPR_COMPLETE,
-        EXPR_END
+        EXPR_COMPLETE
     }
     expr_mode = EXPR_NONE;
 
     for (auto it = expr.begin(); it != expr.end(); ++it)
     {
-        if ((*it == '\\') && (it+1 != expr.end()) && (*(it+1) == '"'))
+        if (expr_mode == EXPR_NONE) // probably we're a leaf
         {
-            it = expr.erase(it); // it will jump to ", but we want to skip it
-            continue;
+            if ((*it == '\\') && (it+1 != expr.end()) && (*(it+1) == '"'))
+            {
+                it = expr.erase(it); // it will jump to ", but we want to skip it
+                continue;
+            }
+
+            if (*it == '"')
+            {
+                ++dbl_apost_cnt;
+                it = expr.erase(it) - 1;
+                continue;
+            }
+        }
+        else
+        {
+            if ((*it == '\\') && (it+1 != expr.end()) && (*(it+1) == '"'))
+            {
+                ++it; // it will jump to ", and then we skip it
+                continue;
+            }
+
+            if (*it == '"')
+            {
+                ++dbl_apost_cnt;
+                continue;
+            }
         }
 
-        if (*it == '"')
-        {
-            ++dbl_apost_cnt;
-            it = expr.erase(it) - 1;
-            continue;
-        }
-
-        if (dbl_apost_cnt == 1) continue;// string mode
-
-        if (dbl_apost_cnt > 2)
-        {
-            if (auto_complete) { it = expr.erase(it) - 1; continue; }
-            else throw expression_error("too many \" marks");
-        }
+        if (dbl_apost_cnt % 2) continue;// string mode
 
         if (*it == '(')
         {
@@ -57,7 +94,7 @@ expression::expression(expression* parent, std::string expr, bool auto_complete)
 
             if (open_brackets == 1 && expr_mode == EXPR_NONE)
             {
-                expr_mode = EXPR_FOUND;
+                expr_mode = EXPR_INCOMPLETE;
                 expr_begin = it + 1;
                 m_name = util::trim( std::string(expr.begin(), it) );
                 if (util::contains_space(m_name))
@@ -70,19 +107,18 @@ expression::expression(expression* parent, std::string expr, bool auto_complete)
 
         if (*it == ')')
         {
-             --open_brackets;
+            --open_brackets;
 
             if (open_brackets < 0)
                 throw expression_error("invalid use of )");
 
-            else if (open_brackets == 0 && (expr_mode == EXPR_FOUND
-                    || expr_mode == EXPR_INCOMPLETE || expr_mode == EXPR_COMPLETE))
+            else if (open_brackets == 0 && expr_mode == EXPR_INCOMPLETE)
             {
                 if (it == expr_begin)
                     new expression (this, "", auto_complete);
                 else
                     new expression(this, std::string(expr_begin, it), auto_complete);
-                expr_mode = EXPR_END;
+                expr_mode = EXPR_COMPLETE;
                 continue;
             }
 
@@ -102,7 +138,7 @@ expression::expression(expression* parent, std::string expr, bool auto_complete)
                     new expression(this, std::string(expr_begin, it), auto_complete);
 
                 expr_begin = it + 1;
-                expr_mode = EXPR_FOUND;
+                //expr_mode = EXPR_INCOMPLETE;
                 dbl_apost_cnt = 0;
                 continue;
             }
@@ -110,35 +146,10 @@ expression::expression(expression* parent, std::string expr, bool auto_complete)
             continue;
         }
 
-        if (dbl_apost_cnt == 2 && expr_mode == EXPR_INCOMPLETE && !std::isspace(*it))
+        if (expr_mode == EXPR_COMPLETE && !std::isspace(*it))
         {
             if (auto_complete) { it = expr.erase(it) - 1; continue; }
-            else throw expression_error("character outside of \" marks");
-        }
-
-        if (dbl_apost_cnt == 0 && expr_mode == EXPR_COMPLETE && std::isspace(*it))
-        {
-            if (auto_complete) { it = expr.erase(it) - 1; continue; }
-            else throw expression_error("expression with spaces should be placed between \" marks //"
-                                         + std::string(expr.begin(),it) + "//" + *it);
-        }
-
-        if (dbl_apost_cnt == 0 && expr_mode == EXPR_INCOMPLETE && std::isspace(*it))
-        {
-            expr_mode = EXPR_COMPLETE;
-            continue;
-        }
-
-        if (expr_mode == EXPR_FOUND && !std::isspace(*it))
-        {
-            expr_mode = EXPR_INCOMPLETE;
-            continue;
-        }
-
-        if (expr_mode == EXPR_END && !std::isspace(*it))
-        {
-            if (auto_complete) { it = expr.erase(it) - 1; continue; }
-            else throw expression_error("character found after expression: " + *it);
+            else throw expression_error("character found after expression");
         }
     }
 
@@ -154,9 +165,20 @@ expression::expression(expression* parent, std::string expr, bool auto_complete)
         else throw expression_error("missing )");
     }
 
-    if (expr_mode == EXPR_NONE) this->m_name = expr;
-
-    this->m_is_leaf = (expr_mode == EXPR_NONE);
+    if (expr_mode == EXPR_NONE)
+    {
+        if (!util::is_numeric(expr) && !is_valid_string_expr(orig_expr))
+        {
+            if (auto_complete) make_valid_string_expr(expr);
+            else throw expression_error("invalid string expression: " + orig_expr);
+        }
+        this->m_is_leaf = true;
+        this->m_name = expr;
+    }
+    else
+    {
+        this->m_is_leaf = false;
+    }
 
     if (parent != nullptr) parent->m_children.push_back(expression_ptr(this));
 }
