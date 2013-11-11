@@ -257,8 +257,11 @@ void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
     {
         e.for_each([&](expression& e)
         {
-            if (!e.is_leaf())
+            if (!e.is_leaf() && // it's an expression
+                (e.get_parent() == nullptr || !e.get_name().empty())) // not an array arg
+            {
                 auto_complete(e.get_name(), print);
+            }
         });
 
         expr = e.get_expression();
@@ -267,13 +270,16 @@ void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
 
 optional<var> c_script_engine::process_expression(const expression& e) const
 {
+    std::string name = e.get_name();
+
     if (e.is_leaf())
     {
-        return var(e.get_name());
+        return var(name);
     }
     else
     {
-        if (!is_valid_fn_name(e.get_name())) return optional<var>();
+        if (!is_valid_fn_name(name) && !name.empty())
+            return optional<var>();
 
         varlist vl;
         auto args = e.get_children();
@@ -285,9 +291,16 @@ optional<var> c_script_engine::process_expression(const expression& e) const
             else return optional<var>();
         }
 
-        tthread::lock_guard<tthread::mutex> guard(m_mutex);
-        auto pos = m_functions.find(e.get_name());
-        if (pos != m_functions.end()) return pos->second(vl);
+        if (name.empty())
+        {
+            return optional<var>(vl);
+        }
+        else
+        {
+            tthread::lock_guard<tthread::mutex> guard(m_mutex);
+            auto pos = m_functions.find(name);
+            if (pos != m_functions.end()) return pos->second(vl);
+        }
     }
 
     return optional<var>();

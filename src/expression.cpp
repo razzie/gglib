@@ -11,6 +11,8 @@ expression::expression(expression* parent, std::string expr, bool auto_complete)
 {
     expr = util::trim(expr);
 
+    std::cerr << "new expression: " << expr << std::endl;
+
     if (expr.size() == 0) return;
 
     int open_brackets = 0;
@@ -48,22 +50,6 @@ expression::expression(expression* parent, std::string expr, bool auto_complete)
             if (auto_complete) { it = expr.erase(it) - 1; continue; }
             else throw expression_error("too many \" marks");
         }
-
-        if (dbl_apost_cnt == 2 && expr_mode == EXPR_INCOMPLETE && !std::isspace(*it))
-        {
-            if (auto_complete) { it = expr.erase(it) - 1; continue; }
-            else throw expression_error("character outside of \" marks");
-        }
-
-        if (dbl_apost_cnt == 0 && expr_mode == EXPR_COMPLETE && std::isspace(*it))
-        {
-            if (auto_complete) { it = expr.erase(it) - 1; continue; }
-            throw expression_error("expression with spaces should be placed between \" marks");
-        }
-
-        if (dbl_apost_cnt == 0 && expr_mode == EXPR_INCOMPLETE && std::isspace(*it)) expr_mode = EXPR_COMPLETE;
-
-        if (expr_mode == EXPR_FOUND && !std::isspace(*it)) expr_mode = EXPR_INCOMPLETE;
 
         if (*it == '(')
         {
@@ -124,6 +110,31 @@ expression::expression(expression* parent, std::string expr, bool auto_complete)
             continue;
         }
 
+        if (dbl_apost_cnt == 2 && expr_mode == EXPR_INCOMPLETE && !std::isspace(*it))
+        {
+            if (auto_complete) { it = expr.erase(it) - 1; continue; }
+            else throw expression_error("character outside of \" marks");
+        }
+
+        if (dbl_apost_cnt == 0 && expr_mode == EXPR_COMPLETE && std::isspace(*it))
+        {
+            if (auto_complete) { it = expr.erase(it) - 1; continue; }
+            else throw expression_error("expression with spaces should be placed between \" marks //"
+                                         + std::string(expr.begin(),it) + "//" + *it);
+        }
+
+        if (dbl_apost_cnt == 0 && expr_mode == EXPR_INCOMPLETE && std::isspace(*it))
+        {
+            expr_mode = EXPR_COMPLETE;
+            continue;
+        }
+
+        if (expr_mode == EXPR_FOUND && !std::isspace(*it))
+        {
+            expr_mode = EXPR_INCOMPLETE;
+            continue;
+        }
+
         if (expr_mode == EXPR_END && !std::isspace(*it))
         {
             if (auto_complete) { it = expr.erase(it) - 1; continue; }
@@ -153,6 +164,37 @@ expression::expression(expression* parent, std::string expr, bool auto_complete)
 expression::expression(std::string expr, bool auto_complete)
  : expression(nullptr, expr, auto_complete)
 {
+}
+
+expression::expression(const expression& e)
+ : m_parent(e.m_parent)
+ , m_name(e.m_name)
+ , m_is_leaf(e.m_is_leaf)
+{
+    std::for_each(e.m_children.begin(), e.m_children.end(),
+        [&](expression_ptr child)
+        {
+            m_children.push_back(expression_ptr( new expression(*child) ));
+        });
+}
+
+expression::expression(expression&& e)
+ : m_parent(e.m_parent)
+ , m_name(std::move(e.m_name))
+ , m_children(std::move(e.m_children))
+ , m_is_leaf(e.m_is_leaf)
+{
+    if (m_parent)
+    {
+        std::for_each(m_parent->m_children.begin(), m_parent->m_children.end(),
+            [&](expression_ptr child)
+            {
+                if (child.get() == &e)
+                {
+                    child = expression_ptr(this);
+                }
+            });
+    }
 }
 
 expression::~expression()

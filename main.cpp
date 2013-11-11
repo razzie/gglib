@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "gglib.hpp"
 
 gg::application* app;
@@ -19,14 +20,25 @@ int main()
     app->get_script_engine()->add_function("is_float",
             [](std::string i){ std::cout << (gg::util::is_float(i) ? "true" : "false"); });
 
-    app->get_script_engine()->add_function("add",
-            [](int a, int b){ std::cout << a << "+" << b << "=" << a+b << "  "; return a+b; });
+    /*app->get_script_engine()->add_function("add",
+            [](int a, int b){ std::cout << a << "+" << b << "=" << a+b << "  "; return a+b; });*/
+
+    app->get_script_engine()->add_function("sum",
+            [](gg::varlist vl)
+            {
+                int sum = 0;
+                std::for_each(vl.begin(), vl.end(), [&](gg::var& v){ sum += v.cast<int>(); });
+                std::cout << sum << std::endl;
+                return sum;
+            });
 
 
     gg::thread* thr = app->get_task_manager()->create_thread("test thread");
 
     gg::task* t = app->get_task_manager()->create_task(
                         [&] {
+                            /*std::cerr << "checking console for being opened... "
+                                << (con->is_opened() ? "true" : "false") << std::endl;*/
                             if (!con->is_opened()) con->open();
                             thr->add_delayed_task(grab(t), 3000);
                         });

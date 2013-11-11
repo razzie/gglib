@@ -15,8 +15,8 @@ namespace gg
         typedef std::shared_ptr<expression> expression_ptr;
 
         expression(std::string expr, bool auto_complete = false);
-        expression(const expression&) = delete;
-        expression(expression&&) = delete;
+        expression(const expression&);
+        expression(expression&&);
         ~expression();
 
         std::string& get_name();

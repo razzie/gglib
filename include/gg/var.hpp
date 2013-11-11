@@ -166,7 +166,8 @@ namespace gg
             return this->get<T>();
         }
 
-        template<typename T>
+        template<typename T,
+            typename = typename std::enable_if<!std::is_same<T, var>::value>::type >
         T cast() const
         {
             if (m_var == nullptr)
@@ -185,6 +186,13 @@ namespace gg
             util::istream_extract(ss, result);
 
             return result;
+        }
+
+        template<typename T,
+            typename = typename std::enable_if<std::is_same<T, var>::value>::type >
+        var cast() const
+        {
+            return var(*this);
         }
 
         view to_stream() const
