@@ -25,8 +25,8 @@ namespace gg
         mutable tthread::mutex m_task_pool_mutex;
         std::list<task_helper> m_tasks;
         std::list<task_helper> m_task_pool;
-        bool m_finished = false;
-        bool m_suspended = false;
+        volatile bool m_finished = false;
+        volatile bool m_suspended = false;
 
         void wait_for_cond();
         void finish();
