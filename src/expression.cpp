@@ -6,34 +6,61 @@
 using namespace gg;
 
 
-static bool is_valid_string_expr(std::string expr)
+static bool is_valid_leaf_expr(std::string expr)
 {
-    if (expr.empty()) return false;
+    if (expr.empty() || util::is_numeric(expr)) return true;
 
     int dbl_apost_cnt = 0;
     auto it = expr.begin(), end = expr.end();
 
     for (; it != end; ++it)
     {
-        if (*it == '"') { ++dbl_apost_cnt; continue; }
-        if (dbl_apost_cnt == 1) continue;
-        if (dbl_apost_cnt > 2) return false;
-        if (!std::isspace(*it)) return false;
+        if ((*it == '\\') && (it+1 != expr.end()) && (*(it+1) == '"'))
+        {
+            ++it; // it will jump to ", but we want to skip it
+            continue;
+        }
+
+        if (*it == '"')
+        {
+            ++dbl_apost_cnt;
+            continue;
+        }
+
+        if (dbl_apost_cnt == 1)
+            continue;
+
+        if (dbl_apost_cnt > 2)
+            return false;
+
+        if (dbl_apost_cnt == 2 && !std::isspace(*it))
+            return false;
     }
+
+    if (dbl_apost_cnt == 0 && util::contains_space(expr))
+        return false;
 
     return true;
 }
 
-static void make_valid_string_expr(std::string& expr)
+static void make_valid_leaf_expr(std::string& expr)
 {
-    if (expr.empty()) { expr = "\"\""; return; }
+    if (expr.empty() || util::is_numeric(expr)) return;
 
-    std::string tmp = "\"";
-    std::for_each(expr.begin(), expr.end(), [&](char c){ if (c != '"') tmp += c; });
-    tmp += "\"";
+    for (auto it = expr.begin(); it != expr.end(); ++it)
+    {
+        if ((*it == '\\') && (it+1 != expr.end()) && (*(it+1) == '"'))
+        {
+            it = expr.erase(it); // it will jump to ", but we want to skip it
+            continue;
+        }
 
-    std::swap(tmp, expr);
-    return;
+        if (*it == '"')
+        {
+            it = expr.erase(it) - 1;
+            continue;
+        }
+    }
 }
 
 
@@ -41,7 +68,6 @@ expression::expression(expression* parent, std::string orig_expr, bool auto_comp
  : m_parent(parent)
 {
     std::string expr = util::trim(orig_expr);
-    if (expr.size() == 0) return;
 
     int open_brackets = 0;
     int dbl_apost_cnt = 0;
@@ -56,34 +82,16 @@ expression::expression(expression* parent, std::string orig_expr, bool auto_comp
 
     for (auto it = expr.begin(); it != expr.end(); ++it)
     {
-        if (expr_mode == EXPR_NONE) // probably we're a leaf
+        if ((*it == '\\') && (it+1 != expr.end()) && (*(it+1) == '"'))
         {
-            if ((*it == '\\') && (it+1 != expr.end()) && (*(it+1) == '"'))
-            {
-                it = expr.erase(it); // it will jump to ", but we want to skip it
-                continue;
-            }
-
-            if (*it == '"')
-            {
-                ++dbl_apost_cnt;
-                it = expr.erase(it) - 1;
-                continue;
-            }
+            ++it; // it will jump to ", and then we skip it
+            continue;
         }
-        else
-        {
-            if ((*it == '\\') && (it+1 != expr.end()) && (*(it+1) == '"'))
-            {
-                ++it; // it will jump to ", and then we skip it
-                continue;
-            }
 
-            if (*it == '"')
-            {
-                ++dbl_apost_cnt;
-                continue;
-            }
+        if (*it == '"')
+        {
+            ++dbl_apost_cnt;
+            continue;
         }
 
         if (dbl_apost_cnt % 2) continue;// string mode
@@ -94,11 +102,14 @@ expression::expression(expression* parent, std::string orig_expr, bool auto_comp
 
             if (open_brackets == 1 && expr_mode == EXPR_NONE)
             {
+                std::string name = std::string(expr.begin(), it);
+                if (!auto_complete && !is_valid_leaf_expr(name))
+                    throw expression_error("invalid expression: " + name);
+
                 expr_mode = EXPR_INCOMPLETE;
                 expr_begin = it + 1;
-                m_name = util::trim( std::string(expr.begin(), it) );
-                if (util::contains_space(m_name))
-                    throw expression_error("expression names cannot contain space");
+                make_valid_leaf_expr(name);
+                this->set_name(name);
                 continue;
             }
 
@@ -114,10 +125,7 @@ expression::expression(expression* parent, std::string orig_expr, bool auto_comp
 
             else if (open_brackets == 0 && expr_mode == EXPR_INCOMPLETE)
             {
-                if (it == expr_begin)
-                    new expression (this, "", auto_complete);
-                else
-                    new expression(this, std::string(expr_begin, it), auto_complete);
+                new expression(this, std::string(expr_begin, it), auto_complete);
                 expr_mode = EXPR_COMPLETE;
                 continue;
             }
@@ -132,13 +140,8 @@ expression::expression(expression* parent, std::string orig_expr, bool auto_comp
 
             else if (open_brackets == 1)
             {
-                if (it == expr_begin)
-                    new expression (this, "", auto_complete);
-                else
-                    new expression(this, std::string(expr_begin, it), auto_complete);
-
+                new expression(this, std::string(expr_begin, it), auto_complete);
                 expr_begin = it + 1;
-                //expr_mode = EXPR_INCOMPLETE;
                 dbl_apost_cnt = 0;
                 continue;
             }
@@ -153,7 +156,7 @@ expression::expression(expression* parent, std::string orig_expr, bool auto_comp
         }
     }
 
-    if (dbl_apost_cnt == 1)
+    if (dbl_apost_cnt % 2)
     {
         if (auto_complete) expr += '"';
         else throw expression_error("missing \"");
@@ -161,23 +164,21 @@ expression::expression(expression* parent, std::string orig_expr, bool auto_comp
 
     if (open_brackets > 0)
     {
-        if (auto_complete) expr += ')';
+        if (auto_complete) { for (int i = open_brackets; i > 0; --i) expr += ')'; }
         else throw expression_error("missing )");
     }
 
     if (expr_mode == EXPR_NONE)
     {
-        if (!util::is_numeric(expr) && !is_valid_string_expr(orig_expr))
-        {
-            if (auto_complete) make_valid_string_expr(expr);
-            else throw expression_error("invalid string expression: " + orig_expr);
-        }
-        this->m_is_leaf = true;
-        this->m_name = expr;
+        if (!auto_complete && !is_valid_leaf_expr(expr))
+            throw expression_error("invalid expression: " + expr);
+
+        make_valid_leaf_expr(expr);
+        this->set_name(expr);
     }
-    else
+    else if (auto_complete && expr_mode == EXPR_INCOMPLETE)
     {
-        this->m_is_leaf = false;
+
     }
 
     if (parent != nullptr) parent->m_children.push_back(expression_ptr(this));
@@ -191,7 +192,6 @@ expression::expression(std::string expr, bool auto_complete)
 expression::expression(const expression& e)
  : m_parent(e.m_parent)
  , m_name(e.m_name)
- , m_is_leaf(e.m_is_leaf)
 {
     std::for_each(e.m_children.begin(), e.m_children.end(),
         [&](expression_ptr child)
@@ -204,7 +204,6 @@ expression::expression(expression&& e)
  : m_parent(e.m_parent)
  , m_name(std::move(e.m_name))
  , m_children(std::move(e.m_children))
- , m_is_leaf(e.m_is_leaf)
 {
     if (m_parent)
     {
@@ -230,29 +229,6 @@ void expression::print(uint32_t level, std::ostream& o) const
     std::for_each(m_children.cbegin(), m_children.cend(), [&](expression_ptr e) { e->print(level+1, o); });
 }
 
-bool expression::is_leaf() const
-{
-    return m_is_leaf;
-    //return m_children.empty();
-}
-
-void expression::for_each(std::function<void(expression&)> func)
-{
-    func(*this);
-    std::for_each(m_children.begin(), m_children.end(), [&](expression_ptr e) { func(*e); });
-}
-
-void expression::for_each(std::function<void(const expression&)> func) const
-{
-    func(*this);
-    std::for_each(m_children.cbegin(), m_children.cend(), [&](const expression_ptr e) { func(*e); });
-}
-
-std::string& expression::get_name()
-{
-    return m_name;
-}
-
 std::string expression::get_name() const
 {
     return m_name;
@@ -267,7 +243,7 @@ std::string expression::get_expression() const
 
 void expression::get_expression(std::string& expr) const
 {
-    if (is_leaf())
+    if (this->is_leaf())
     {
         if (!util::is_numeric(m_name)) expr += '"' + m_name + '"';
         else expr += m_name;
@@ -299,6 +275,36 @@ const expression* expression::get_parent() const
 const std::vector<expression::expression_ptr>& expression::get_children() const
 {
     return m_children;
+}
+
+bool expression::is_leaf() const
+{
+    return m_children.empty();
+}
+
+void expression::set_name(std::string name)
+{
+    if (!this->is_leaf() && util::contains_space(name))
+        throw expression_error("non-leaf expressions cannot contain space");
+
+    m_name = util::trim(name);
+}
+
+void expression::add_child(expression e)
+{
+    m_children.push_back(expression_ptr( new expression(e) ));
+}
+
+void expression::for_each(std::function<void(expression&)> func)
+{
+    func(*this);
+    std::for_each(m_children.begin(), m_children.end(), [&](expression_ptr e) { e->for_each(func); });
+}
+
+void expression::for_each(std::function<void(const expression&)> func) const
+{
+    func(*this);
+    std::for_each(m_children.cbegin(), m_children.cend(), [&](const expression_ptr e) { e->for_each(func); });
 }
 
 

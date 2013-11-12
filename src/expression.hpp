@@ -19,13 +19,16 @@ namespace gg
         expression(expression&&);
         ~expression();
 
-        std::string& get_name();
         std::string get_name() const;
         std::string get_expression() const;
         expression* get_parent();
         const expression* get_parent() const;
         const std::vector<expression_ptr>& get_children() const;
         bool is_leaf() const;
+
+        void set_name(std::string name);
+        void add_child(expression e);
+
         void for_each(std::function<void(expression&)>);
         void for_each(std::function<void(const expression&)>) const;
 
@@ -44,7 +47,6 @@ namespace gg
         expression* m_parent;
         std::string m_name;
         std::vector<expression_ptr> m_children;
-        bool m_is_leaf;
     };
 
     class expression_error : public std::exception

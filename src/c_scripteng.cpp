@@ -250,8 +250,14 @@ void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
 
     if (e.is_leaf())
     {
-        if ( auto_complete(expr, print) )
-            expr += "( )";
+        std::string name = e.get_name();
+
+        if ( auto_complete(name, print) )
+        {
+            //e.set_name(name);
+            //e.add_child({"\" \""});
+            expr = name + "(  )";
+        }
     }
     else
     {
@@ -260,7 +266,9 @@ void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
             if (!e.is_leaf() && // it's an expression
                 (e.get_parent() == nullptr || !e.get_name().empty())) // not an array arg
             {
-                auto_complete(e.get_name(), print);
+                std::string name = e.get_name();
+                auto_complete(name, print);
+                e.set_name(name);
             }
         });
 
