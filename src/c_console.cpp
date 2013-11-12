@@ -254,15 +254,14 @@ void c_console::async_open()
 
 	SetWindowLongPtr(m_hWnd, GWLP_USERDATA, (LONG_PTR)this);
 
-    LOGFONT lfont;
 	m_hTheme = OpenThemeData(m_hWnd, L"CompositedWindow::Window");
-    GetThemeFont(m_hTheme, (HDC)NULL, 0, 0, TMT_FONT, &lfont);
-    //strcpy(lfont.lfFaceName, "Consolas");
+
+    LOGFONT lfont;
+    GetObject(GetStockObject(DEFAULT_GUI_FONT), sizeof(LOGFONT), &lfont);
+    strcpy(lfont.lfFaceName, "Consolas");
     m_hFont = CreateFontIndirect(&lfont);
 
 	ShowWindow(m_hWnd, SW_SHOW);
-	//UpdateWindow(m_hWnd);
-	//PostMessage(m_hWnd, WM_PAINT, 0, 0);
 	update();
 }
 
@@ -273,6 +272,7 @@ void c_console::async_close()
     if (!m_open) return;
     m_open = false;
 
+    DeleteObject(m_hFont);
     CloseThemeData(m_hTheme);
     DestroyWindow(m_hWnd);
 }
@@ -302,7 +302,6 @@ bool c_console::run()
 void c_console::update()
 {
     InvalidateRect(m_hWnd, NULL, TRUE);
-    //UpdateWindow(m_hWnd);
     PostMessage(m_hWnd, WM_PAINT, 0, 0);
 }
 
@@ -490,7 +489,11 @@ bool c_console::prepare_render_context(render_context* ctx)
     ctx->dttopts.iBorderSize = 2;
     ctx->dttopts.crBorder = RGB(255,255,255);
 
+    /*LOGFONT lfont;
+    GetObject(m_hFont, sizeof(LOGFONT), &lfont);
+    ctx->font = CreateFontIndirect(&lfont);*/
     ctx->font = m_hFont;
+
     ctx->bitmap = CreateDIBSection(ctx->secondary, &ctx->bminfo, DIB_RGB_COLORS, NULL, NULL, 0);
     if (!ctx->bitmap) goto prepare_ctx_cleanup;
 
@@ -519,7 +522,7 @@ void c_console::finish_render_context(render_context* ctx)
            ctx->secondary, 0, 0, SRCCOPY);
 
     DeleteObject(ctx->bitmap);
-    DeleteObject(ctx->font);
+    //DeleteObject(ctx->font);
 
     DeleteDC(ctx->secondary);
     ReleaseDC(m_hWnd, ctx->primary);
