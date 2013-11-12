@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <vector>
 #include "gg/util.hpp"
 #include "c_console.hpp"
@@ -79,48 +80,146 @@ LRESULT CALLBACK c_console::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
 
 
 c_console::c_output::c_output(c_output&& o)
- : m_console(o.m_console)/*, m_stream(std::move(o.m_stream))*/
- , m_color(o.m_color), m_right(o.m_right), m_visible(o.m_visible)
+ : m_console(o.m_console)
+ , m_text(std::move(o.m_text))
+ , m_color(o.m_color)
+ , m_align(o.m_align)
+ , m_visible(o.m_visible)
+ , m_dirty(true)
 {
-    m_stream << o.m_stream.str();
 }
 
-c_console::c_output::c_output(c_console& con, gg::color clr, bool r, bool v)
- : m_console(con), m_color(clr), m_right(r), m_visible(v)
+c_console::c_output::c_output(c_console* con)
+ : m_console(con)
+ , m_color({0,0,0})
+ , m_align(alignment::H_LEFT | alignment::V_BOTTOM)
+ , m_visible(true)
+ , m_dirty(true)
+{
+}
+
+c_console::c_output::c_output(c_console* con, gg::color c, int align, bool visible)
+ : m_console(con)
+ , m_color(c)
+ , m_align(align)
+ , m_visible(visible)
+ , m_dirty(true)
 {
 }
 
 c_console::c_output::~c_output()
 {
     m_mutex.lock();
-    m_console.remove_output(this);
+    if (m_console != nullptr) m_console->remove_output(this);
     m_mutex.unlock();
 }
 
 console& c_console::c_output::get_console() const
 {
-    return m_console;
+    if (m_console == nullptr)
+        throw std::runtime_error("no parent console");
+
+    return *m_console;
 }
 
 void c_console::c_output::show()
 {
+    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
     m_visible = true;
 }
 
 void c_console::c_output::hide()
 {
+    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
     m_visible = false;
 }
+
+void c_console::c_output::flag_dirty()
+{
+    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    m_dirty = true;
+}
+
+bool c_console::c_output::is_dirty() const
+{
+    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    return m_dirty;
+}
+
+void c_console::c_output::draw(const render_context* ctx, RECT* bounds, int caret_pos) const
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    if (m_dirty)
+    {
+        m_wrapped_text = util::widen(m_text);
+        m_last_height = c_console::wrap_text(ctx, m_wrapped_text, bounds);
+    }
+
+    RECT rect;
+    DTTOPTS tmpopts = ctx->dttopts;
+    DWORD flags = DT_NOCLIP;
+
+    tmpopts.crText = RGB(m_color.R, m_color.G, m_color.B);
+
+    if (bounds == NULL) // we should use window size in this case
+        CopyRect(&rect, &ctx->wndrect);
+    else
+        CopyRect(&rect, bounds);
+
+    m_last_bounds = rect;
+
+    if (m_align & alignment::H_LEFT) {
+        flags |= DT_LEFT;
+    }
+    else if (m_align & alignment::H_CENTER) {
+        flags |= DT_CENTER;
+    }
+    else if (m_align & alignment::H_RIGHT) {
+        flags |= DT_RIGHT;
+    }
+
+    if (m_align & alignment::V_TOP) {
+        flags |= DT_TOP;
+        bounds->top += m_last_height + 2;
+    }
+    else if (m_align & alignment::V_CENTER) {
+        flags |= DT_VCENTER;
+        rect.top += (rect.bottom - rect.top)/2 - m_last_height/2;
+    }
+    else if (m_align & alignment::V_BOTTOM) {
+        flags |= DT_BOTTOM;
+        rect.top = rect.bottom - m_last_height;
+        bounds->bottom -= m_last_height + 2;
+    }
+
+    DrawThemeTextEx(ctx->theme, ctx->secondary, 0, 0, m_wrapped_text.c_str(), -1, flags, &rect, &tmpopts);
+    DrawThemeTextEx(ctx->theme, ctx->secondary, 0, 0, m_wrapped_text.c_str(), -1, flags, &rect, &tmpopts);
+    //FrameRect(ctx->secondary, &rect, (HBRUSH)GetStockObject(WHITE_BRUSH)); // debug
+
+    if (caret_pos >= 0)
+    {
+        RECT caret = c_console::calc_caret_rect(ctx, m_wrapped_text, rect.right-rect.left, caret_pos);
+
+        caret.top += rect.top;
+        caret.bottom += rect.top;
+        caret.left += rect.left;
+        caret.right += rect.left;
+
+        FrameRect(ctx->secondary, &caret, (HBRUSH)GetStockObject(WHITE_BRUSH));
+    }
+}
+
 
 void c_console::c_output::set_color(gg::color c)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
     m_color = c;
 }
 
 gg::color c_console::c_output::get_color() const
 {
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
     return m_color;
 }
 
@@ -128,29 +227,27 @@ void c_console::c_output::align_left()
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    m_right = false;
+    m_align |= alignment::H_LEFT;
+    m_align &= ~alignment::H_CENTER;
+    m_align &= ~alignment::H_RIGHT;
 }
 
 void c_console::c_output::align_right()
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    m_right = true;
-}
-
-bool c_console::c_output::is_empty() const
-{
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-    return (m_stream.rdbuf()->in_avail() == 0);
+    m_align &= ~alignment::H_LEFT;
+    m_align &= ~alignment::H_CENTER;
+    m_align |= alignment::H_RIGHT;
 }
 
 console::output& c_console::c_output::operator<< (const gg::var& v)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    m_stream << v.to_stream();
-    m_console.update();
+    m_text += v.cast<std::string>();
+    this->flag_dirty();
+    if (m_console != nullptr) m_console->update();
 
     return *this;
 }
@@ -158,8 +255,19 @@ console::output& c_console::c_output::operator<< (const gg::var& v)
 std::string c_console::c_output::get_string() const
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    return m_text;
+}
 
-    return m_stream.str();
+bool c_console::c_output::is_empty() const
+{
+    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    return (m_text.empty());
+}
+
+void c_console::c_output::erase()
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    m_text.erase();
 }
 
 
@@ -221,7 +329,6 @@ void c_console::open()
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     if (m_open) return; // already opened
-    //m_open = true;
 
     m_thread = new c_thread("console '" + m_name + "' thread");
 	m_thread->add_task(new c_console::main_task(this));
@@ -232,7 +339,6 @@ void c_console::close()
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     if (!m_open) return;
-    //m_open = false;
 
     delete m_thread;
 }
@@ -309,7 +415,7 @@ console::output* c_console::create_output()
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
-    c_output* out = new c_output(*this);
+    c_output* out = new c_output(this);
     out->grab();
     m_outp.push_back(out);
 
@@ -355,6 +461,7 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
 			break;
 
         case WM_SIZE:
+            std::for_each(m_outp.begin(), m_outp.end(), [](c_output* o){ o->flag_dirty(); });
             update();
             break;
 
@@ -530,17 +637,17 @@ void c_console::finish_render_context(render_context* ctx)
     return;
 }
 
-RECT c_console::calc_caret_rect(const render_context* ctx, std::string text, int max_width, int pos)
+RECT c_console::calc_caret_rect(const render_context* ctx, std::wstring text, int max_width, int pos)
 {
-    std::string::iterator it = text.begin(), end = text.end();
+    auto it = text.begin(), end = text.end();
     int curr_pos = 0, curr_width = 0, height = 0;
+    wchar_t c;
     SIZE s;
-    char c;
 
     for (; it != end && (pos == -1 || curr_pos < pos); ++it, ++curr_pos)
     {
         c = *it;
-        GetTextExtentPoint32(ctx->secondary, &c, 1, &s);
+        GetTextExtentPoint32W(ctx->secondary, &c, 1, &s);
         curr_width += s.cx;
 
         if (curr_width >= max_width)
@@ -549,7 +656,7 @@ RECT c_console::calc_caret_rect(const render_context* ctx, std::string text, int
             curr_width = 0;
         }
 
-        if (*it == '\n')
+        if (c == L'\n')
         {
             height += s.cy;
             curr_width = 0;
@@ -564,128 +671,55 @@ RECT c_console::calc_caret_rect(const render_context* ctx, std::string text, int
     else
     {
         c = *(it++);
-        GetTextExtentPoint32(ctx->secondary, &c, 1, &s);
+        GetTextExtentPoint32W(ctx->secondary, &c, 1, &s);
     }
 
     return {(LONG)curr_width, (LONG)height, (LONG)(curr_width+s.cx), (LONG)(height+s.cy)};
 }
 
-int c_console::wrap_text(const render_context* ctx, std::string& text, const RECT* rect)
+int c_console::wrap_text(const render_context* ctx, std::wstring& text, const RECT* rect)
 {
-    std::string tmpstr;
-    std::string::iterator it = text.begin(), end = text.end();
     size_t height = 0, curr_width = 0, max_width = rect->right - rect->left;
-    char c;
+    wchar_t c;
     SIZE s;
 
-    //c = ' ';
-    //GetTextExtentPoint32(ctx->secondary, &c, 1, &s);
-    //height = s.cy;
     height = ctx->cheight;
 
-    for (; it != end; ++it)
+    for (auto it = text.begin(); it != text.end(); ++it)
     {
         c = *it;
-        GetTextExtentPoint32(ctx->secondary, &c, 1, &s);
+        GetTextExtentPoint32W(ctx->secondary, &c, 1, &s);
         curr_width += s.cx;
 
         if (curr_width >= max_width)
         {
-            tmpstr.append("\n");
+            it = text.insert(it, L'\n')-1;
             height += s.cy;
             curr_width = 0;
         }
 
-        if (*it == '\n')
+        if (c == L'\n')
         {
             height += s.cy;
             curr_width = 0;
         }
-
-        tmpstr.append(&c, 1);
     }
-
-    //text = tmpstr;
-    std::swap(text, tmpstr);
-
-    return height;
-}
-
-int c_console::draw_text(const render_context* ctx, std::string text, const RECT* rect,
-        int align, COLORREF color)
-{
-    int height;
-    RECT bounds;
-    DTTOPTS tmpopts = ctx->dttopts;
-    DWORD flags = DT_NOCLIP;
-
-    if (color != TEXTCOLOR_SYSTEM)
-        tmpopts.crText = color;
-
-    if (rect == NULL) // we should use window size in this case
-        CopyRect(&bounds, &ctx->wndrect);
-    else
-        CopyRect(&bounds, rect);
-
-    height = wrap_text(ctx, text, &bounds);
-
-    if (align & alignment::TP_LEFT) {
-        flags |= DT_LEFT;
-    }
-    if (align & alignment::TP_TOP) {
-        flags |= DT_TOP;
-    }
-    if (align & alignment::TP_BOTTOM) {
-        flags |= DT_BOTTOM;
-        bounds.top = bounds.bottom - height;
-    }
-    if (align & alignment::TP_RIGHT) {
-        flags |= DT_RIGHT;
-    }
-    if (align & alignment::TP_CENTER) {
-        flags |= DT_VCENTER | DT_CENTER;
-        bounds.top += (bounds.bottom - bounds.top)/2 - height/2;
-    }
-
-    DrawThemeTextEx(ctx->theme, ctx->secondary, 0, 0, util::widen(text).c_str(), -1, flags, &bounds, &tmpopts);
-    //FrameRect(ctx->secondary, &bounds, (HBRUSH)GetStockObject(WHITE_BRUSH)); // debug
 
     return height;
 }
 
 void c_console::paint(const render_context* ctx)
 {
-    #define DRAWTEXT(outp) \
-        if (outp.m_visible) \
-        { \
-            tthread::lock_guard<tthread::mutex> guard(outp.m_mutex); \
-            pos.bottom -= draw_text(ctx, outp.m_stream.str(), &pos, \
-                                    alignment::TP_BOTTOM | (outp.m_right ? alignment::TP_RIGHT : alignment::TP_LEFT), \
-                                    RGB(outp.m_color.R, outp.m_color.G, outp.m_color.B)) + 2; \
-        } \
+    RECT bounds = ctx->wndrect;
 
-    RECT pos, caret;
-    auto it = m_outp.rbegin(), end = m_outp.rend();
-    unsigned cmd_height;
+    c_output cmd(nullptr);
+    cmd << m_cmd;
+    cmd.draw(ctx, &bounds, std::distance(m_cmd.begin(), m_cmd_pos));
 
-    cmd_height = draw_text(ctx, m_cmd, &ctx->wndrect, alignment::TP_BOTTOM, RGB(32,32,32));
-    caret = calc_caret_rect(ctx, m_cmd, ctx->wndrect.right, std::distance(m_cmd.begin(), m_cmd_pos));
-
-    CopyRect(&pos, &ctx->wndrect);
-    pos.bottom -= ((cmd_height==0) ? ctx->cheight : cmd_height) + 2;
-
-    caret.top += pos.bottom + 2;
-    caret.bottom += pos.bottom + 2;
-    FrameRect(ctx->secondary, &caret, (HBRUSH)GetStockObject(WHITE_BRUSH));
-
-    for (; it != end && pos.bottom > 0; ++it)
+    for (auto it = m_outp.rbegin(); it != m_outp.rend() && bounds.bottom > 0; ++it)
     {
-        DRAWTEXT((**it));
+        (*it)->draw(ctx, &bounds);
     }
-
-    return;
-
-    #undef DRAWTEXT
 }
 
 void c_console::cmd_async_exec()
