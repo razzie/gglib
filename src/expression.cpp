@@ -121,7 +121,10 @@ expression::expression(expression* parent, std::string orig_expr, bool auto_comp
             --open_brackets;
 
             if (open_brackets < 0)
+            {
+                if (auto_complete) { it = expr.erase(it) - 1; continue; }
                 throw expression_error("invalid use of )");
+            }
 
             else if (open_brackets == 0 && expr_mode == EXPR_INCOMPLETE)
             {
@@ -156,29 +159,37 @@ expression::expression(expression* parent, std::string orig_expr, bool auto_comp
         }
     }
 
-    if (dbl_apost_cnt % 2)
+    if (auto_complete)
     {
-        if (auto_complete) expr += '"';
-        else throw expression_error("missing \"");
+        if (expr_mode == EXPR_INCOMPLETE)
+        {
+            std::string child_expr = std::string(expr_begin, expr.end());
+            if (dbl_apost_cnt % 2) child_expr += '"';
+            if (open_brackets > 0) for (int i = open_brackets; i > 0; --i) child_expr += ')';
+            new expression(this, child_expr, auto_complete);
+        }
+        else if (expr_mode == EXPR_NONE)
+        {
+            make_valid_leaf_expr(expr);
+            this->set_name(expr);
+        }
     }
-
-    if (open_brackets > 0)
+    else
     {
-        if (auto_complete) { for (int i = open_brackets; i > 0; --i) expr += ')'; }
-        else throw expression_error("missing )");
-    }
+        if (dbl_apost_cnt % 2)
+            throw expression_error("missing \"");
 
-    if (expr_mode == EXPR_NONE)
-    {
-        if (!auto_complete && !is_valid_leaf_expr(expr))
-            throw expression_error("invalid expression: " + expr);
+        if (open_brackets > 0)
+            throw expression_error("missing )");
 
-        make_valid_leaf_expr(expr);
-        this->set_name(expr);
-    }
-    else if (auto_complete && expr_mode == EXPR_INCOMPLETE)
-    {
+        if (expr_mode == EXPR_NONE)
+        {
+            if (!is_valid_leaf_expr(expr))
+                throw expression_error("invalid expression: " + expr);
 
+            make_valid_leaf_expr(expr);
+            this->set_name(expr);
+        }
     }
 
     if (parent != nullptr) parent->m_children.push_back(expression_ptr(this));
