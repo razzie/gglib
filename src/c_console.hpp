@@ -164,7 +164,9 @@ private:
 	bool m_open;
 	std::list<c_output*> m_outp;
 	std::string m_cmd;
-	size_t m_cmdpos;
+	std::string::iterator m_cmd_pos;
+	std::vector<std::string> m_cmd_history;
+	std::vector<std::string>::iterator m_cmd_history_pos;
 	controller* m_ctrl;
 	c_thread* m_thread;
     HINSTANCE m_hInst;
@@ -194,6 +196,8 @@ private:
 /* public functions */
 public:
     c_console(std::string name, controller* ctrl);
+    c_console(const c_console&) = delete;
+    c_console(c_console&&) = delete;
     ~c_console();
     void set_controller(controller* ctrl);
     controller* get_controller() const;

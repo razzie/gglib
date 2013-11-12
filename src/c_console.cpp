@@ -166,7 +166,8 @@ std::string c_console::c_output::get_string() const
 c_console::c_console(std::string name, controller* ctrl)
  : m_name(name)
  , m_open(false)
- , m_cmdpos(0)
+ , m_cmd_pos(m_cmd.end())
+ , m_cmd_history_pos(m_cmd_history.end())
  , m_ctrl(ctrl)
 {
     if (m_ctrl != nullptr) m_ctrl->grab();
@@ -380,7 +381,7 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
             if (/*GetKeyState(VK_CONTROL) && wParam == 'c'*/ wParam == 3) // EndOfText
             {
                 m_cmd.clear();
-                m_cmdpos = 0;
+                m_cmd_pos = m_cmd.end();
                 break;
             }
             // handling currently typed command
@@ -399,18 +400,16 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
                     break;
 
                 case VK_BACK:
-                    if (m_cmdpos > 0)
+                    if (m_cmd_pos != m_cmd.begin())
                     {
-                        m_cmd.erase(m_cmdpos-1, 1);
-                        m_cmdpos--;
+                        m_cmd_pos = m_cmd.erase(m_cmd_pos - 1);
                     }
                     break;
 
                 default:
                     if (isprint(wParam))
                     {
-                        m_cmd.insert(m_cmdpos, 1, wParam);
-                        m_cmdpos++;
+                        m_cmd_pos = m_cmd.insert(m_cmd_pos, wParam) + 1;
                     }
                     break;
             }
@@ -421,11 +420,32 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
             switch (wParam)
             {
                 case VK_LEFT:
-                    if (m_cmdpos > 0) m_cmdpos--;
+                    if (m_cmd_pos != m_cmd.begin()) --m_cmd_pos;
                     break;
 
                 case VK_RIGHT:
-                    if (m_cmdpos < m_cmd.length()) m_cmdpos++;
+                    if (m_cmd_pos != m_cmd.end()) ++m_cmd_pos;
+                    break;
+
+                case VK_UP:
+                    if (m_cmd_history_pos != m_cmd_history.begin())
+                    {
+                        m_cmd = *(--m_cmd_history_pos);
+                        m_cmd_pos = m_cmd.end();
+                    }
+                    break;
+
+                case VK_DOWN:
+                    if (m_cmd_history_pos == m_cmd_history.end() - 1)
+                    {
+                        m_cmd.erase();
+                        m_cmd_pos = m_cmd.end();
+                    }
+                    else if (m_cmd_history_pos != m_cmd_history.end())
+                    {
+                        m_cmd = *(++m_cmd_history_pos);
+                        m_cmd_pos = m_cmd.end();
+                    }
                     break;
             }
             update();
@@ -646,7 +666,7 @@ void c_console::paint(const render_context* ctx)
     unsigned cmd_height;
 
     cmd_height = draw_text(ctx, m_cmd, &ctx->wndrect, alignment::TP_BOTTOM, RGB(32,32,32));
-    caret = calc_caret_rect(ctx, m_cmd, ctx->wndrect.right, m_cmdpos);
+    caret = calc_caret_rect(ctx, m_cmd, ctx->wndrect.right, std::distance(m_cmd.begin(), m_cmd_pos));
 
     CopyRect(&pos, &ctx->wndrect);
     pos.bottom -= ((cmd_height==0) ? ctx->cheight : cmd_height) + 2;
@@ -667,8 +687,7 @@ void c_console::paint(const render_context* ctx)
 
 void c_console::cmd_async_exec()
 {
-    if (m_ctrl != nullptr &&
-        m_cmd.size() > 0 && m_cmd[0] != '#')
+    if (m_ctrl != nullptr && !m_cmd.empty())
     {
         c_thread* t = new c_thread("async cmd exec");
         c_output* cmd_outp = static_cast<c_output*>(create_output());
@@ -682,8 +701,11 @@ void c_console::cmd_async_exec()
         o->drop();
     }
 
+    if (!m_cmd.empty())
+        m_cmd_history_pos = m_cmd_history.insert(m_cmd_history_pos, std::move(m_cmd)) + 1;
+
     m_cmd.erase();
-    m_cmdpos = 0;
+    m_cmd_pos = m_cmd.end();
 }
 
 void c_console::cmd_complete()
@@ -705,7 +727,7 @@ void c_console::cmd_complete()
         //if (o->is_empty()) o->drop();
     }
 
-    m_cmdpos = m_cmd.length();
+    m_cmd_pos = m_cmd.end();
 }
 
 
