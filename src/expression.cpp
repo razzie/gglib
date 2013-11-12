@@ -293,6 +293,11 @@ bool expression::is_leaf() const
     return m_children.empty();
 }
 
+bool expression::is_empty() const
+{
+    return (this->is_leaf() && util::trim(m_name).empty());
+}
+
 void expression::set_name(std::string name)
 {
     if (!this->is_leaf() && util::contains_space(name))

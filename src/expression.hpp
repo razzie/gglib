@@ -25,6 +25,7 @@ namespace gg
         const expression* get_parent() const;
         const std::vector<expression_ptr>& get_children() const;
         bool is_leaf() const;
+        bool is_empty() const;
 
         void set_name(std::string name);
         void add_child(expression e);

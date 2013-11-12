@@ -294,6 +294,8 @@ optional<var> c_script_engine::process_expression(const expression& e) const
         auto it = args.begin(), end = args.end();
         for (; it != end; ++it)
         {
+            if ((*it)->is_empty()) continue;
+
             optional<var> v = process_expression(**it);
             if (v.is_valid()) vl.push_back(v);
             else return optional<var>();
