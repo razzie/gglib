@@ -202,14 +202,8 @@ private:
     bool prepare_render_context(render_context* ctx);
     void finish_render_context(render_context* ctx);
 	void paint(const render_context* ctx);
-
-	int draw_text(const render_context* ctx, std::string text, const RECT* rect,
-                  int align = alignment::V_BOTTOM, COLORREF color = TEXTCOLOR_SYSTEM);
-
 	LRESULT handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam);
 	static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
-	static RECT calc_caret_rect(const render_context* ctx, std::wstring text, int max_width, int pos = -1);
-	static int wrap_text(const render_context* ctx, std::wstring& text, const RECT* rect);
 
 /* public functions */
 public:

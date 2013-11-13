@@ -78,6 +78,75 @@ LRESULT CALLBACK c_console::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
     }
 }
 
+static RECT calc_caret_rect(HDC hdc, std::wstring text, int max_width, int pos)
+{
+    auto it = text.begin(), end = text.end();
+    int curr_pos = 0, curr_width = 0, height = 0;
+    wchar_t c;
+    SIZE s;
+
+    for (; it != end && (pos == -1 || curr_pos < pos); ++it, ++curr_pos)
+    {
+        c = *it;
+        GetTextExtentPoint32W(hdc, &c, 1, &s);
+        curr_width += s.cx;
+
+        if (c == L'\n')
+        {
+            height += s.cy;
+            curr_width = 0;
+            --curr_pos;
+            continue;
+        }
+
+        if (curr_width >= max_width)
+        {
+            height += s.cy;
+            curr_width = 0;
+        }
+    }
+
+    if (it == end) c = L' ';
+    else c = *(it++);
+
+    GetTextExtentPoint32W(hdc, &c, 1, &s);
+
+    return {(LONG)curr_width, (LONG)height, (LONG)(curr_width+s.cx), (LONG)(height+s.cy)};
+}
+
+static int wrap_text(HDC hdc, std::wstring& text, const RECT* rect)
+{
+    size_t height = 0, curr_width = 0, max_width = rect->right - rect->left;
+    wchar_t c;
+    SIZE s;
+
+    c = L' ';
+    GetTextExtentPoint32W(hdc, &c, 1, &s);
+    height = s.cy;
+
+    for (auto it = text.begin(); it != text.end(); ++it)
+    {
+        c = *it;
+        GetTextExtentPoint32W(hdc, &c, 1, &s);
+        curr_width += s.cx;
+
+        if (curr_width >= max_width)
+        {
+            it = text.insert(it, L'\n');
+            height += s.cy;
+            curr_width = 0;
+        }
+
+        if (c == L'\n')
+        {
+            height += s.cy;
+            curr_width = 0;
+        }
+    }
+
+    return height;
+}
+
 
 c_console::c_output::c_output(c_output&& o)
  : m_console(o.m_console)
@@ -153,7 +222,7 @@ void c_console::c_output::draw(const render_context* ctx, RECT* bounds, int care
     if (m_dirty)
     {
         m_wrapped_text = util::widen(m_text);
-        m_last_height = c_console::wrap_text(ctx, m_wrapped_text, bounds);
+        m_last_height = wrap_text(ctx->secondary, m_wrapped_text, bounds);
     }
 
     RECT rect;
@@ -199,23 +268,19 @@ void c_console::c_output::draw(const render_context* ctx, RECT* bounds, int care
 
     if (caret_pos >= 0)
     {
-        RECT caret = c_console::calc_caret_rect(ctx, m_wrapped_text, rect.right-rect.left, caret_pos);
+        int h_pos = 0;
+        RECT caret = calc_caret_rect(ctx->secondary, m_wrapped_text, rect.right-rect.left, caret_pos);
+
+        if (m_align & alignment::H_LEFT)        h_pos = rect.left;
+        else if (m_align & alignment::H_CENTER) h_pos = (rect.right - rect.left) / 2;
+        else if (m_align & alignment::H_RIGHT)  h_pos = rect.right - (rect.left - caret.left);
 
         caret.top += rect.top;
         caret.bottom += rect.top;
-
-        if (m_align & alignment::H_LEFT) {
-            caret.left += rect.left;
-            caret.right += rect.left;
-        }
-        else if (m_align & alignment::H_CENTER) {
-            caret.left += rect.left;
-            caret.right += rect.left;
-        }
-        else if (m_align & alignment::H_RIGHT) {
-            caret.left += rect.left;
-            caret.right += rect.left;
-        }
+        //caret.top += bounds->bottom + 2;
+        //caret.bottom += bounds->bottom + 2;
+        caret.left += h_pos;
+        caret.right += h_pos;
 
         FrameRect(ctx->secondary, &caret, (HBRUSH)GetStockObject(WHITE_BRUSH));
     }
@@ -684,77 +749,6 @@ void c_console::finish_render_context(render_context* ctx)
     ReleaseDC(m_hWnd, ctx->primary);
 
     return;
-}
-
-RECT c_console::calc_caret_rect(const render_context* ctx, std::wstring text, int max_width, int pos)
-{
-    auto it = text.begin(), end = text.end();
-    int curr_pos = 0, curr_width = 0, height = 0;
-    wchar_t c;
-    SIZE s;
-
-    for (; it != end && (pos == -1 || curr_pos < pos); ++it, ++curr_pos)
-    {
-        c = *it;
-        GetTextExtentPoint32W(ctx->secondary, &c, 1, &s);
-        curr_width += s.cx;
-
-        if (curr_width >= max_width)
-        {
-            height += s.cy;
-            curr_width = 0;
-        }
-
-        if (c == L'\n')
-        {
-            height += s.cy;
-            curr_width = 0;
-        }
-    }
-
-    if (it == end)
-    {
-        s.cx = ctx->cwidth;
-        s.cy = ctx->cheight;
-    }
-    else
-    {
-        c = *(it++);
-        GetTextExtentPoint32W(ctx->secondary, &c, 1, &s);
-    }
-
-    return {(LONG)curr_width, (LONG)height, (LONG)(curr_width+s.cx), (LONG)(height+s.cy)};
-}
-
-int c_console::wrap_text(const render_context* ctx, std::wstring& text, const RECT* rect)
-{
-    size_t height = 0, curr_width = 0, max_width = rect->right - rect->left;
-    wchar_t c;
-    SIZE s;
-
-    height = ctx->cheight;
-
-    for (auto it = text.begin(); it != text.end(); ++it)
-    {
-        c = *it;
-        GetTextExtentPoint32W(ctx->secondary, &c, 1, &s);
-        curr_width += s.cx;
-
-        if (curr_width >= max_width)
-        {
-            it = text.insert(it, L'\n')-1;
-            height += s.cy;
-            curr_width = 0;
-        }
-
-        if (c == L'\n')
-        {
-            height += s.cy;
-            curr_width = 0;
-        }
-    }
-
-    return height;
 }
 
 void c_console::paint(const render_context* ctx)
