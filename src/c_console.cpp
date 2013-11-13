@@ -124,19 +124,19 @@ console& c_console::c_output::get_console() const
 
 void c_console::c_output::show()
 {
-    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
     m_visible = true;
 }
 
 void c_console::c_output::hide()
 {
-    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
     m_visible = false;
 }
 
 void c_console::c_output::flag_dirty()
 {
-    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
     m_dirty = true;
 }
 
@@ -203,8 +203,19 @@ void c_console::c_output::draw(const render_context* ctx, RECT* bounds, int care
 
         caret.top += rect.top;
         caret.bottom += rect.top;
-        caret.left += rect.left;
-        caret.right += rect.left;
+
+        if (m_align & alignment::H_LEFT) {
+            caret.left += rect.left;
+            caret.right += rect.left;
+        }
+        else if (m_align & alignment::H_CENTER) {
+            caret.left += rect.left;
+            caret.right += rect.left;
+        }
+        else if (m_align & alignment::H_RIGHT) {
+            caret.left += rect.left;
+            caret.right += rect.left;
+        }
 
         FrameRect(ctx->secondary, &caret, (HBRUSH)GetStockObject(WHITE_BRUSH));
     }
@@ -232,6 +243,15 @@ void c_console::c_output::align_left()
     m_align &= ~alignment::H_RIGHT;
 }
 
+void c_console::c_output::align_center()
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    m_align &= ~alignment::H_LEFT;
+    m_align |= alignment::H_CENTER;
+    m_align &= ~alignment::H_RIGHT;
+}
+
 void c_console::c_output::align_right()
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
@@ -241,12 +261,39 @@ void c_console::c_output::align_right()
     m_align |= alignment::H_RIGHT;
 }
 
+void c_console::c_output::valign_top()
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    m_align |= alignment::V_TOP;
+    m_align &= ~alignment::V_CENTER;
+    m_align &= ~alignment::V_BOTTOM;
+}
+
+void c_console::c_output::valign_center()
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    m_align &= ~alignment::V_TOP;
+    m_align |= alignment::V_CENTER;
+    m_align &= ~alignment::V_BOTTOM;
+}
+
+void c_console::c_output::valign_bottom()
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    m_align &= ~alignment::V_TOP;
+    m_align &= ~alignment::V_CENTER;
+    m_align |= alignment::V_BOTTOM;
+}
+
 console::output& c_console::c_output::operator<< (const gg::var& v)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     m_text += v.cast<std::string>();
-    this->flag_dirty();
+    m_dirty = true;
     if (m_console != nullptr) m_console->update();
 
     return *this;
@@ -364,6 +411,8 @@ void c_console::async_open()
 
     LOGFONT lfont;
     GetObject(GetStockObject(DEFAULT_GUI_FONT), sizeof(LOGFONT), &lfont);
+    lfont.lfHeight = 16;
+    lfont.lfWidth = 0;
     strcpy(lfont.lfFaceName, "Consolas");
     m_hFont = CreateFontIndirect(&lfont);
 

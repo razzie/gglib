@@ -21,6 +21,7 @@ namespace gg
             virtual void set_color(gg::color) = 0;
             virtual gg::color get_color() const = 0;
             virtual void align_left() = 0;
+            virtual void align_center() = 0;
             virtual void align_right() = 0;
             virtual bool is_empty() const = 0;
             virtual output& operator<< (const gg::var&) = 0;
