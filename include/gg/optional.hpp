@@ -58,10 +58,15 @@ namespace gg
             m_valid = valid;
         }
 
-        operator T() const
+        T get() const
         {
             if (!m_valid) throw std::runtime_error("getting value of invalid optional<>");
             return m_val;
+        }
+
+        operator T() const
+        {
+            return get();
         }
     };
 };

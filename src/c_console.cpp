@@ -116,7 +116,9 @@ static RECT calc_caret_rect(HDC hdc, std::wstring text, int max_width, int pos)
 
 static int wrap_text(HDC hdc, std::wstring& text, const RECT* rect)
 {
-    size_t height = 0, curr_width = 0, max_width = rect->right - rect->left;
+    size_t height = 0;
+    size_t curr_width = 0;
+    size_t max_width = rect->right - rect->left;
     wchar_t c;
     SIZE s;
 
@@ -357,7 +359,7 @@ console::output& c_console::c_output::operator<< (const gg::var& v)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    m_text += v.cast<std::string>();
+    m_text += v.to_string();
     m_dirty = true;
     if (m_console != nullptr) m_console->update();
 

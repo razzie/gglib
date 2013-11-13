@@ -14,6 +14,8 @@ int main()
 
     app->get_script_engine()->add_function("exit_program", [&](int exit_code){ app->exit(exit_code); });
 
+    app->get_script_engine()->add_function("echo", [](std::string str) { std::cout << str; });
+
     app->get_script_engine()->add_function("is_integer",
             [](std::string i){ std::cout << (gg::util::is_integer(i) ? "true" : "false"); });
 

@@ -133,7 +133,6 @@ namespace gg
 
         var& operator= (var&& v)
         {
-            //if (m_var != nullptr) { delete m_var; m_var = nullptr; }
             std::swap(m_var, v.m_var);
 
             return *this;
@@ -198,6 +197,13 @@ namespace gg
         view to_stream() const
         {
             return view(*this);
+        }
+
+        std::string to_string() const
+        {
+            std::stringstream ss;
+            ss << to_stream();
+            return ss.str();
         }
 
         const std::type_info& get_type() const

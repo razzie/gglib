@@ -40,6 +40,7 @@ console::controller::exec_result
         recursive_thread_global<console*>::scope invoker(&out.get_console());
         expression e(expr);
         r = m_scripteng->parse_and_exec(expr, out);
+        if (out.is_empty()) out << "[returned: " << r.get().to_stream() << "]";
     }
     catch (expression_error& e)
     {
