@@ -368,7 +368,7 @@ console::output& c_console::c_output::operator<< (const gg::var& v)
     return *this;
 }
 
-std::string c_console::c_output::get_string() const
+std::string c_console::c_output::to_string() const
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
     return m_text;

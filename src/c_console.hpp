@@ -138,7 +138,7 @@ private:
         void valign_bottom();
 
         output& operator<< (const gg::var&);
-        std::string get_string() const;
+        std::string to_string() const;
         bool is_empty() const;
         void erase();
     };
