@@ -252,29 +252,24 @@ bool c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
 
 static void fill_expr_by_sign(expression& e, const expression& sg)
 {
-    while (true)
-    {
-        const std::list<expression::expression_ptr>& e_chld = e.get_children();
-        const std::list<expression::expression_ptr>& sg_chld = sg.get_children();
-        size_t e_chld_size = e_chld.size();
-        size_t sg_chld_size = sg_chld.size();
+    std::list<expression::expression_ptr>& e_chld = e.get_children();
+    const std::list<expression::expression_ptr>& sg_chld = sg.get_children();
 
-        if (e_chld_size < sg_chld_size)
+    size_t e_chld_size = e_chld.size();
+    size_t sg_chld_size = sg_chld.size();
+
+    if (e_chld_size < sg_chld_size)
+    {
+        for (auto it = std::next(sg_chld.begin(), sg_chld_size - e_chld_size + 1); it != sg_chld.end(); ++it)
         {
-            for (auto it = std::next(sg_chld.begin(), sg_chld_size - e_chld_size + 1); it != sg_chld.end(); ++it)
-            {
-                e.add_child(**it);
-            }
-            break;
+            e.add_child(**it);
         }
-        else if (e_chld_size > sg_chld_size)
+    }
+    else if (e_chld_size > sg_chld_size)
+    {
+        for (auto it = std::next(e_chld.begin(), e_chld_size - sg_chld_size); it != e_chld.end(); ++it)
         {
-            e = expression(e.get_name());
-            continue;
-        }
-        else
-        {
-            break;
+            e.remove_child(it);
         }
     }
 }
@@ -315,7 +310,7 @@ void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
         });
     }
 
-    expr = e.get_expression();
+    if (!e.is_empty()) expr = e.get_expression();
 }
 
 optional<var> c_script_engine::process_expression(const expression& e) const

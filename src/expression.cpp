@@ -307,6 +307,11 @@ const expression* expression::get_parent() const
     return m_parent;
 }
 
+std::list<expression::expression_ptr>& expression::get_children()
+{
+    return m_children;
+}
+
 const std::list<expression::expression_ptr>& expression::get_children() const
 {
     return m_children;
@@ -332,26 +337,17 @@ void expression::set_name(std::string name)
 
 void expression::add_child(expression e)
 {
-    m_children.push_back(expression_ptr( new expression(e) ));
+    expression* expr = new expression(e);
+    expr->m_parent = this;
+    m_children.push_back(expression_ptr( expr ));
 }
 
-void expression::remove_child(std::list<expression_ptr>::iterator pos, expression_ptr* pop)
+void expression::remove_child(std::list<expression_ptr>::iterator& it)
 {
-    if (pos == m_children.end()) return;
+    if (it == m_children.end()) return;
 
-    if ((*pos)->m_parent != nullptr)
-    {
-        for (auto it = (*pos)->m_parent->m_children.begin(); it != (*pos)->m_parent->m_children.end(); ++it)
-        {
-            if (it->get() == pos->get())
-            {
-                if (pop != nullptr) *pop = *it;
-                (*pos)->m_parent->m_children.erase(it);
-                (*pos)->m_parent = nullptr;
-                break;
-            }
-        }
-    }
+    (*it)->m_parent = nullptr;
+    it = std::prev(m_children.erase(it));
 }
 
 void expression::for_each(std::function<void(expression&)> func)

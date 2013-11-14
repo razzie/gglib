@@ -19,7 +19,6 @@ namespace gg
         nulltype get_arg( std::string& args,
             typename std::enable_if<std::is_arithmetic<_T>::value>::type* = 0 )
         {
-            std::cerr << "NUM: " << typeid(T).name() << std::endl;
             args.insert(0, ", 0");
             return {};
         }
@@ -29,7 +28,6 @@ namespace gg
             typename std::enable_if<!std::is_arithmetic<_T>::value
              && !std::is_same<_T, varlist>::value>::type* = 0 )
         {
-            std::cerr << "STR: " << typeid(T).name() << std::endl;
             args.insert(0, ", \"  \"");
             return {};
         }
@@ -38,7 +36,6 @@ namespace gg
         nulltype get_arg( std::string& args,
             typename std::enable_if<std::is_same<_T, varlist>::value>::type* = 0 )
         {
-            std::cerr << "LIST: " << typeid(T).name() << std::endl;
             args.insert(0, ", (  )");
             return {};
         }
@@ -46,7 +43,6 @@ namespace gg
         template<typename... Args>
         std::string get_args()
         {
-            std::cerr << "GETTING ARGS" << std::endl;
             std::string args;
 
             struct { void operator() (...) {} } expand;

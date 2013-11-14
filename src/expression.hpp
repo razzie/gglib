@@ -26,13 +26,14 @@ namespace gg
         std::string get_expression() const;
         expression* get_parent();
         const expression* get_parent() const;
+        std::list<expression_ptr>& get_children();
         const std::list<expression_ptr>& get_children() const;
         bool is_leaf() const;
         bool is_empty() const;
 
         void set_name(std::string name);
         void add_child(expression e);
-        void remove_child(std::list<expression_ptr>::iterator it, expression_ptr* pop = nullptr);
+        void remove_child(std::list<expression_ptr>::iterator& it);
 
         void for_each(std::function<void(expression&)>);
         void for_each(std::function<void(const expression&)>) const;

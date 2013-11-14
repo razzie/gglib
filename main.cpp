@@ -3,6 +3,8 @@
 
 gg::application* app;
 
+int add(int a, int b) { return a + b; }
+
 int main()
 {
     app = gg::application::create_instance("test app", 0, 1);
@@ -16,15 +18,16 @@ int main()
 
     app->get_script_engine()->add_function("echo", [](std::string str) { std::cout << str; });
 
-    app->get_script_engine()->add_function("is_integer", gg::util::is_integer);
+    /*app->get_script_engine()->add_function("is_integer", gg::util::is_integer);
+    app->get_script_engine()->add_function("is_float", gg::util::is_float);*/
 
-    app->get_script_engine()->add_function("is_float", gg::util::is_float);
-
-    /*app->get_script_engine()->add_function("is_integer",
+    app->get_script_engine()->add_function("is_integer",
             [](std::string i){ std::cout << (gg::util::is_integer(i) ? "true" : "false"); });
 
     app->get_script_engine()->add_function("is_float",
-            [](std::string i){ std::cout << (gg::util::is_float(i) ? "true" : "false"); });*/
+            [](std::string i){ std::cout << (gg::util::is_float(i) ? "true" : "false"); });
+
+    app->get_script_engine()->add_function("add", add);
 
     app->get_script_engine()->add_function("sum",
             [](gg::varlist vl)
