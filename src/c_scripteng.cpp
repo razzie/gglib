@@ -44,7 +44,8 @@ console::controller::exec_result
 
         if (r.is_valid() && out.is_empty() && !e.is_leaf())
         {
-            out << "[returned: '" << r.get().to_stream() << "']";
+            //out << "[returned: '" << r.get().to_stream() << "']";
+            out << r.get().to_stream();
         }
     }
     catch (expression_error& e)
