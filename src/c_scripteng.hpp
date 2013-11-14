@@ -22,14 +22,21 @@ namespace gg
             void complete(std::string& expr, console::output&);
         };
 
+        struct function_container
+        {
+            dynamic_function m_func;
+            expression m_sign;
+            //std::string m_args;
+        };
+
         mutable tthread::mutex m_mutex;
-        std::map<std::string, dynamic_function> m_functions;
+        std::map<std::string, function_container> m_functions;
         console_controller* m_ctrl;
 
     public:
         c_script_engine();
         ~c_script_engine();
-        void add_function(std::string fn, dynamic_function func);
+        void add_function(std::string fn, dynamic_function func, std::string args);
         void remove_function(std::string fn);
         optional<var> exec(std::string fn, varlist vl, std::ostream& output = std::cout) const;
         optional<var> exec(std::string fn, varlist vl, console::output& output) const;

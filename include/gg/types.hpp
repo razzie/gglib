@@ -14,6 +14,8 @@ namespace gg
         virtual std::string get_name() const = 0;
     };
 
+    struct nulltype {};
+
     /*struct buffer
     {
         char* m_ptr;

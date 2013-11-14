@@ -38,9 +38,14 @@ console::controller::exec_result
     try
     {
         recursive_thread_global<console*>::scope invoker(&out.get_console());
+
         expression e(expr);
         r = m_scripteng->parse_and_exec(expr, out);
-        if (out.is_empty()) out << "[returned: " << r.get().to_stream() << "]";
+
+        if (r.is_valid() && out.is_empty() && !e.is_leaf())
+        {
+            out << "[returned: '" << r.get().to_stream() << "']";
+        }
     }
     catch (expression_error& e)
     {
@@ -86,14 +91,14 @@ c_script_engine::~c_script_engine()
 {
 }
 
-void c_script_engine::add_function(std::string fn, dynamic_function func)
+void c_script_engine::add_function(std::string fn, dynamic_function func, std::string args)
 {
     if (m_functions.count(fn) == 1)
         throw std::runtime_error("command already registered");
 
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    m_functions.insert( std::make_pair(fn, func) );
+    m_functions.insert( std::make_pair(fn, function_container {func, fn+args}) );
 }
 
 void c_script_engine::remove_function(std::string fn)
@@ -114,7 +119,7 @@ optional<var> c_script_engine::exec(std::string fn, varlist vl, std::ostream& ou
     if (pos != m_functions.end())
     {
         managed_cout::hook h(output);
-        return pos->second(vl);
+        return pos->second.m_func(vl);
     }
 
     return optional<var>();
@@ -128,7 +133,7 @@ optional<var> c_script_engine::exec(std::string fn, varlist vl, console::output&
     if (pos != m_functions.end())
     {
         managed_cout::hook h(output);
-        return pos->second(vl);
+        return pos->second.m_func(vl);
     }
 
     return optional<var>();
@@ -245,6 +250,35 @@ bool c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
     return true;
 }
 
+static void fill_expr_by_sign(expression& e, const expression& sg)
+{
+    while (true)
+    {
+        const std::list<expression::expression_ptr>& e_chld = e.get_children();
+        const std::list<expression::expression_ptr>& sg_chld = sg.get_children();
+        size_t e_chld_size = e_chld.size();
+        size_t sg_chld_size = sg_chld.size();
+
+        if (e_chld_size < sg_chld_size)
+        {
+            for (auto it = std::next(sg_chld.begin(), sg_chld_size - e_chld_size + 1); it != sg_chld.end(); ++it)
+            {
+                e.add_child(**it);
+            }
+            break;
+        }
+        else if (e_chld_size > sg_chld_size)
+        {
+            e = expression(e.get_name());
+            continue;
+        }
+        else
+        {
+            break;
+        }
+    }
+}
+
 void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
 {
     expression e(expr, true);
@@ -255,9 +289,12 @@ void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
 
         if ( auto_complete(name, print) )
         {
-            //e.set_name(name);
+            e.set_name(name);
             //e.add_child({"\" \""});
-            expr = name + "(  )";
+
+            tthread::lock_guard<tthread::mutex> guard(m_mutex);
+            auto pos = m_functions.find(name);
+            if (pos != m_functions.end()) fill_expr_by_sign(e, pos->second.m_sign);
         }
     }
     else
@@ -270,11 +307,15 @@ void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
                 std::string name = e.get_name();
                 auto_complete(name, print);
                 e.set_name(name);
+
+                tthread::lock_guard<tthread::mutex> guard(m_mutex);
+                auto pos = m_functions.find(name);
+                if (pos != m_functions.end()) fill_expr_by_sign(e, pos->second.m_sign);
             }
         });
-
-        expr = e.get_expression();
     }
+
+    expr = e.get_expression();
 }
 
 optional<var> c_script_engine::process_expression(const expression& e) const
@@ -310,7 +351,7 @@ optional<var> c_script_engine::process_expression(const expression& e) const
         {
             tthread::lock_guard<tthread::mutex> guard(m_mutex);
             auto pos = m_functions.find(name);
-            if (pos != m_functions.end()) return pos->second(vl);
+            if (pos != m_functions.end()) return pos->second.m_func(vl);
         }
     }
 

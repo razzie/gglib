@@ -219,6 +219,8 @@ bool c_console::c_output::is_dirty() const
 
 void c_console::c_output::draw(const render_context* ctx, RECT* bounds, int caret_pos) const
 {
+    if (!m_visible) return;
+
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     if (m_dirty)

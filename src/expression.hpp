@@ -2,7 +2,7 @@
 #define GG_EXPRESSION_HPP_INCLUDED
 
 #include <string>
-#include <vector>
+#include <list>
 #include <memory>
 #include <exception>
 #include "gg/types.hpp"
@@ -15,20 +15,24 @@ namespace gg
         typedef std::shared_ptr<expression> expression_ptr;
 
         expression(std::string expr, bool auto_complete = false);
-        expression(const expression&);
-        expression(expression&&);
+        expression(const expression& e);
+        expression(expression&& e);
         ~expression();
+
+        expression& operator= (const expression& e);
+        expression& operator= (expression&& e);
 
         std::string get_name() const;
         std::string get_expression() const;
         expression* get_parent();
         const expression* get_parent() const;
-        const std::vector<expression_ptr>& get_children() const;
+        const std::list<expression_ptr>& get_children() const;
         bool is_leaf() const;
         bool is_empty() const;
 
         void set_name(std::string name);
         void add_child(expression e);
+        void remove_child(std::list<expression_ptr>::iterator it, expression_ptr* pop = nullptr);
 
         void for_each(std::function<void(expression&)>);
         void for_each(std::function<void(const expression&)>) const;
@@ -47,7 +51,7 @@ namespace gg
     private:
         expression* m_parent;
         std::string m_name;
-        std::vector<expression_ptr> m_children;
+        std::list<expression_ptr> m_children;
     };
 
     class expression_error : public std::exception

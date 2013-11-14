@@ -216,7 +216,7 @@ expression::expression(expression&& e)
  , m_name(std::move(e.m_name))
  , m_children(std::move(e.m_children))
 {
-    if (m_parent)
+    if (m_parent != nullptr)
     {
         std::for_each(m_parent->m_children.begin(), m_parent->m_children.end(),
             [&](expression_ptr child)
@@ -231,6 +231,30 @@ expression::expression(expression&& e)
 
 expression::~expression()
 {
+}
+
+expression& expression::operator= (const expression& e)
+{
+    m_name = e.m_name;
+    m_children.clear();
+    m_children.insert(m_children.begin(), e.m_children.begin(), e.m_children.end());
+
+    return *this;
+}
+
+expression& expression::operator= (expression&& e)
+{
+    m_name = std::move(e.m_name);
+    m_children.clear();
+    m_children = std::move(e.m_children);
+
+    std::for_each(e.m_children.begin(), e.m_children.end(),
+        [&](expression_ptr child)
+        {
+            child->m_parent = this;
+        });
+
+    return *this;
 }
 
 void expression::print(uint32_t level, std::ostream& o) const
@@ -267,7 +291,7 @@ void expression::get_expression(std::string& expr) const
         for (; it != end; ++it)
         {
             (*it)->get_expression(expr);
-            if ((it + 1) != end) expr += ", ";
+            if (std::next(it, 1) != end) expr += ", ";
         }
         expr += ')';
     }
@@ -283,7 +307,7 @@ const expression* expression::get_parent() const
     return m_parent;
 }
 
-const std::vector<expression::expression_ptr>& expression::get_children() const
+const std::list<expression::expression_ptr>& expression::get_children() const
 {
     return m_children;
 }
@@ -309,6 +333,25 @@ void expression::set_name(std::string name)
 void expression::add_child(expression e)
 {
     m_children.push_back(expression_ptr( new expression(e) ));
+}
+
+void expression::remove_child(std::list<expression_ptr>::iterator pos, expression_ptr* pop)
+{
+    if (pos == m_children.end()) return;
+
+    if ((*pos)->m_parent != nullptr)
+    {
+        for (auto it = (*pos)->m_parent->m_children.begin(); it != (*pos)->m_parent->m_children.end(); ++it)
+        {
+            if (it->get() == pos->get())
+            {
+                if (pop != nullptr) *pop = *it;
+                (*pos)->m_parent->m_children.erase(it);
+                (*pos)->m_parent = nullptr;
+                break;
+            }
+        }
+    }
 }
 
 void expression::for_each(std::function<void(expression&)> func)
