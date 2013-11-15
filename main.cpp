@@ -49,17 +49,17 @@ int main()
             });*/
 
 
-    gg::thread* thr = app->get_task_manager()->create_thread("test thread");
+    /*gg::thread* thr = app->get_task_manager()->create_thread("test thread");
 
     gg::task* t = app->get_task_manager()->create_task(
                         [&] {
-                            /*std::cerr << "checking console for being opened... "
-                                << (con->is_opened() ? "true" : "false") << std::endl;*/
+                            //std::cerr << "checking console for being opened... "
+                            //    << (con->is_opened() ? "true" : "false") << std::endl;
                             if (!con->is_opened()) con->open();
                             thr->add_delayed_task(grab(t), 3000);
                         });
 
-    thr->add_task(grab(t));
+    thr->add_task(grab(t));*/
 
     return app->start();
 }

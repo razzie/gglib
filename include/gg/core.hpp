@@ -158,33 +158,37 @@ namespace gg
 
     class typeinfo
     {
-        const std::type_info& m_type;
+        const std::type_info* m_type;
 
     public:
         typeinfo(const std::type_info&);
         typeinfo(const typeinfo&);
-        //typeinfo& operator= (const typeinfo&) = delete;
+        typeinfo& operator= (const typeinfo&);
         ~typeinfo();
-        std::string name() const;
+
         bool operator== (const typeinfo&) const;
         bool operator!= (const typeinfo&) const;
         bool operator<  (const typeinfo&) const;
         bool operator<= (const typeinfo&) const;
         bool operator>  (const typeinfo&) const;
         bool operator>= (const typeinfo&) const;
-    };
 
-    namespace sfinae
-    {
-        template<typename T> T& lvalue_of_type();
-        template<typename T> T  rvalue_of_type();
-
-        class yes { char c[1]; };
-        class no  { char c[2]; };
+        std::string name() const;
+        static std::string name_of(const std::type_info&);
     };
 
     namespace meta
     {
+        namespace sfinae
+        {
+            class yes { char c[1]; };
+            class no  { char c[2]; };
+        };
+
+        template<typename T> T& lvalue_of_type();
+        template<typename T> T  rvalue_of_type();
+
+
         template<typename T>
         struct remove_class { };
 
@@ -223,7 +227,7 @@ namespace gg
         {
             template<typename U>
             static sfinae::yes test(char(*)[sizeof(
-                sfinae::lvalue_of_type<std::ostream>() << sfinae::rvalue_of_type<U>()
+                lvalue_of_type<std::ostream>() << rvalue_of_type<U>()
             )]);
 
             template<typename U>
@@ -239,7 +243,7 @@ namespace gg
         {
             template<typename U>
             static sfinae::yes test(char(*)[sizeof(
-                sfinae::lvalue_of_type<std::istream>() >> sfinae::lvalue_of_type<U>()
+                lvalue_of_type<std::istream>() >> lvalue_of_type<U>()
             )]);
 
             template<typename U>
