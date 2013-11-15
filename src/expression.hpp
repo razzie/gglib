@@ -1,11 +1,8 @@
 #ifndef GG_EXPRESSION_HPP_INCLUDED
 #define GG_EXPRESSION_HPP_INCLUDED
 
-#include <string>
-#include <list>
 #include <memory>
-#include <exception>
-#include "gg/types.hpp"
+#include "gg/core.hpp"
 
 namespace gg
 {

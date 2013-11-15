@@ -1,21 +1,12 @@
 #ifndef GG_UTIL_HPP_INCLUDED
 #define GG_UTIL_HPP_INCLUDED
 
-#include <iostream>
-#include <sstream>
-#include <locale>
-#include <functional>
-#include <type_traits>
-#include <stdexcept>
-#include "gg/types.hpp"
+#include "gg/core.hpp"
 
 namespace gg
 {
 namespace util
 {
-    /*
-     * string related helpers
-     */
     std::string trim(std::string, std::locale = std::locale());
     std::wstring trim(std::wstring, std::locale = std::locale());
 
@@ -25,13 +16,9 @@ namespace util
     bool is_integer(std::string);
     bool is_float(std::string);
     bool is_numeric(std::string);
-
     bool contains_space(std::string);
 
 
-    /*
-     * automated function call when the scope ends
-     */
     class on_return
     {
         std::function<void()> m_func;
@@ -44,52 +31,10 @@ namespace util
     };
 
 
-    /*
-     * remove class of member function pointer
-     */
-    template<typename T>
-    struct remove_class { };
-
-    template<typename C, typename R, typename... Args>
-    struct remove_class<R(C::*)(Args...)> { using type = R(Args...); };
-
-    template<typename C, typename R, typename... Args>
-    struct remove_class<R(C::*)(Args...) const> { using type = R(Args...); };
-
-    template<typename C, typename R, typename... Args>
-    struct remove_class<R(C::*)(Args...) volatile> { using type = R(Args...); };
-
-    template<typename C, typename R, typename... Args>
-    struct remove_class<R(C::*)(Args...) const volatile> { using type = R(Args...); };
-
-
-    /*
-     * get signature of lambda
-     */
-    template<typename T>
-    struct get_signature_impl { using type = typename remove_class<
-        decltype(&std::remove_reference<T>::type::operator())>::type; };
-
-    template<typename R, typename... Args>
-    struct get_signature_impl<R(Args...)> { using type = R(Args...); };
-
-    template<typename R, typename... Args>
-    struct get_signature_impl<R(&)(Args...)> { using type = R(Args...); };
-
-    template<typename R, typename... Args>
-    struct get_signature_impl<R(*)(Args...)> { using type = R(Args...); };
-
-    template<typename T>
-    using get_signature = typename get_signature_impl<T>::type;
-
-
-    /*
-     * make_function
-     */
     template<typename F>
-    std::function<get_signature<F>> make_function(F &&f)
+    std::function<meta::get_signature<F>> make_function(F &&f)
     {
-        return std::function<get_signature<F>>( std::forward<F>(f) );
+        return std::function<meta::get_signature<F>>( std::forward<F>(f) );
     }
 
     template<typename R>
@@ -104,112 +49,68 @@ namespace util
         return std::function<R(Args...)> (func);
     }
 
+    typedef std::function<var(varlist)> dynamic_function;
 
-    /*
-     * SFINAE helpers
-     */
-    namespace sfinae
+    template<typename R, typename... Args>
+    R call_function(std::function<R(Args...)> func, varlist vl);
+
+    template<typename R>
+    R call_function(std::function<R()> func, varlist vl)
     {
-        template<typename T> T& lvalue_of_type();
-        template<typename T> T  rvalue_of_type();
+        if (vl.size() > 0)
+            throw std::runtime_error("too long argument list");
 
-        class yes { char c[1]; };
-        class no  { char c[2]; };
+        return func();
     }
 
-
-    /*
-     * ostream insertion helpers
-     */
-    template<typename T>
-    struct has_insert_op
+    template<typename R, typename Arg0, typename... Args>
+    R call_function(std::function<R(Arg0, Args...)> func, varlist vl)
     {
-        template<typename U>
-        static sfinae::yes test(char(*)[sizeof(
-            sfinae::lvalue_of_type<std::ostream>() << sfinae::rvalue_of_type<U>()
-        )]);
+        if (vl.size() == 0)
+            throw std::runtime_error("too short argument list");
 
-        template<typename U>
-        static sfinae::no test(...);
+        Arg0 arg0 = vl[0].cast<Arg0>();
+        vl.erase(vl.begin());
+        std::function<R(Args... args)> lambda =
+            [=](Args... args) -> R { return func(arg0, args...); };
 
-        enum { value = ( sizeof(sfinae::yes) == sizeof(test<T>(0)) ) };
-        typedef std::integral_constant<bool, value> type;
-    };
-
-    template<typename T>
-    void ostream_insert(std::ostream& o, const T& t,
-        typename std::enable_if<has_insert_op<T>::value>::type* = 0)
-    {
-        o << t;
+        return call_function(lambda, vl);
     }
 
-    template<typename T>
-    void ostream_insert(std::ostream& o, const T& t,
-        typename std::enable_if<!has_insert_op<T>::value>::type* = 0)
+    template<typename R, typename... Args>
+    dynamic_function make_dynamic_function(std::function<R(Args...)> stdfunc)
     {
-        o << "???";
-    }
-
-
-    /*
-     * istream extraction helpers
-     */
-    template<typename T>
-    struct has_extract_op
-    {
-        template<typename U>
-        static sfinae::yes test(char(*)[sizeof(
-            sfinae::lvalue_of_type<std::istream>() >> sfinae::lvalue_of_type<U>()
-        )]);
-
-        template<typename U>
-        static sfinae::no test(...);
-
-        enum { value = ( sizeof(sfinae::yes) == sizeof(test<T>(0)) ) };
-        typedef std::integral_constant<bool, value> type;
-    };
-
-    template<typename T>
-    void istream_extract(std::istream& o, T& t,
-        typename std::enable_if<has_extract_op<T>::value>::type* = 0)
-    {
-        o >> t;
-    }
-
-    template<typename T>
-    void istream_extract(std::istream& o, T& t,
-        typename std::enable_if<!has_extract_op<T>::value>::type* = 0)
-    {
-    }
-
-
-    /*
-     * cast utilities
-     */
-    template<typename From, typename To>
-    typename std::enable_if<std::is_convertible<From, To>::value, To>::type
-    cast(const From& from)
-    {
-        return To(from);
-    }
-
-    template<typename From, typename To>
-    typename std::enable_if<!std::is_convertible<From, To>::value, To>::type
-    cast(const From& from)
-    {
-        if (!has_insert_op<From>::value
-            || !has_extract_op<To>::value)
-        {
-            throw std::runtime_error("unable to cast");
-        }
-
-        To result;
-        std::stringstream ss;
-
-        ostream_insert(ss, from);
-        istream_extract(ss, result);
-
+        dynamic_function result =
+            [=](varlist vl) -> var
+            {
+                return var(call_function(stdfunc, vl));
+            };
         return result;
+    }
+
+    template<typename... Args>
+    dynamic_function make_dynamic_function(std::function<void(Args...)> stdfunc)
+    {
+        dynamic_function result =
+            [=](varlist vl) -> var
+            {
+                call_function(stdfunc, vl);
+                return var();
+            };
+        return result;
+    }
+
+    template<typename R, typename... Args>
+    dynamic_function make_dynamic_function(R(*func)(Args...))
+    {
+        std::function<R(Args...)> stdfunc = func;
+        return make_dynamic_function(stdfunc);
+    }
+
+    template<typename F>
+    dynamic_function make_dynamic_function(F&& f)
+    {
+        return make_dynamic_function(make_function(f));
     }
 };
 };

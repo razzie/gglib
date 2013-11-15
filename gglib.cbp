@@ -62,18 +62,14 @@
 		<Unit filename="ext/tinythread++/tinythread.h" />
 		<Unit filename="include/gg/application.hpp" />
 		<Unit filename="include/gg/console.hpp" />
+		<Unit filename="include/gg/core.hpp" />
 		<Unit filename="include/gg/eventmgr.hpp" />
-		<Unit filename="include/gg/optional.hpp" />
-		<Unit filename="include/gg/refcounted.hpp" />
 		<Unit filename="include/gg/scripteng.hpp" />
 		<Unit filename="include/gg/taskmgr.hpp" />
 		<Unit filename="include/gg/timer.hpp" />
-		<Unit filename="include/gg/types.hpp" />
 		<Unit filename="include/gg/util.hpp">
 			<Option weight="60" />
 		</Unit>
-		<Unit filename="include/gg/var.hpp" />
-		<Unit filename="include/gg/varutil.hpp" />
 		<Unit filename="include/gglib.hpp" />
 		<Unit filename="main.cpp" />
 		<Unit filename="src/c_application.cpp" />
@@ -90,13 +86,13 @@
 		<Unit filename="src/c_taskmgr.hpp" />
 		<Unit filename="src/c_timer.cpp" />
 		<Unit filename="src/c_timer.hpp" />
+		<Unit filename="src/core.cpp" />
 		<Unit filename="src/expression.cpp" />
 		<Unit filename="src/expression.hpp" />
 		<Unit filename="src/managed_cout.cpp" />
 		<Unit filename="src/managed_cout.hpp" />
 		<Unit filename="src/threadglobal.hpp" />
 		<Unit filename="src/util.cpp" />
-		<Unit filename="src/var.cpp" />
 		<Extensions>
 			<code_completion />
 			<debugger />

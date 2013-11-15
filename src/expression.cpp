@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <cctype>
 #include "expression.hpp"
 #include "gg/util.hpp"

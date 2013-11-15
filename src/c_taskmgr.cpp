@@ -1,6 +1,3 @@
-#include <iostream>
-#include <functional>
-#include <stdexcept>
 #include "c_taskmgr.hpp"
 
 using namespace gg;

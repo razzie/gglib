@@ -1,10 +1,7 @@
 #ifndef GG_CONSOLE_HPP_INCLUDED
 #define GG_CONSOLE_HPP_INCLUDED
 
-#include <string>
-#include <sstream>
-#include "gg/refcounted.hpp"
-#include "gg/var.hpp"
+#include "gg/core.hpp"
 
 namespace gg
 {

@@ -1,4 +1,3 @@
-#include <algorithm>
 #include "gglib.hpp"
 
 gg::application* app;

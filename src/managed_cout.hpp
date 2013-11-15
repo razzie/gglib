@@ -1,10 +1,8 @@
 #ifndef MANAGED_COUT_HPP_INCLUDED
 #define MANAGED_COUT_HPP_INCLUDED
 
-#include <map>
-#include <vector>
 #include "tinythread.h"
-#include "gg/types.hpp"
+#include "gg/core.hpp"
 #include "gg/console.hpp"
 
 namespace gg

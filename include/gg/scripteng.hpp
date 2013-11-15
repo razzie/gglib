@@ -1,11 +1,8 @@
 #ifndef GG_SCRIPTENG_HPP_INCLUDED
 #define GG_SCRIPTENG_HPP_INCLUDED
 
-#include <iostream>
-#include "gg/types.hpp"
-#include "gg/optional.hpp"
-#include "gg/var.hpp"
-#include "gg/varutil.hpp"
+#include "gg/core.hpp"
+#include "gg/util.hpp"
 #include "gg/console.hpp"
 
 namespace gg
@@ -16,27 +13,11 @@ namespace gg
         virtual ~script_engine() {}
 
         template<typename T, typename _T = typename std::decay<T>::type>
-        nulltype get_arg( std::string& args,
-            typename std::enable_if<std::is_arithmetic<_T>::value>::type* = 0 )
+        nulltype get_arg( std::string& args )
         {
-            args.insert(0, ", 0");
-            return {};
-        }
-
-        template<typename T, typename _T = typename std::decay<T>::type>
-        nulltype get_arg( std::string& args,
-            typename std::enable_if<!std::is_arithmetic<_T>::value
-             && !std::is_same<_T, varlist>::value>::type* = 0 )
-        {
-            args.insert(0, ", \"  \"");
-            return {};
-        }
-
-        template<typename T, typename _T = typename std::decay<T>::type>
-        nulltype get_arg( std::string& args,
-            typename std::enable_if<std::is_same<_T, varlist>::value>::type* = 0 )
-        {
-            args.insert(0, ", (  )");
+            if (std::is_same<_T, varlist>::value) args.insert(0, ",( )");
+            else if (std::is_arithmetic<_T>::value) args.insert(0, ",0");
+            else if (!std::is_arithmetic<_T>::value) args.insert(0, ",\"\"");
             return {};
         }
 
@@ -48,7 +29,7 @@ namespace gg
             struct { void operator() (...) {} } expand;
             expand( get_arg<Args>(args)... );
 
-            args.erase(0, 2);
+            args.erase(args.begin());
             args.insert(args.begin(), '(');
             args.insert(args.end(), ')');
 
@@ -56,7 +37,7 @@ namespace gg
         }
 
     public:
-        virtual void add_function(std::string fn, dynamic_function func, std::string args) = 0;
+        virtual void add_function(std::string fn, util::dynamic_function func, std::string args) = 0;
         virtual void remove_function(std::string fn) = 0;
 
         template<typename R, typename... Args>
@@ -74,7 +55,7 @@ namespace gg
         template<typename F>
         void add_function(std::string fn, F&& func)
         {
-            this->add_function(fn, util::make_dynamic_function(func), get_args<util::get_signature<F>>());
+            this->add_function(fn, util::make_dynamic_function(func), get_args<meta::get_signature<F>>());
         }
 
         virtual optional<var> exec(std::string fn, varlist vl, std::ostream& output = std::cout) const = 0;

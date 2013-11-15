@@ -1,15 +1,12 @@
 #ifndef CCONSOLE_H_INCLUDED
 #define CCONSOLE_H_INCLUDED
 
-#include <iostream>
-#include <sstream>
-#include <list>
 #define _WIN32_WINNT	0x0501
 #define _WIN32_IE       0x0501
 #include <windows.h>
 #include <commctrl.h>
 #include <uxtheme.h>
-#include "gg/types.hpp"
+#include "gg/core.hpp"
 #include "gg/console.hpp"
 #include "c_taskmgr.hpp"
 

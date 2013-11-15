@@ -1,5 +1,4 @@
 #include <stdio.h>
-#include <stdexcept>
 #include "managed_cout.hpp"
 
 using namespace gg;

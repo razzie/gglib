@@ -1,11 +1,8 @@
 #ifndef GG_THREADGLOBAL_HPP_INCLUDED
 #define GG_THREADGLOBAL_HPP_INCLUDED
 
-#include <map>
-#include <vector>
 #include "tinythread.h"
-#include "gg/types.hpp"
-#include "gg/optional.hpp"
+#include "gg/core.hpp"
 
 #define GG_USE_THREAD_GLOBAL(T) \
     template<> tthread::mutex gg::thread_global<T>::sm_mutex{}; \

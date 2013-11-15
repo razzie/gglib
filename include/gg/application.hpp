@@ -1,8 +1,7 @@
 #ifndef GG_APPLICATION_HPP_INCLUDED
 #define GG_APPLICATION_HPP_INCLUDED
 
-#include "gg/types.hpp"
-#include "gg/refcounted.hpp"
+#include "gg/core.hpp"
 
 namespace gg
 {

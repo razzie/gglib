@@ -1,8 +1,6 @@
 #ifndef C_SCRIPTENG_HPP_INCLUDED
 #define C_SCRIPTENG_HPP_INCLUDED
 
-#include <map>
-#include <vector>
 #include "gg/scripteng.hpp"
 #include "expression.hpp"
 #include "tinythread.h"
@@ -24,9 +22,8 @@ namespace gg
 
         struct function_container
         {
-            dynamic_function m_func;
+            util::dynamic_function m_func;
             expression m_sign;
-            //std::string m_args;
         };
 
         mutable tthread::mutex m_mutex;
@@ -36,7 +33,7 @@ namespace gg
     public:
         c_script_engine();
         ~c_script_engine();
-        void add_function(std::string fn, dynamic_function func, std::string args);
+        void add_function(std::string fn, util::dynamic_function func, std::string args);
         void remove_function(std::string fn);
         optional<var> exec(std::string fn, varlist vl, std::ostream& output = std::cout) const;
         optional<var> exec(std::string fn, varlist vl, console::output& output) const;

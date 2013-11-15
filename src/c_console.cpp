@@ -1,7 +1,5 @@
-#include <algorithm>
-#include <vector>
-#include "gg/util.hpp"
 #include "c_console.hpp"
+#include "gg/util.hpp"
 
 using namespace gg;
 

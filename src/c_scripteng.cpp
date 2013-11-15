@@ -1,6 +1,4 @@
 #include <cctype>
-#include <stdexcept>
-#include <algorithm>
 #include "c_scripteng.hpp"
 #include "managed_cout.hpp"
 #include "threadglobal.hpp"
@@ -92,7 +90,7 @@ c_script_engine::~c_script_engine()
 {
 }
 
-void c_script_engine::add_function(std::string fn, dynamic_function func, std::string args)
+void c_script_engine::add_function(std::string fn, util::dynamic_function func, std::string args)
 {
     if (m_functions.count(fn) == 1)
         throw std::runtime_error("command already registered");

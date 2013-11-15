@@ -1,9 +1,7 @@
 #ifndef GG_TASKMGR_HPP_INCLUDED
 #define GG_TASKMGR_HPP_INCLUDED
 
-#include <list>
-#include "gg/types.hpp"
-#include "gg/refcounted.hpp"
+#include "gg/core.hpp"
 
 namespace gg
 {
