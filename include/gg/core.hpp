@@ -175,6 +175,7 @@ namespace gg
 
         std::string name() const;
         static std::string name_of(const std::type_info&);
+        operator const std::type_info& () const;
     };
 
     namespace meta

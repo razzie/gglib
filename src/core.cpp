@@ -112,3 +112,8 @@ std::string typeinfo::name_of(const std::type_info& ti)
 
     return tname;
 }
+
+typeinfo::operator const std::type_info& () const
+{
+    return *m_type;
+}

@@ -3,68 +3,9 @@
 
 using namespace gg;
 
-extern "C"
-{
-    HRESULT WINAPI DwmExtendFrameIntoClientArea(HWND hWnd, const MARGINS *pMarInset);
-    HRESULT WINAPI DwmIsCompositionEnabled(BOOL *pfEnabled);
-    HRESULT WINAPI DwmEnableBlurBehindWindow(HWND hWnd, const DWM_BLURBEHIND *pBlurBehind);
-
-    HRESULT WINAPI DrawThemeTextEx(HTHEME hTheme, HDC hdc, int iPartId, int iStateId, LPCWSTR pszText,
-                                    int iCharCount, DWORD dwFlags, LPRECT pRect, const DTTOPTS *pOptions);
-}
-
-/*HMODULE hDwmAPI;
-HRESULT (WINAPI *DwmExtendFrameIntoClientArea)(HWND hWnd, const MARGINS *pMarInset);
-HRESULT (WINAPI *DwmIsCompositionEnabled)(BOOL *pfEnabled);
-HRESULT (WINAPI *DwmEnableBlurBehindWindow)(HWND hWnd, const DWM_BLURBEHIND *pBlurBehind);
-
-HMODULE hUxtAPI;
-HRESULT (WINAPI *DrawThemeTextEx)(HTHEME hTheme, HDC hdc, int iPartId, int iStateId, LPCWSTR pszText,
-            int iCharCount, DWORD dwFlags, LPRECT pRect, const DTTOPTS *pOptions);
-
-void init() __attribute__((constructor));
-void init()
-{
-    hDwmAPI = LoadLibrary("dwmapi.dll");
-    if (hDwmAPI)
-    {
-        *(FARPROC *)&DwmIsCompositionEnabled      = GetProcAddress(hDwmAPI, "DwmIsCompositionEnabled");
-        *(FARPROC *)&DwmExtendFrameIntoClientArea = GetProcAddress(hDwmAPI, "DwmExtendFrameIntoClientArea");
-        *(FARPROC *)&DwmEnableBlurBehindWindow    = GetProcAddress(hDwmAPI, "DwmEnableBlurBehindWindow");
-    }
-
-    hUxtAPI = LoadLibrary("uxtheme.dll");
-    if (hUxtAPI)
-    {
-        *(FARPROC *)&DrawThemeTextEx = GetProcAddress(hUxtAPI, "DrawThemeTextEx");
-    }
-}*/
-
-bool enable_glass(HWND hWnd)
-{
-    //if(hDwmAPI)
-    //{
-        BOOL bEnabled = FALSE;
-        MARGINS Margins = { -1 };
-        if(SUCCEEDED(DwmIsCompositionEnabled(&bEnabled)) && bEnabled)
-        {
-            if(SUCCEEDED(DwmExtendFrameIntoClientArea(hWnd, &Margins)))
-            {
-                DWM_BLURBEHIND blurBehind = {
-                    DWM_BB_ENABLE | DWM_BB_TRANSITIONONMAXIMIZED,
-                    TRUE, NULL, TRUE,
-                };
-                DwmEnableBlurBehindWindow(hWnd, &blurBehind);
-                return true;
-            }
-        }
-    //}
-    return false;
-}
-
 LRESULT CALLBACK c_console::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    c_console* con = (c_console*)GetWindowLongPtr(hWnd, GWLP_USERDATA);
+    c_console* con = reinterpret_cast<c_console*>(GetWindowLongPtr(hWnd, GWLP_USERDATA));
 
     if (con == NULL)
     {
@@ -76,40 +17,61 @@ LRESULT CALLBACK c_console::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM 
     }
 }
 
-static RECT calc_caret_rect(HDC hdc, std::wstring text, int max_width, int pos)
+static RECT calc_caret_rect(HDC hdc, std::wstring text, int pos = -1, int* line_width = nullptr)
 {
     auto it = text.begin(), end = text.end();
     int curr_pos = 0, curr_width = 0, height = 0;
     wchar_t c;
     SIZE s;
+    RECT caret { 0 };
+    bool caret_initialized = false;
 
-    for (; it != end && (pos == -1 || curr_pos < pos); ++it, ++curr_pos)
+    for (; it != end; ++it, ++curr_pos)
     {
         c = *it;
         GetTextExtentPoint32W(hdc, &c, 1, &s);
-        curr_width += s.cx;
 
         if (c == L'\n')
         {
             height += s.cy;
+            if (pos >= 0 && curr_pos >= pos) break;
             curr_width = 0;
-            --curr_pos;
-            continue;
         }
 
-        if (curr_width >= max_width)
+        if (curr_pos == pos)
         {
-            height += s.cy;
-            curr_width = 0;
+            if (it+1 == end) c = L' ';
+            else c = *(it+2);
+
+            GetTextExtentPoint32W(hdc, &c, 1, &s);
+
+            caret.top = height;
+            caret.bottom = height + s.cy;
+            caret.left = curr_width;
+            caret.right = curr_width + s.cx;
+
+            caret_initialized = true;
         }
+
+        curr_width += s.cx;
     }
 
-    if (it == end) c = L' ';
-    else c = *(it++);
+    if (!caret_initialized)
+    {
+        if (it == end || it+1 == end) c = L' ';
+        else c = *(it+2);
 
-    GetTextExtentPoint32W(hdc, &c, 1, &s);
+        GetTextExtentPoint32W(hdc, &c, 1, &s);
 
-    return {(LONG)curr_width, (LONG)height, (LONG)(curr_width+s.cx), (LONG)(height+s.cy)};
+        caret.top = height;
+        caret.bottom = height + s.cy;
+        caret.left = curr_width;
+        caret.right = curr_width + s.cx;
+    }
+
+    if (line_width != nullptr) *line_width = curr_width;
+
+    return caret;
 }
 
 static int wrap_text(HDC hdc, std::wstring& text, const RECT* rect)
@@ -132,12 +94,12 @@ static int wrap_text(HDC hdc, std::wstring& text, const RECT* rect)
 
         if (curr_width >= max_width)
         {
-            it = text.insert(it, L'\n');
+            it = text.insert(it, '\n');
             height += s.cy;
             curr_width = 0;
         }
 
-        if (c == L'\n')
+        if (c == '\n')
         {
             height += s.cy;
             curr_width = 0;
@@ -270,19 +232,20 @@ void c_console::c_output::draw(const render_context* ctx, RECT* bounds, int care
 
     if (caret_pos >= 0)
     {
-        int h_pos = 0;
-        RECT caret = calc_caret_rect(ctx->secondary, m_wrapped_text, rect.right-rect.left, caret_pos);
+        int line_width = 0, h_offset = 0, v_offset = 0;
+        RECT caret = calc_caret_rect(ctx->secondary, m_wrapped_text, caret_pos, &line_width);
 
-        if (m_align & alignment::H_LEFT)        h_pos = rect.left;
-        else if (m_align & alignment::H_CENTER) h_pos = (rect.right - rect.left) / 2;
-        else if (m_align & alignment::H_RIGHT)  h_pos = rect.right - (rect.left - caret.left);
+        if (m_align & alignment::H_LEFT)        h_offset = rect.left;
+        else if (m_align & alignment::H_CENTER) h_offset = ((rect.right - rect.left) / 2) - (caret.left / 2);
+        else if (m_align & alignment::H_RIGHT)  h_offset = (rect.right - rect.left) - line_width - (caret.right - caret.left);
 
-        caret.top += rect.top;
-        caret.bottom += rect.top;
-        //caret.top += bounds->bottom + 2;
-        //caret.bottom += bounds->bottom + 2;
-        caret.left += h_pos;
-        caret.right += h_pos;
+        v_offset += rect.top;
+
+        // convert relative caret coords to absolute
+        caret.top += v_offset;
+        caret.bottom += v_offset;
+        caret.left += h_offset;
+        caret.right += h_offset;
 
         FrameRect(ctx->secondary, &caret, (HBRUSH)GetStockObject(WHITE_BRUSH));
     }

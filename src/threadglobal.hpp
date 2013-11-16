@@ -1,6 +1,7 @@
 #ifndef GG_THREADGLOBAL_HPP_INCLUDED
 #define GG_THREADGLOBAL_HPP_INCLUDED
 
+#include <stack>
 #include "tinythread.h"
 #include "gg/core.hpp"
 
@@ -10,7 +11,7 @@
 
 #define GG_USE_RECURSIVE_THREAD_GLOBAL(T) \
     template<> tthread::mutex gg::recursive_thread_global<T>::sm_mutex{}; \
-    template<> std::map<tthread::thread::id, std::vector<T>> gg::recursive_thread_global<T>::sm_values{};
+    template<> std::map<tthread::thread::id, std::stack<T>> gg::recursive_thread_global<T>::sm_values{};
 
 namespace gg
 {
@@ -49,7 +50,7 @@ namespace gg
     class recursive_thread_global
     {
         static tthread::mutex sm_mutex;
-        static std::map<tthread::thread::id, std::vector<T>> sm_values;
+        static std::map<tthread::thread::id, std::stack<T>> sm_values;
 
     public:
         recursive_thread_global() = delete;
@@ -58,21 +59,21 @@ namespace gg
         static void begin(T t)
         {
             tthread::lock_guard<tthread::mutex> guard(sm_mutex);
-            sm_values[tthread::this_thread::get_id()].push_back(t);
+            sm_values[tthread::this_thread::get_id()].push(t);
         }
 
         static void end()
         {
             tthread::lock_guard<tthread::mutex> guard(sm_mutex);
-            std::vector<T>& v = sm_values[tthread::this_thread::get_id()];
-            if (!v.empty()) v.pop_back();
+            std::stack<T>& v = sm_values[tthread::this_thread::get_id()];
+            if (!v.empty()) v.pop();
         }
 
         static optional<T> get()
         {
             tthread::lock_guard<tthread::mutex> guard(sm_mutex);
-            std::vector<T>& v = sm_values[tthread::this_thread::get_id()];
-            if (!v.empty()) return v[ v.size() - 1 ];
+            std::stack<T>& v = sm_values[tthread::this_thread::get_id()];
+            if (!v.empty()) return v.top();
             else return optional<T>();
         }
 

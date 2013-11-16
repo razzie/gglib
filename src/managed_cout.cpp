@@ -19,15 +19,15 @@ int managed_cout::managed_buf::overflow(int c)
     tthread::lock_guard<tthread::mutex> guard(mc->m_mutex);
 
     tthread::thread::id tid = tthread::this_thread::get_id();
-    std::vector<callback>& cbvect = mc->m_hooks[tid];
+    std::stack<callback>& cbstack = mc->m_hooks[tid];
 
-    if (cbvect.size() == 0)
+    if (cbstack.empty())
     {
         fputc(c, stdout);
     }
     else
     {
-        managed_cout::callback& cb = cbvect[ cbvect.size()-1 ];
+        managed_cout::callback& cb = cbstack.top();
 
         if (cb.type == managed_cout::callback::STREAM)
         {
@@ -63,7 +63,7 @@ void managed_cout::push_hook(std::ostream& o)
     cb.type = managed_cout::callback::STREAM;
     cb.data.stream = &o;
 
-    m_hooks[tid].push_back( cb );
+    m_hooks[tid].push( cb );
 }
 
 void managed_cout::push_hook(console::output& o)
@@ -75,7 +75,7 @@ void managed_cout::push_hook(console::output& o)
     cb.type = managed_cout::callback::CONSOLE;
     cb.data.console = &o;
 
-    m_hooks[tid].push_back( cb );
+    m_hooks[tid].push( cb );
 }
 
 void managed_cout::pop_hook()
@@ -83,7 +83,7 @@ void managed_cout::pop_hook()
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     tthread::thread::id tid = tthread::this_thread::get_id();
-    m_hooks[tid].pop_back();
+    m_hooks[tid].pop();
 }
 
 managed_cout* managed_cout::get_instance()

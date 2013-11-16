@@ -1,6 +1,7 @@
 #ifndef MANAGED_COUT_HPP_INCLUDED
 #define MANAGED_COUT_HPP_INCLUDED
 
+#include <stack>
 #include "tinythread.h"
 #include "gg/core.hpp"
 #include "gg/console.hpp"
@@ -31,7 +32,7 @@ namespace gg
         tthread::mutex m_mutex;
         std::streambuf* m_cout_rdbuf = nullptr;
         managed_buf* m_own_rdbuf = nullptr;
-        std::map<tthread::thread::id, std::vector<callback>> m_hooks;
+        std::map<tthread::thread::id, std::stack<callback>> m_hooks;
 
     protected:
         managed_cout();
