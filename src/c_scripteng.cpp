@@ -5,12 +5,12 @@
 
 using namespace gg;
 
+static recursive_thread_global<console*> s_invokers;
 
-GG_USE_RECURSIVE_THREAD_GLOBAL(console*)
 
 console* script_engine::get_invoker_console()
 {
-    optional<console*> con = recursive_thread_global<console*>::get();
+    optional<console*> con = s_invokers.get();
     if (con.is_valid()) return con;
     else return nullptr;
 }
@@ -35,7 +35,7 @@ console::controller::exec_result
 
     try
     {
-        recursive_thread_global<console*>::scope invoker(&out.get_console());
+        recursive_thread_global<console*>::scope invoker(&s_invokers, &out.get_console());
 
         expression e(expr);
         r = m_scripteng->parse_and_exec(expr, out);

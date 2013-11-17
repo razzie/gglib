@@ -2,60 +2,30 @@
 #define MANAGED_COUT_HPP_INCLUDED
 
 #include <stack>
-#include "tinythread.h"
 #include "gg/core.hpp"
-#include "gg/console.hpp"
 
 namespace gg
 {
     class managed_cout
     {
-        class managed_buf : public std::streambuf
-        {
-        public:
-            managed_buf();
-            virtual ~managed_buf();
-        protected:
-            virtual int overflow (int c);
-        };
-
-        struct callback
-        {
-            enum { STREAM, CONSOLE } type;
-            union
-            {
-                std::ostream* stream;
-                gg::console::output* console;
-            } data;
-        };
-
-        tthread::mutex m_mutex;
-        std::streambuf* m_cout_rdbuf = nullptr;
-        managed_buf* m_own_rdbuf = nullptr;
-        std::map<tthread::thread::id, std::stack<callback>> m_hooks;
-
-    protected:
-        managed_cout();
-        ~managed_cout();
-        void push_hook(std::ostream&);
-        void push_hook(console::output&);
-        void pop_hook();
+        static void push_hook(std::ostream&);
+        static void pop_hook();
 
     public:
-        static managed_cout* get_instance();
+        managed_cout() = delete;
+        ~managed_cout() = delete;
 
-        void enable();
-        void disable();
-        bool is_enabled() const;
+        static void enable();
+        static void disable();
+        static bool is_enabled();
 
         class hook
         {
         public:
-            hook(std::ostream& o) { managed_cout::get_instance()->push_hook(o); }
-            hook(console::output& o) { managed_cout::get_instance()->push_hook(o); }
+            hook(std::ostream& o) { managed_cout::push_hook(o); }
             hook(const hook&) = delete;
             hook(hook&&) = delete;
-            ~hook() { managed_cout::get_instance()->pop_hook(); }
+            ~hook() { managed_cout::pop_hook(); }
         };
     };
 };

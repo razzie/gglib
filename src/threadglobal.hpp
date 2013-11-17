@@ -5,39 +5,31 @@
 #include "tinythread.h"
 #include "gg/core.hpp"
 
-#define GG_USE_THREAD_GLOBAL(T) \
-    template<> tthread::mutex gg::thread_global<T>::sm_mutex{}; \
-    template<> std::map<tthread::thread::id, T> gg::thread_global<T>::sm_value{};
-
-#define GG_USE_RECURSIVE_THREAD_GLOBAL(T) \
-    template<> tthread::mutex gg::recursive_thread_global<T>::sm_mutex{}; \
-    template<> std::map<tthread::thread::id, std::stack<T>> gg::recursive_thread_global<T>::sm_values{};
-
 namespace gg
 {
     template<typename T>
     class thread_global
     {
-        static tthread::mutex sm_mutex;
-        static std::map<tthread::thread::id, T> sm_value;
+        tthread::mutex sm_mutex;
+        std::map<tthread::thread::id, T> sm_value;
 
     public:
-        thread_global() = delete;
-        ~thread_global() = delete;
+        thread_global() = default;
+        ~thread_global() = default;
 
-        static void set(T t)
+        void set(T t)
         {
             tthread::lock_guard<tthread::mutex> guard(sm_mutex);
             sm_value[tthread::this_thread::get_id()] = t;
         }
 
-        static void unset()
+        void unset()
         {
             tthread::lock_guard<tthread::mutex> guard(sm_mutex);
             sm_value.erase(tthread::this_thread::get_id());
         }
 
-        static optional<T> get()
+        optional<T> get()
         {
             tthread::lock_guard<tthread::mutex> guard(sm_mutex);
             auto pos = sm_value.find(tthread::this_thread::get_id());
@@ -49,27 +41,27 @@ namespace gg
     template<typename T>
     class recursive_thread_global
     {
-        static tthread::mutex sm_mutex;
-        static std::map<tthread::thread::id, std::stack<T>> sm_values;
+        tthread::mutex sm_mutex;
+        std::map<tthread::thread::id, std::stack<T>> sm_values;
 
     public:
-        recursive_thread_global() = delete;
-        ~recursive_thread_global() = delete;
+        recursive_thread_global() = default;
+        ~recursive_thread_global() = default;
 
-        static void begin(T t)
+        void begin(T t)
         {
             tthread::lock_guard<tthread::mutex> guard(sm_mutex);
             sm_values[tthread::this_thread::get_id()].push(t);
         }
 
-        static void end()
+        void end()
         {
             tthread::lock_guard<tthread::mutex> guard(sm_mutex);
             std::stack<T>& v = sm_values[tthread::this_thread::get_id()];
             if (!v.empty()) v.pop();
         }
 
-        static optional<T> get()
+        optional<T> get()
         {
             tthread::lock_guard<tthread::mutex> guard(sm_mutex);
             std::stack<T>& v = sm_values[tthread::this_thread::get_id()];
@@ -79,11 +71,13 @@ namespace gg
 
         class scope
         {
+            recursive_thread_global* m_ptr;
+
         public:
-            scope(T t) { begin(t); }
+            scope(recursive_thread_global* ptr, T t) : m_ptr(ptr) { m_ptr->begin(t); }
             scope(const scope&) = delete;
             scope(scope&&) = delete;
-            ~scope() { end(); }
+            ~scope() { m_ptr->end(); }
         };
     };
 };

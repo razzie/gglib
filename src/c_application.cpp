@@ -18,7 +18,7 @@ c_application::c_application(std::string name, uint32_t ver_major, uint32_t ver_
 {
     setlocale(LC_ALL, "");
 
-    try { managed_cout::get_instance()->enable(); } catch(...) {};
+    try { managed_cout::enable(); } catch(...) {};
 
     m_eventmgr = new c_event_manager();
     m_taskmgr = new c_task_manager();
