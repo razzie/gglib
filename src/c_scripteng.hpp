@@ -24,6 +24,7 @@ namespace gg
         {
             util::dynamic_function m_func;
             expression m_sign;
+            bool m_is_hidden;
         };
 
         mutable tthread::mutex m_mutex;
@@ -33,12 +34,10 @@ namespace gg
     public:
         c_script_engine();
         ~c_script_engine();
-        void add_function(std::string fn, util::dynamic_function func, std::string args);
+        void add_function(std::string fn, util::dynamic_function func, std::string args, bool hidden = false);
         void remove_function(std::string fn);
         optional<var> exec(std::string fn, varlist vl, std::ostream& output = std::cout) const;
-        optional<var> exec(std::string fn, varlist vl, console::output& output) const;
         optional<var> parse_and_exec(std::string expr, std::ostream& output = std::cout) const;
-        optional<var> parse_and_exec(std::string expr, console::output& output) const;
         console::controller* get_console_controller() const;
 
     private:

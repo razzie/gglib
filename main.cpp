@@ -25,21 +25,18 @@ int main()
 
     app->get_script_engine()->add_function("exit_program", [&](int exit_code){ app->exit(exit_code); });
 
-    app->get_script_engine()->add_function("echo", [](std::string str) { std::cout << str; });
-
-    app->get_script_engine()->add_function("is_integer", gg::util::is_integer<char>);
-    app->get_script_engine()->add_function("is_float", gg::util::is_float<char>);
+    app->get_script_engine()->add_function("echo", [](std::string str) { return str; }, true);
 
     app->get_script_engine()->add_function("add", add);
     app->get_script_engine()->add_function("sum", sum);
 
-    /*app->get_script_engine()->add_function("is_integer",
-            [](std::string i){ std::cout << (gg::util::is_integer(i) ? "true" : "false"); });
+    app->get_script_engine()->add_function("is_integer",
+            [](std::string i){ return (gg::util::is_integer(i) ? "true" : "false"); });
 
     app->get_script_engine()->add_function("is_float",
-            [](std::string i){ std::cout << (gg::util::is_float(i) ? "true" : "false"); });
+            [](std::string i){ return (gg::util::is_float(i) ? "true" : "false"); });
 
-    app->get_script_engine()->add_function("sum",
+    /*app->get_script_engine()->add_function("sum",
             [](gg::varlist vl)
             {
                 int sum = 0;

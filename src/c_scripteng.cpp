@@ -42,7 +42,6 @@ console::controller::exec_result
 
         if (r.is_valid() && out.is_empty() && !e.is_leaf())
         {
-            //out << "[returned: '" << r.get().to_stream() << "']";
             out << r.get().to_stream();
         }
     }
@@ -90,14 +89,14 @@ c_script_engine::~c_script_engine()
 {
 }
 
-void c_script_engine::add_function(std::string fn, util::dynamic_function func, std::string args)
+void c_script_engine::add_function(std::string fn, util::dynamic_function func, std::string args, bool hidden)
 {
     if (m_functions.count(fn) == 1)
         throw std::runtime_error("command already registered");
 
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    m_functions.insert( std::make_pair(fn, function_container {func, fn+args}) );
+    m_functions.insert( std::make_pair(fn, function_container {func, fn+args, hidden}) );
 }
 
 void c_script_engine::remove_function(std::string fn)
@@ -124,27 +123,7 @@ optional<var> c_script_engine::exec(std::string fn, varlist vl, std::ostream& ou
     return optional<var>();
 }
 
-optional<var> c_script_engine::exec(std::string fn, varlist vl, console::output& output) const
-{
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-    auto pos = m_functions.find(fn);
-    if (pos != m_functions.end())
-    {
-        managed_cout::hook h(output);
-        return pos->second.m_func(vl);
-    }
-
-    return optional<var>();
-}
-
 optional<var> c_script_engine::parse_and_exec(std::string expr, std::ostream& output) const
-{
-    managed_cout::hook h(output);
-    return process_expression(expr);
-}
-
-optional<var> c_script_engine::parse_and_exec(std::string expr, console::output& output) const
 {
     managed_cout::hook h(output);
     return process_expression(expr);
@@ -180,6 +159,9 @@ std::vector<std::string> c_script_engine::find_matching_functions(std::string fn
 
     for (; it != end; ++it)
     {
+        if (it->second.m_is_hidden)
+            continue;
+
         if (it->first.compare(0, len, fn) == 0)
             matches.push_back(it->first);
     }
