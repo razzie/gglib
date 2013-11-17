@@ -111,7 +111,8 @@ static int wrap_text(HDC hdc, std::wstring& text, const RECT* rect)
 
 
 c_console::c_output::c_output(c_output&& o)
- : m_console(o.m_console)
+ : std::ostream(this)
+ , m_console(o.m_console)
  , m_text(std::move(o.m_text))
  , m_color(o.m_color)
  , m_align(o.m_align)
@@ -121,7 +122,8 @@ c_console::c_output::c_output(c_output&& o)
 }
 
 c_console::c_output::c_output(c_console* con)
- : m_console(con)
+ : std::ostream(this)
+ , m_console(con)
  , m_color({0,0,0})
  , m_align(alignment::H_LEFT | alignment::V_BOTTOM)
  , m_visible(true)
@@ -130,7 +132,8 @@ c_console::c_output::c_output(c_console* con)
 }
 
 c_console::c_output::c_output(c_console* con, gg::color c, int align, bool visible)
- : m_console(con)
+ : std::ostream(this)
+ , m_console(con)
  , m_color(c)
  , m_align(align)
  , m_visible(visible)
@@ -318,15 +321,15 @@ void c_console::c_output::valign_bottom()
     m_align |= alignment::V_BOTTOM;
 }
 
-console::output& c_console::c_output::operator<< (const gg::var& v)
+int c_console::c_output::overflow(int c)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    m_text += v.to_string();
+    m_text.push_back(c);
     m_dirty = true;
     if (m_console != nullptr) m_console->update();
 
-    return *this;
+    return c;
 }
 
 std::string c_console::c_output::to_string() const

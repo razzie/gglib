@@ -8,7 +8,7 @@ namespace gg
     class console : public reference_counted
     {
     public:
-        class output : public reference_counted
+        class output : public reference_counted, public virtual std::ostream
         {
         public:
             virtual ~output() {}
@@ -21,7 +21,6 @@ namespace gg
             virtual void align_center() = 0;
             virtual void align_right() = 0;
             virtual bool is_empty() const = 0;
-            virtual output& operator<< (const gg::var&) = 0;
             virtual std::string to_string() const = 0;
         };
 

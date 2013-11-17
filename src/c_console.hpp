@@ -38,7 +38,7 @@ private:
         V_BOTTOM = 0x0020
     };
 
-    class c_output : public output
+    class c_output : public output, public std::streambuf
     {
         friend class c_console;
 
@@ -76,10 +76,13 @@ private:
         void valign_center();
         void valign_bottom();
 
-        output& operator<< (const gg::var&);
         std::string to_string() const;
         bool is_empty() const;
         void erase();
+
+    protected:
+        // inherited from std::streambuf
+        virtual int overflow (int c =  std::char_traits<char>::eof());
     };
 
     class main_task : public task
