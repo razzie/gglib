@@ -40,6 +40,10 @@ namespace gg
         };
 
         virtual ~console() {};
+        virtual void set_controller(controller* ctrl) = 0;
+        virtual controller* get_controller() const = 0;
+        virtual void set_name(std::string name) = 0;
+        virtual std::string get_name() const = 0;
         virtual void open() = 0;
         virtual void close() = 0;
         virtual bool is_opened() const = 0;

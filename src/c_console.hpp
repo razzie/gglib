@@ -95,6 +95,7 @@ private:
         main_task(main_task&&) = delete;
         ~main_task();
         bool run(uint32_t unused);
+        std::string get_name() const;
     };
 
     class cmd_async_exec_task : public task
@@ -114,6 +115,7 @@ private:
                             c_thread* t);
         ~cmd_async_exec_task();
         bool run(uint32_t);
+        std::string get_name() const;
     };
 
 /* private variables */
@@ -121,6 +123,8 @@ private:
     tthread::recursive_mutex m_mutex;
     std::string m_name;
 	bool m_open;
+	bool m_welcome;
+	c_output m_welcome_text;
 	std::list<c_output*> m_outp;
 	std::string m_cmd;
 	std::string::iterator m_cmd_pos;
@@ -149,12 +153,14 @@ private:
 
 /* public functions */
 public:
-    c_console(std::string name, controller* ctrl);
+    c_console(std::string name, controller* ctrl, std::string welcome_text = "");
     c_console(const c_console&) = delete;
     c_console(c_console&&) = delete;
     ~c_console();
     void set_controller(controller* ctrl);
     controller* get_controller() const;
+    void set_name(std::string name);
+    std::string get_name() const;
     void open();
     void close();
     bool is_opened() const;

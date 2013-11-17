@@ -27,8 +27,8 @@ int main()
 
     app->get_script_engine()->add_function("echo", [](std::string str) { std::cout << str; });
 
-    app->get_script_engine()->add_function("is_integer", gg::util::is_integer);
-    app->get_script_engine()->add_function("is_float", gg::util::is_float);
+    app->get_script_engine()->add_function("is_integer", gg::util::is_integer<char>);
+    app->get_script_engine()->add_function("is_float", gg::util::is_float<char>);
 
     app->get_script_engine()->add_function("add", add);
     app->get_script_engine()->add_function("sum", sum);

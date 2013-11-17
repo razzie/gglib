@@ -67,7 +67,9 @@ script_engine* c_application::get_script_engine()
 
 console* c_application::create_console()
 {
-    return new c_console(m_name, auto_drop<console::controller>( m_scripteng->get_console_controller() ));
+    return new c_console(m_name,
+                         auto_drop<console::controller>( m_scripteng->get_console_controller() ),
+                         "Press TAB to list available commands");
 }
 
 console* c_application::create_console(std::string name)

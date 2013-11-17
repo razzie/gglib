@@ -188,7 +188,7 @@ void c_console::c_output::draw(const render_context* ctx, RECT* bounds, int care
 
     if (m_dirty)
     {
-        m_wrapped_text = util::widen(m_text);
+        m_wrapped_text = util::convert_string<char, wchar_t>(m_text);
         m_last_height = wrap_text(ctx->secondary, m_wrapped_text, bounds);
     }
 
@@ -351,9 +351,11 @@ void c_console::c_output::erase()
 }
 
 
-c_console::c_console(std::string name, controller* ctrl)
+c_console::c_console(std::string name, controller* ctrl, std::string welcome_text)
  : m_name(name)
  , m_open(false)
+ , m_welcome(true)
+ , m_welcome_text(nullptr)
  , m_cmd_pos(m_cmd.end())
  , m_cmd_history_pos(m_cmd_history.end())
  , m_ctrl(ctrl)
@@ -382,6 +384,10 @@ c_console::c_console(std::string name, controller* ctrl)
 
 	//if(!RegisterClassEx(&m_wndClassEx)) return;
     RegisterClassEx(&m_wndClassEx);
+
+    m_welcome_text << welcome_text;
+    m_welcome_text.align_center();
+    m_welcome_text.valign_center();
 }
 
 c_console::~c_console()
@@ -402,6 +408,19 @@ void c_console::set_controller(controller* ctrl)
 console::controller* c_console::get_controller() const
 {
     return m_ctrl;
+}
+
+void c_console::set_name(std::string name)
+{
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+
+    m_name = name;
+    if (m_open) SetWindowText(m_hWnd, TEXT(m_name.c_str()));
+}
+
+std::string c_console::get_name() const
+{
+    return m_name;
 }
 
 void c_console::open()
@@ -605,6 +624,7 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
             break;
 
         case WM_KEYDOWN:
+            m_welcome = false;
             switch (wParam)
             {
                 case VK_LEFT:
@@ -723,6 +743,12 @@ void c_console::paint(const render_context* ctx)
 {
     RECT bounds = ctx->wndrect;
 
+    if (m_welcome)
+    {
+        m_welcome_text.draw(ctx, &bounds);
+        return;
+    }
+
     c_output cmd(nullptr);
     cmd << m_cmd;
     cmd.draw(ctx, &bounds, std::distance(m_cmd.begin(), m_cmd_pos));
@@ -799,6 +825,11 @@ bool c_console::main_task::run(uint32_t)
     return !m_con->run();
 }
 
+std::string c_console::main_task::get_name() const
+{
+    return std::string("console main task: ") + m_con->get_name();
+}
+
 
 c_console::cmd_async_exec_task::cmd_async_exec_task(
     std::string cmd,
@@ -851,4 +882,9 @@ bool c_console::cmd_async_exec_task::run(uint32_t)
 
     delete m_thread;
     return true;
+}
+
+std::string c_console::cmd_async_exec_task::get_name() const
+{
+    return std::string("command async execution task: ") + m_con->get_name();
 }
