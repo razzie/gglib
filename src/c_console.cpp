@@ -482,11 +482,19 @@ void c_console::async_close()
     DeleteObject(m_hFont);
     CloseThemeData(m_hTheme);
     DestroyWindow(m_hWnd);
+
+    if (m_close_cb) m_close_cb(this);
 }
 
 bool c_console::is_opened() const
 {
     return m_open;
+}
+
+void c_console::on_close(std::function<void(console*)> callback)
+{
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    m_close_cb = callback;
 }
 
 bool c_console::run()
@@ -519,6 +527,8 @@ console::output* c_console::create_output()
     c_output* out = new c_output(this);
     out->grab();
     m_outp.push_back(out);
+
+    m_welcome = false;
 
     return out;
 }

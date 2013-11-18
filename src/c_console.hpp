@@ -132,6 +132,7 @@ private:
 	std::vector<std::string>::iterator m_cmd_history_pos;
 	controller* m_ctrl;
 	c_thread* m_thread;
+	std::function<void(console*)> m_close_cb;
     HINSTANCE m_hInst;
     WNDCLASSEX m_wndClassEx;
 	HWND m_hWnd;
@@ -164,6 +165,7 @@ public:
     void open();
     void close();
     bool is_opened() const;
+    void on_close(std::function<void(console*)> callback);
     bool run();
 	void update();
     output* create_output();
