@@ -14,6 +14,11 @@ int sum(gg::varlist vl)
     return sum;
 }
 
+void exit_program(int exit_code)
+{
+    gg::script_engine::get_invoker_console()->get_app()->exit(exit_code);
+}
+
 int main()
 {
     app = gg::application::create_instance("test app", 0, 1);
@@ -23,7 +28,7 @@ int main()
     con->open();
 
 
-    app->get_script_engine()->add_function("exit_program", [&](int exit_code){ app->exit(exit_code); });
+    app->get_script_engine()->add_function("exit_program", exit_program);
 
     app->get_script_engine()->add_function("echo", [](std::string str) { return str; }, true);
 
