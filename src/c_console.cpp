@@ -351,8 +351,10 @@ void c_console::c_output::erase()
 }
 
 
-c_console::c_console(std::string name, controller* ctrl, std::string welcome_text)
- : m_name(name)
+c_console::c_console(application* app, std::string name,
+                     controller* ctrl, std::string welcome_text)
+ : m_app(app)
+ , m_name(name)
  , m_open(false)
  , m_welcome(true)
  , m_welcome_text(nullptr)
@@ -395,6 +397,11 @@ c_console::~c_console()
     if (m_open) close();
     if (m_ctrl != nullptr) m_ctrl->drop();
     clear();
+}
+
+application* c_console::get_app() const
+{
+    return m_app;
 }
 
 void c_console::set_controller(controller* ctrl)

@@ -25,7 +25,7 @@ namespace gg
         virtual task_manager*  get_task_manager() = 0;
         virtual script_engine* get_script_engine() = 0;
         virtual console*       create_console() = 0;
-        virtual console*       create_console(std::string name) = 0;
+        virtual console*       create_console(std::string name, std::string welcome_text) = 0;
         virtual timer*         create_timer() = 0;
 
         virtual int  start() = 0;

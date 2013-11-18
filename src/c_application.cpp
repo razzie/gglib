@@ -20,9 +20,9 @@ c_application::c_application(std::string name, uint32_t ver_major, uint32_t ver_
 
     try { managed_cout::enable(); } catch(...) {};
 
-    m_eventmgr = new c_event_manager();
-    m_taskmgr = new c_task_manager();
-    m_scripteng = new c_script_engine();
+    m_eventmgr = new c_event_manager(this);
+    m_taskmgr = new c_task_manager(this);
+    m_scripteng = new c_script_engine(this);
 }
 
 c_application::~c_application()
@@ -67,14 +67,14 @@ script_engine* c_application::get_script_engine()
 
 console* c_application::create_console()
 {
-    return new c_console(m_name,
+    return new c_console(this, m_name,
                          auto_drop<console::controller>( m_scripteng->get_console_controller() ),
                          "Press TAB to list available commands");
 }
 
-console* c_application::create_console(std::string name)
+console* c_application::create_console(std::string name, std::string welcome_text)
 {
-    return new c_console(name, nullptr);
+    return new c_console(this, name, nullptr, welcome_text);
 }
 
 timer* c_application::create_timer()

@@ -36,7 +36,7 @@ namespace gg
         task_manager*  get_task_manager();
         script_engine* get_script_engine();
         console*       create_console();
-        console*       create_console(std::string name);
+        console*       create_console(std::string name, std::string welcome_text);
         timer*         create_timer();
 
         int  start();

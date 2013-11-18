@@ -30,12 +30,15 @@ namespace gg
 
     class c_event_manager : public event_manager
     {
+        mutable tthread::mutex m_mutex;
+        mutable application* m_app;
         std::map<std::string, c_event_type> m_evt_types;
         c_thread m_thread;
 
     public:
-        c_event_manager();
+        c_event_manager(application* app);
         ~c_event_manager();
+        application* get_app() const;
         c_event_type* create_event_type(std::string name);
         c_event_type* get_event_type(std::string name);
         event_listener* create_event_listener(event_callback) const;

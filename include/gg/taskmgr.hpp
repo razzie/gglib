@@ -5,6 +5,8 @@
 
 namespace gg
 {
+    class application;
+
     class task : public reference_counted
     {
         std::string m_name;
@@ -42,9 +44,9 @@ namespace gg
         virtual ~task_manager() {}
 
     public:
+        virtual application* get_app() const = 0;
         virtual thread* create_thread(std::string name) = 0;
         virtual thread* get_thread(std::string name) = 0;
-
         virtual task* create_wait_task(uint32_t wait_ms) const = 0;
         virtual task* create_periodic_task(std::function<bool(uint32_t)> func) const = 0;
         virtual task* create_periodic_task(std::function<bool()> func) const = 0;

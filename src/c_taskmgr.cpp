@@ -179,7 +179,8 @@ void c_thread::mainloop()
     }
 }
 
-c_task_manager::c_task_manager()
+c_task_manager::c_task_manager(application* app)
+ : m_app(app)
 {
 }
 
@@ -197,6 +198,11 @@ c_task_manager::~c_task_manager()
 
         it = m_threads.erase(it);
     }
+}
+
+application* c_task_manager::get_app() const
+{
+    return m_app;
 }
 
 gg::thread* c_task_manager::create_thread(std::string name)

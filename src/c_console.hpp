@@ -120,7 +120,8 @@ private:
 
 /* private variables */
 private:
-    tthread::recursive_mutex m_mutex;
+    mutable tthread::recursive_mutex m_mutex;
+    mutable application* m_app;
     std::string m_name;
 	bool m_open;
 	bool m_welcome;
@@ -154,10 +155,12 @@ private:
 
 /* public functions */
 public:
-    c_console(std::string name, controller* ctrl, std::string welcome_text = "");
+    c_console(application* app, std::string name,
+              controller* ctrl, std::string welcome_text = "");
     c_console(const c_console&) = delete;
     c_console(c_console&&) = delete;
     ~c_console();
+    application* get_app() const;
     void set_controller(controller* ctrl);
     controller* get_controller() const;
     void set_name(std::string name);

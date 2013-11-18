@@ -5,6 +5,8 @@
 
 namespace gg
 {
+    class application;
+
     class event : public reference_counted
     {
         std::string m_name;
@@ -55,6 +57,7 @@ namespace gg
         virtual ~event_manager() {}
 
     public:
+        virtual application* get_app() const = 0;
         virtual event_type* create_event_type(std::string name) = 0;
         virtual event_type* get_event_type(std::string name) = 0;
         virtual event_listener* create_event_listener(event_callback) const = 0;

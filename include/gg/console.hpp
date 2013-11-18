@@ -5,6 +5,8 @@
 
 namespace gg
 {
+    class application;
+
     class console : public reference_counted
     {
     public:
@@ -40,6 +42,7 @@ namespace gg
         };
 
         virtual ~console() {};
+        virtual application* get_app() const = 0;
         virtual void set_controller(controller* ctrl) = 0;
         virtual controller* get_controller() const = 0;
         virtual void set_name(std::string name) = 0;

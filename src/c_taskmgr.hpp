@@ -44,14 +44,16 @@ namespace gg
 
     class c_task_manager : public gg::task_manager
     {
+        mutable tthread::mutex m_mutex;
+        mutable application* m_app;
         std::map<std::string, c_thread*> m_threads;
 
     public:
-        c_task_manager();
+        c_task_manager(application* app);
         ~c_task_manager();
+        application* get_app() const;
         thread* create_thread(std::string name);
         thread* get_thread(std::string name);
-
         task* create_wait_task(uint32_t wait_time) const;
         task* create_periodic_task(std::function<bool(uint32_t)> func) const;
         task* create_periodic_task(std::function<bool()> func) const;

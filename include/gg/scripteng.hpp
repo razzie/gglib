@@ -7,6 +7,8 @@
 
 namespace gg
 {
+    class application;
+
     class script_engine
     {
     protected:
@@ -37,8 +39,13 @@ namespace gg
         }
 
     public:
+        virtual application* get_app() const = 0;
         virtual void add_function(std::string fn, util::dynamic_function func, std::string args, bool hidden = false) = 0;
         virtual void remove_function(std::string fn) = 0;
+        virtual optional<var> exec(std::string fn, varlist vl, std::ostream& output = std::cout) const = 0;
+        virtual optional<var> parse_and_exec(std::string expr, std::ostream& output = std::cout) const = 0;
+        virtual console::controller* get_console_controller() const = 0;
+        static console* get_invoker_console();
 
         template<typename R, typename... Args>
         void add_function(std::string fn, std::function<R(Args...)> func, bool hidden = false)
@@ -57,11 +64,6 @@ namespace gg
         {
             this->add_function(fn, util::make_dynamic_function(func), get_args<meta::get_signature<F>>(), hidden);
         }
-
-        virtual optional<var> exec(std::string fn, varlist vl, std::ostream& output = std::cout) const = 0;
-        virtual optional<var> parse_and_exec(std::string expr, std::ostream& output = std::cout) const = 0;
-        virtual console::controller* get_console_controller() const = 0;
-        static console* get_invoker_console();
     };
 };
 
