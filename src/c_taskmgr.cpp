@@ -58,7 +58,6 @@ c_thread::c_thread(std::string name)
     [](void* o) { static_cast<c_thread*>(o)->mainloop(); },
     static_cast<void*>(this) )
 {
-    s_threads.set(this);
 }
 
 c_thread::~c_thread()
@@ -76,8 +75,6 @@ c_thread::~c_thread()
         delete it->m_timer;
         it->m_task->drop();
     }
-
-    s_threads.unset();
 }
 
 std::string c_thread::get_name() const
@@ -132,6 +129,8 @@ void c_thread::finish()
 
 void c_thread::mainloop()
 {
+    thread_global<thread*>::scope thread_scope(&s_threads, this);
+
     for(;;)
     {
         // there are no tasks to run or thread was suspended

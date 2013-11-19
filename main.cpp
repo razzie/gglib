@@ -3,11 +3,8 @@
 void exit_program(int exit_code)
 {
     gg::console* con = gg::console::get_invoker_console();
-
-    if (con != nullptr)
-        con->get_app()->exit(exit_code);
-    else
-        std::exit(exit_code);
+    if (con == nullptr) std::exit(exit_code);
+    else con->get_app()->exit(exit_code);
 }
 
 int main()
@@ -38,20 +35,7 @@ int main()
             });
 
 
-    /*gg::thread* thr = app->get_task_manager()->create_thread("test thread");
-
-    gg::task* t = app->get_task_manager()->create_task(
-                        [&] {
-                            std::cerr << "checking console for being opened... "
-                                << (con->is_opened() ? "true" : "false") << std::endl;
-                            if (!con->is_opened())
-                                con->open();
-                            thr->add_delayed_task(grab(t), 3000);
-                        });
-
-    thr->add_task(grab(t));*/
-
-    //con->on_close([]{ exit_program(0); });
+    con->on_close(std::bind(&gg::console::open, con));
 
     return app->start();
 }
