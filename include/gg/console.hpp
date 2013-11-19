@@ -10,6 +10,8 @@ namespace gg
     class console : public reference_counted
     {
     public:
+        static console* get_invoker_console();
+
         class output : public reference_counted, public virtual std::ostream
         {
         public:

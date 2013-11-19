@@ -1,19 +1,8 @@
 #include <cctype>
 #include "c_scripteng.hpp"
 #include "managed_cout.hpp"
-#include "threadglobal.hpp"
 
 using namespace gg;
-
-static recursive_thread_global<console*> s_invokers;
-
-
-console* script_engine::get_invoker_console()
-{
-    optional<console*> con = s_invokers.get();
-    if (con.is_valid()) return con;
-    else return nullptr;
-}
 
 
 c_script_engine::console_controller::console_controller(const c_script_engine* scripteng)
@@ -35,8 +24,6 @@ console::controller::exec_result
 
     try
     {
-        recursive_thread_global<console*>::scope invoker(&s_invokers, &out.get_console());
-
         expression e(expr);
         r = m_scripteng->parse_and_exec(expr, out);
 
@@ -69,7 +56,7 @@ c_script_engine::c_script_engine(application* app)
 
     eng->add_function("close",
             [&] {
-                console* con = script_engine::get_invoker_console();
+                console* con = console::get_invoker_console();
                 if (con == nullptr)
                     std::cout << "This function can only be used from a console" << std::endl;
                 else
@@ -78,7 +65,7 @@ c_script_engine::c_script_engine(application* app)
 
     eng->add_function("clear",
             [&] {
-                console* con = script_engine::get_invoker_console();
+                console* con = console::get_invoker_console();
                 if (con == nullptr)
                     std::cout << "This function can only be used from a console" << std::endl;
                 else

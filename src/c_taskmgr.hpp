@@ -54,6 +54,7 @@ namespace gg
         application* get_app() const;
         thread* create_thread(std::string name);
         thread* get_thread(std::string name);
+        void async_invoke(std::function<void()> func) const;
         task* create_wait_task(uint32_t wait_time) const;
         task* create_periodic_task(std::function<bool(uint32_t)> func) const;
         task* create_periodic_task(std::function<bool()> func) const;

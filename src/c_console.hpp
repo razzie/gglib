@@ -2,9 +2,9 @@
 #define CCONSOLE_H_INCLUDED
 
 #include "win32_aero.hpp"
+#include "tinythread.h"
 #include "gg/core.hpp"
 #include "gg/console.hpp"
-#include "c_taskmgr.hpp"
 
 namespace gg
 {
@@ -85,39 +85,6 @@ private:
         virtual int overflow (int c =  std::char_traits<char>::eof());
     };
 
-    class main_task : public task
-    {
-        c_console* m_con;
-
-    public:
-        main_task(c_console* con);
-        main_task(const main_task&) = delete;
-        main_task(main_task&&) = delete;
-        ~main_task();
-        bool run(uint32_t unused);
-        std::string get_name() const;
-    };
-
-    class cmd_async_exec_task : public task
-    {
-        std::string m_cmd;
-        c_output* m_cmd_outp;
-        c_output* m_exec_outp;
-        c_console* m_con;
-        controller* m_ctrl;
-        c_thread* m_thread;
-
-    public:
-        cmd_async_exec_task(std::string cmd,
-                            c_output* cmd_outp,
-                            c_output* exec_outp,
-                            c_console* con,
-                            c_thread* t);
-        ~cmd_async_exec_task();
-        bool run(uint32_t);
-        std::string get_name() const;
-    };
-
 /* private variables */
 private:
     mutable tthread::recursive_mutex m_mutex;
@@ -132,7 +99,6 @@ private:
 	std::vector<std::string> m_cmd_history;
 	std::vector<std::string>::iterator m_cmd_history_pos;
 	controller* m_ctrl;
-	c_thread* m_thread;
 	std::function<void(console*)> m_close_cb;
     HINSTANCE m_hInst;
     WNDCLASSEX m_wndClassEx;
@@ -145,6 +111,7 @@ private:
 private:
     void async_open();
     void async_close();
+	void control_thread();
 	void cmd_async_exec();
 	void cmd_complete();
     bool prepare_render_context(render_context* ctx);

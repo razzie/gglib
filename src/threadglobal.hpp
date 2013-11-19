@@ -36,6 +36,17 @@ namespace gg
             if (pos != sm_value.end()) return optional<T>(pos->second);
             else return optional<T>();
         }
+
+        class scope
+        {
+            thread_global* m_ptr;
+
+        public:
+            scope(thread_global* ptr, T t) : m_ptr(ptr) { m_ptr->set(t); }
+            scope(const scope&) = delete;
+            scope(scope&&) = delete;
+            ~scope() { m_ptr->unset(); }
+        };
     };
 
     template<typename T>

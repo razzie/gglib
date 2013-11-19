@@ -1,41 +1,56 @@
+#include "threadglobal.hpp"
 #include "c_taskmgr.hpp"
 
 using namespace gg;
 
-namespace gg
+static thread_global<gg::thread*> s_threads;
+
+
+class wait_task : public task
 {
-    class wait_task : public task
+    uint32_t m_wait;
+    uint32_t m_elapsed;
+
+public:
+    wait_task(uint32_t wait_time)
+     : task("wait"), m_wait(wait_time), m_elapsed(0) {}
+    ~wait_task() {}
+
+    bool run(uint32_t elapsed)
     {
-        uint32_t m_wait;
-        uint32_t m_elapsed;
-
-    public:
-        wait_task(uint32_t wait_time)
-         : task("wait"), m_wait(wait_time), m_elapsed(0) {}
-        ~wait_task() {}
-
-        bool run(uint32_t elapsed)
-        {
-            m_elapsed += elapsed;
-            return (m_elapsed > m_wait);
-        }
-    };
-
-    class function_task : public task
-    {
-        std::function<bool(uint32_t)> m_func;
-
-    public:
-        function_task(const std::function<bool(uint32_t)>& f)
-         : task("function"), m_func(f) {}
-        ~function_task() {}
-
-        bool run(uint32_t elapsed)
-        {
-            return m_func(elapsed);
-        }
-    };
+        m_elapsed += elapsed;
+        return (m_elapsed > m_wait);
+    }
 };
+
+class function_task : public task
+{
+    std::function<bool(uint32_t)> m_func;
+
+public:
+    function_task(const std::function<bool(uint32_t)>& f)
+     : task("function"), m_func(f) {}
+    ~function_task() {}
+
+    bool run(uint32_t elapsed)
+    {
+        return m_func(elapsed);
+    }
+};
+
+/*class kill_thread_task : public task
+{
+public:
+    kill_thread_task() {}
+    ~kill_thread_task() {}
+
+    bool run(uint32_t)
+    {
+        delete static_cast<c_thread*>( task_manager::get_current_thread() );
+        return true;
+    }
+};*/
+
 
 c_thread::c_thread(std::string name)
  : m_name(name)
@@ -43,6 +58,7 @@ c_thread::c_thread(std::string name)
     [](void* o) { static_cast<c_thread*>(o)->mainloop(); },
     static_cast<void*>(this) )
 {
+    s_threads.set(this);
 }
 
 c_thread::~c_thread()
@@ -60,6 +76,8 @@ c_thread::~c_thread()
         delete it->m_timer;
         it->m_task->drop();
     }
+
+    s_threads.unset();
 }
 
 std::string c_thread::get_name() const
@@ -179,6 +197,7 @@ void c_thread::mainloop()
     }
 }
 
+
 c_task_manager::c_task_manager(application* app)
  : m_app(app)
 {
@@ -207,6 +226,8 @@ application* c_task_manager::get_app() const
 
 gg::thread* c_task_manager::create_thread(std::string name)
 {
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
     auto ret = m_threads.insert( std::make_pair(name, new c_thread(name)) );
 
     if (!ret.second)
@@ -217,11 +238,35 @@ gg::thread* c_task_manager::create_thread(std::string name)
 
 gg::thread* c_task_manager::get_thread(std::string name)
 {
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
     auto it = m_threads.find(name);
     if (it == m_threads.end())
         return nullptr;
     else
         return it->second;
+}
+
+void c_task_manager::async_invoke(std::function<void()> func) const
+{
+    struct async_invoke_data
+    {
+        std::function<void()> m_func;
+        tthread::thread* m_thread;
+    };
+
+    tthread::thread* async_invoke_thread = new tthread::thread(
+        [](void* ptr)
+        {
+            async_invoke_data* f = static_cast<async_invoke_data*>(ptr);
+            tthread::thread* t = f->m_thread;
+            f->m_func();
+            delete f;
+            delete t;
+        },
+        static_cast<void*>( new async_invoke_data {func} ));
+
+    async_invoke_thread->detach();
 }
 
 task* c_task_manager::create_wait_task(uint32_t wait_time) const
@@ -244,4 +289,10 @@ task* c_task_manager::create_task(std::function<void()> func) const
 {
     return new function_task(
         [func](uint32_t) -> bool { func(); return true; });
+}
+
+thread* task_manager::get_current_thread()
+{
+    optional<thread*> t = s_threads.get();
+    return (t.is_valid() ? t.get() : nullptr);
 }

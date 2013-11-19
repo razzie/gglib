@@ -1,7 +1,21 @@
 #include "c_console.hpp"
+#include "threadglobal.hpp"
 #include "gg/util.hpp"
+#include "gg/taskmgr.hpp"
+#include "gg/application.hpp"
 
 using namespace gg;
+
+static recursive_thread_global<console*> s_invokers;
+
+
+console* console::get_invoker_console()
+{
+    optional<console*> con = s_invokers.get();
+    if (con.is_valid()) return con;
+    else return nullptr;
+}
+
 
 LRESULT CALLBACK c_console::WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
@@ -340,7 +354,7 @@ std::string c_console::c_output::to_string() const
 
 bool c_console::c_output::is_empty() const
 {
-    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
     return (m_text.empty());
 }
 
@@ -407,7 +421,6 @@ application* c_console::get_app() const
 void c_console::set_controller(controller* ctrl)
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-
     if (m_ctrl != nullptr) m_ctrl->drop();
     m_ctrl = ctrl;
 }
@@ -420,33 +433,28 @@ console::controller* c_console::get_controller() const
 void c_console::set_name(std::string name)
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-
     m_name = name;
     if (m_open) SetWindowText(m_hWnd, TEXT(m_name.c_str()));
 }
 
 std::string c_console::get_name() const
 {
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     return m_name;
 }
 
 void c_console::open()
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-
     if (m_open) return; // already opened
-
-    m_thread = new c_thread("console '" + m_name + "' thread");
-	m_thread->add_task(new c_console::main_task(this));
+	m_app->get_task_manager()->async_invoke(std::bind(&c_console::control_thread, this));
 }
 
 void c_console::close()
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-
-    if (!m_open) return;
-
-    delete m_thread;
+    if (!m_open) return; // already closed
+    m_open = false;
 }
 
 void c_console::async_open()
@@ -483,9 +491,6 @@ void c_console::async_close()
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
-    if (!m_open) return;
-    m_open = false;
-
     DeleteObject(m_hFont);
     CloseThemeData(m_hTheme);
     DestroyWindow(m_hWnd);
@@ -502,6 +507,16 @@ void c_console::on_close(std::function<void(console*)> callback)
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     m_close_cb = callback;
+}
+
+void c_console::control_thread()
+{
+    if (!this->is_opened())
+        this->async_open();
+
+    while (this->run());
+
+    this->async_close();
 }
 
 bool c_console::run()
@@ -778,12 +793,46 @@ void c_console::paint(const render_context* ctx)
 
 void c_console::cmd_async_exec()
 {
+    auto async_exec = [](std::string m_cmd, c_output* m_cmd_outp, c_output* m_exec_outp,
+                         c_console* m_con, controller* m_ctrl)
+    {
+        m_con->grab();
+        *m_cmd_outp << m_cmd;
+
+        try
+        {
+            controller::exec_result r = m_ctrl->exec(m_cmd, *m_exec_outp);
+            switch (r)
+            {
+            case controller::exec_result::EXEC_SUCCESS:
+                m_cmd_outp->set_color({0,100,0});
+                break;
+            case controller::exec_result::EXEC_FAIL:
+                m_cmd_outp->set_color({100,0,0});
+                break;
+            default:
+                break;
+            }
+        }
+        catch (std::exception& e) { *m_exec_outp << "exception: " << e.what(); }
+        catch (...) { *m_exec_outp << "exception: unknown"; }
+
+        if (m_exec_outp->is_empty()) { m_exec_outp->hide(); m_con->update(); }
+        //if (m_exec_outp->is_empty()) { m_exec_outp->drop(); m_con->update(); }
+
+        m_cmd_outp->drop();
+        m_exec_outp->drop();
+        m_con->drop();
+    };
+
     if (m_ctrl != nullptr && !m_cmd.empty())
     {
-        c_thread* t = new c_thread("async cmd exec");
         c_output* cmd_outp = static_cast<c_output*>(create_output());
         c_output* exec_outp = static_cast<c_output*>(create_output());
-        t->add_task( new cmd_async_exec_task(m_cmd, cmd_outp, exec_outp, this, t) );
+        std::function<void()> async_exec_bound = std::bind(async_exec, m_cmd, cmd_outp, exec_outp, this, m_ctrl);
+
+        recursive_thread_global<console*>::scope invoker(&s_invokers, this);
+        m_app->get_task_manager()->async_invoke(async_exec_bound);
     }
     else
     {
@@ -807,6 +856,7 @@ void c_console::cmd_complete()
 
         try
         {
+            recursive_thread_global<console*>::scope invoker(&s_invokers, this);
             m_ctrl->complete(m_cmd, *o);
         }
         catch (std::exception& e) { *o << "\nexception: " << e.what(); }
@@ -819,89 +869,4 @@ void c_console::cmd_complete()
     }
 
     m_cmd_pos = m_cmd.end();
-}
-
-
-c_console::main_task::main_task(c_console* con)
- : m_con(con)
-{
-    m_con->grab();
-}
-
-c_console::main_task::~main_task()
-{
-    m_con->async_close();
-    m_con->drop();
-}
-
-bool c_console::main_task::run(uint32_t)
-{
-    if (!m_con->is_opened())
-        m_con->async_open();
-
-    return !m_con->run();
-}
-
-std::string c_console::main_task::get_name() const
-{
-    return std::string("console main task: ") + m_con->get_name();
-}
-
-
-c_console::cmd_async_exec_task::cmd_async_exec_task(
-    std::string cmd,
-    c_console::c_output* cmd_outp,
-    c_console::c_output* exec_outp,
-    c_console* con,
-    c_thread* t)
- : m_cmd(cmd)
- , m_cmd_outp(cmd_outp)
- , m_exec_outp(exec_outp)
- , m_con(con)
- , m_ctrl(con->get_controller())
- , m_thread(t)
-{
-    m_con->grab();
-}
-
-c_console::cmd_async_exec_task::~cmd_async_exec_task()
-{
-    m_con->drop();
-}
-
-bool c_console::cmd_async_exec_task::run(uint32_t)
-{
-    *m_cmd_outp << m_cmd;
-
-    try
-    {
-        controller::exec_result r = m_ctrl->exec(m_cmd, *m_exec_outp);
-        switch (r)
-        {
-        case controller::exec_result::EXEC_SUCCESS:
-            m_cmd_outp->set_color({0,100,0});
-            break;
-        case controller::exec_result::EXEC_FAIL:
-            m_cmd_outp->set_color({100,0,0});
-            break;
-        default:
-            break;
-        }
-    }
-    catch (std::exception& e) { *m_exec_outp << "exception: " << e.what(); }
-    catch (...) { *m_exec_outp << "exception: unknown"; }
-
-    if (m_exec_outp->is_empty()) { m_exec_outp->hide(); m_con->update(); }
-    //if (m_exec_outp->is_empty()) { m_exec_outp->drop(); m_con->update(); }
-
-    m_cmd_outp->drop();
-    m_exec_outp->drop();
-
-    delete m_thread;
-    return true;
-}
-
-std::string c_console::cmd_async_exec_task::get_name() const
-{
-    return std::string("command async execution task: ") + m_con->get_name();
 }
