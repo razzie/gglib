@@ -22,7 +22,7 @@ namespace gg
 
         struct function_container
         {
-            util::dynamic_function m_func;
+            dynamic_function m_func;
             expression m_sign;
             bool m_is_hidden;
         };
@@ -36,7 +36,7 @@ namespace gg
         c_script_engine(application* app);
         ~c_script_engine();
         application* get_app() const;
-        void add_function(std::string fn, util::dynamic_function func, std::string args, bool hidden = false);
+        void add_function(std::string fn, dynamic_function func, std::string args, bool hidden = false);
         void remove_function(std::string fn);
         optional<var> exec(std::string fn, varlist vl, std::ostream& output = std::cout) const;
         optional<var> parse_and_exec(std::string expr, std::ostream& output = std::cout) const;

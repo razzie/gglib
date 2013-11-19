@@ -117,3 +117,15 @@ typeinfo::operator const std::type_info& () const
 {
     return *m_type;
 }
+
+std::ostream& gg::operator<< (std::ostream& o, const varlist& vl)
+{
+    if (vl.empty()) return o;
+    auto it = vl.begin();
+
+    o << "[" << (it++)->to_stream();
+    std::for_each(it, vl.end(), [&](const var& v){ o << ", " << v.to_stream(); });
+    o << "]";
+
+    return o;
+}

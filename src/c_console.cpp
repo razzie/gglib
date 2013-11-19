@@ -796,6 +796,8 @@ void c_console::cmd_async_exec()
     auto async_exec = [](std::string m_cmd, c_output* m_cmd_outp, c_output* m_exec_outp,
                          c_console* m_con, controller* m_ctrl)
     {
+        recursive_thread_global<console*>::scope invoker(&s_invokers, m_con);
+
         m_con->grab();
         *m_cmd_outp << m_cmd;
 
@@ -831,7 +833,6 @@ void c_console::cmd_async_exec()
         c_output* exec_outp = static_cast<c_output*>(create_output());
         std::function<void()> async_exec_bound = std::bind(async_exec, m_cmd, cmd_outp, exec_outp, this, m_ctrl);
 
-        recursive_thread_global<console*>::scope invoker(&s_invokers, this);
         m_app->get_task_manager()->async_invoke(async_exec_bound);
     }
     else

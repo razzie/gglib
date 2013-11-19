@@ -522,18 +522,127 @@ namespace gg
     };
 
     typedef std::vector<var> varlist;
+
+    std::ostream& operator<< (std::ostream& o, const varlist& vl);
+
+    template<typename = void>
+    class function
+    {
+    public:
+        function() = delete;
+        ~function() = delete;
+
+        template<typename R, typename... Args>
+        static R invoke(std::function<R(Args...)> func, varlist vl);
+
+        template<typename R>
+        static R invoke(std::function<R()> func, varlist vl)
+        {
+            if (vl.size() > 0)
+                throw std::runtime_error("too long argument list");
+
+            return func();
+        }
+
+        template<typename R, typename Arg0, typename... Args>
+        static R invoke(std::function<R(Arg0, Args...)> func, varlist vl)
+        {
+            if (vl.size() == 0)
+                throw std::runtime_error("too short argument list");
+
+            Arg0 arg0 = vl[0].cast<Arg0>();
+            vl.erase(vl.begin());
+            std::function<R(Args... args)> lambda =
+                [=](Args... args) -> R { return func(arg0, args...); };
+
+            return invoke(lambda, vl);
+        }
+
+        template<typename R, typename... Args>
+        static R invoke(R(*func)(Args...))
+        {
+            return invoke(std::function<R(Args...)>(func));
+        }
+
+        template<typename F>
+        static typename std::result_of<meta::get_signature<F>>::type
+        invoke(F func)
+        {
+            return invoke(std::function<meta::get_signature<F>>(func));
+        }
+    };
+
+    template<typename R, typename... Args>
+    class function<R(Args...)>
+    {
+        std::function<R(Args...)> m_func;
+
+    public:
+        function() {}
+        function(const gg::function<R(Args...)>& func) : m_func(func.m_func) {}
+        function(gg::function<R(Args...)>&& func) : m_func(std::move(func.m_func)) {}
+        ~function() {}
+
+        template<typename F>
+        function(F func) : m_func(func) {}
+        function(R(*func)(Args...)) : m_func(func) {}
+        function(std::function<R(Args...)> func) : m_func(func) {}
+
+        template<typename F>
+        function<R(Args...)>& operator= (F func) { m_func = func; return *this; }
+        function<R(Args...)>& operator= (R(*func)(Args...)) { m_func = func; return *this; }
+        function<R(Args...)>& operator= (std::function<R(Args...)> func) { m_func = func; return *this; }
+
+        function& operator= (const gg::function<R(Args...)>& func) { m_func = func.m_func; return *this; }
+        function& operator= (gg::function<R(Args...)>&& func) { m_func = std::move(func.m_func); return *this; }
+
+        R operator() (Args... args) const { return m_func(std::forward<Args>(args)...); }
+        R invoke(varlist vl) const { return gg::function<>::invoke(m_func, vl); }
+    };
+
+    class dynamic_function
+    {
+        gg::function<var(varlist)> m_func;
+
+        template<typename R, typename... Args>
+        static gg::function<var(varlist)> convert(gg::function<R(Args...)> func)
+        {
+            return ([=](varlist vl)->var { return func.invoke(vl); });
+        }
+
+        template<typename... Args>
+        static gg::function<var(varlist)> convert(gg::function<void(Args...)> func)
+        {
+            return ([=](varlist vl)->var { func.invoke(vl); return var(); });
+        }
+
+    public:
+        dynamic_function() {}
+        dynamic_function(const dynamic_function& func) : m_func(func.m_func) {}
+        dynamic_function(dynamic_function&& func) : m_func(std::move(func.m_func)) {}
+        ~dynamic_function() {}
+
+        template<typename R, typename... Args>
+        dynamic_function(gg::function<R(Args...)> func)
+         : m_func(convert(func)) {}
+
+        template<typename R, typename... Args>
+        dynamic_function(std::function<R(Args...)> func)
+         : m_func(convert( gg::function<R(Args...)>(func) )) {}
+
+        template<typename R, typename... Args>
+        dynamic_function(R(*func)(Args...))
+         : m_func(convert( gg::function<R(Args...)>(func) )) {}
+
+        template<typename F>
+        dynamic_function(F func)
+         : m_func(convert( gg::function<meta::get_signature<F>>(func) )) {}
+
+        dynamic_function& operator= (const dynamic_function& func) { m_func = func.m_func; return *this; }
+        dynamic_function& operator= (dynamic_function&& func) { m_func = std::move(func.m_func); return *this; }
+
+        var operator() (varlist vl) const { return m_func(vl); }
+    };
 };
-
-inline std::ostream& operator<< (std::ostream& o, const gg::varlist& vl)
-{
-    if (vl.empty()) return o;
-    auto it = vl.begin();
-
-    o << "[" << (it++)->to_stream();
-    std::for_each(it, vl.end(), [&](const gg::var& v){ o << ", " << v.to_stream(); });
-    o << "]";
-
-    return o;
-}
 
 #endif // GG_CORE_HPP_INCLUDED

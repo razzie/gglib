@@ -1,6 +1,7 @@
 #include <cctype>
 #include "c_scripteng.hpp"
 #include "managed_cout.hpp"
+#include "gg/util.hpp"
 
 using namespace gg;
 
@@ -27,7 +28,8 @@ console::controller::exec_result
         expression e(expr);
         r = m_scripteng->parse_and_exec(expr, out);
 
-        if (r.is_valid() && out.is_empty() && !e.is_leaf())
+        if (r.is_valid() && !r.get().is_empty()
+             && out.is_empty() && !e.is_leaf())
         {
             out << r.get().to_stream();
         }
@@ -82,7 +84,7 @@ application* c_script_engine::get_app() const
     return m_app;
 }
 
-void c_script_engine::add_function(std::string fn, util::dynamic_function func, std::string args, bool hidden)
+void c_script_engine::add_function(std::string fn, dynamic_function func, std::string args, bool hidden)
 {
     if (m_functions.count(fn) == 1)
         throw std::runtime_error("command already registered");
