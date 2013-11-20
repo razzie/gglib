@@ -2,3 +2,4 @@ bin
 obj
 gglib.layout
 gglib.depend
+gmon.out
