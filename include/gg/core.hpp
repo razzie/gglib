@@ -492,6 +492,7 @@ namespace gg
         function& operator= (const gg::function<R(Args...)>& func) { m_func = func.m_func; return *this; }
         function& operator= (gg::function<R(Args...)>&& func) { m_func = std::move(func.m_func); return *this; }
 
+        operator bool() { return static_cast<bool>(m_func); }
         R operator() (Args... args) const { return m_func(std::forward<Args>(args)...); }
         R invoke(varlist vl) const { return gg::function<>::invoke(m_func, vl); }
     };
@@ -537,6 +538,7 @@ namespace gg
         dynamic_function& operator= (const dynamic_function& func) { m_func = func.m_func; return *this; }
         dynamic_function& operator= (dynamic_function&& func) { m_func = std::move(func.m_func); return *this; }
 
+        operator bool() { return static_cast<bool>(m_func); }
         var operator() (varlist vl) const { return m_func(vl); }
     };
 };

@@ -106,13 +106,17 @@ void c_script_engine::remove_function(std::string fn)
 
 optional<var> c_script_engine::exec(std::string fn, varlist vl, std::ostream& output) const
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    dynamic_function func;
 
+    m_mutex.lock();
     auto pos = m_functions.find(fn);
-    if (pos != m_functions.end())
+    if (pos != m_functions.end()) func = pos->second.m_func;
+    m_mutex.unlock();
+
+    if (func)
     {
         managed_cout::hook h(output);
-        return pos->second.m_func(vl);
+        return func(vl);
     }
 
     return optional<var>();
@@ -320,9 +324,14 @@ optional<var> c_script_engine::process_expression(const expression& e) const
         }
         else
         {
-            tthread::lock_guard<tthread::mutex> guard(m_mutex);
+            dynamic_function func;
+
+            m_mutex.lock();
             auto pos = m_functions.find(name);
-            if (pos != m_functions.end()) return pos->second.m_func(vl);
+            if (pos != m_functions.end()) func = pos->second.m_func;
+            m_mutex.unlock();
+
+            if (func) return func(vl);
         }
     }
 
