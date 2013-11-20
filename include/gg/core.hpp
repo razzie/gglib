@@ -189,7 +189,6 @@ namespace gg
         template<typename T> T& lvalue_of_type();
         template<typename T> T  rvalue_of_type();
 
-
         template<typename T>
         struct remove_class { };
 
@@ -204,7 +203,6 @@ namespace gg
 
         template<typename C, typename R, typename... Args>
         struct remove_class<R(C::*)(Args...) const volatile> { using type = R(Args...); };
-
 
         template<typename T>
         struct get_signature_impl { using type = typename remove_class<
@@ -222,7 +220,6 @@ namespace gg
         template<typename T>
         using get_signature = typename get_signature_impl<T>::type;
 
-
         template<typename T>
         struct has_insert_op
         {
@@ -237,7 +234,6 @@ namespace gg
             enum { value = ( sizeof(sfinae::yes) == sizeof(test<T>(0)) ) };
             typedef std::integral_constant<bool, value> type;
         };
-
 
         template<typename T>
         struct has_extract_op
@@ -310,9 +306,6 @@ namespace gg
 
     class var
     {
-        /*
-         * var_impl_base abstract class for holding dynamic data
-         */
         class var_impl_base
         {
         public:
@@ -323,9 +316,6 @@ namespace gg
             virtual void extract_to(std::ostream&) const = 0;
         };
 
-        /*
-         * var_impl<T> implements var_impl_base abstract class
-         */
         template<typename T>
         class var_impl : public var_impl_base
         {
@@ -333,120 +323,54 @@ namespace gg
             const std::type_info* m_type;
 
         public:
-            var_impl(T t)
-             : m_var(t), m_type(&typeid(T))
-            {
-            }
-
-            var_impl(const var_impl& v)
-             : m_var(v.m_var), m_type(v.m_type)
-            {
-            }
-
-            ~var_impl()
-            {
-            }
-
-            var_impl_base* clone() const
-            {
-                return new var_impl<T>(m_var);
-            }
-
-            const void* get_ptr() const
-            {
-                return static_cast<const void*>(&m_var);
-            }
-
-            const std::type_info& get_type() const
-            {
-                return *m_type;
-            }
-
-            void extract_to(std::ostream& o) const
-            {
-                ostream_insert(o, m_var);
-            }
+            var_impl(T t) : m_var(t), m_type(&typeid(T)) {}
+            var_impl(const var_impl& v) : m_var(v.m_var), m_type(v.m_type) {}
+            ~var_impl() {}
+            var_impl_base* clone() const { return new var_impl<T>(m_var); }
+            const void* get_ptr() const { return static_cast<const void*>(&m_var); }
+            const std::type_info& get_type() const { return *m_type; }
+            void extract_to(std::ostream& o) const { ostream_insert(o, m_var); }
         };
 
         const var_impl_base* m_var = nullptr;
 
     public:
-        /*
-         * view class for ostream insertion operator support
-         */
         class view
         {
             friend std::ostream& operator<< (std::ostream& o, const gg::var::view& vw);
-
             const var& m_var;
 
         public:
-            view(const var& var) : m_var(var) {}
-            view(const view& vw) : m_var(vw.m_var) {}
-            ~view() {}
+            view(const var& var);
+            view(const view& vw);
+            ~view();
         };
 
-        inline friend std::ostream& operator<< (std::ostream& o, const gg::var::view& vw)
-        {
-            if (vw.m_var.m_var == nullptr) o << "(empty)";
-            else vw.m_var.m_var->extract_to(o);
-            return o;
-        }
+        friend std::ostream& operator<< (std::ostream& o, const gg::var::view& vw);
 
-        /*
-         * var public method implementations
-         */
-        var() {}
-
-        var(const var& v)
-        {
-            if (v.m_var != nullptr) m_var = v.m_var->clone();
-        }
-
-        var(var&& v)
-        {
-            std::swap(m_var, v.m_var);
-        }
+        var();
+        var(const var& v);
+        var(var&& v);
+        ~var();
+        var& operator= (const var& v);
+        var& operator= (var&& v);
 
         template<typename T>
-        var(T t)
-        {
-            m_var = new var_impl<T>(t);
-        }
-
-        var(const char* str)
-         : var(std::string(str))
-        {
-        }
-
-        ~var()
-        {
-            if (m_var != nullptr) delete m_var;
-        }
-
-        var& operator= (const var& v)
-        {
-            if (m_var != nullptr) { delete m_var; m_var = nullptr; }
-            if (v.m_var != nullptr) m_var = v.m_var->clone();
-
-            return *this;
-        }
-
-        var& operator= (var&& v)
-        {
-            std::swap(m_var, v.m_var);
-
-            return *this;
-        }
+        var(T t) { m_var = new var_impl<T>(t); }
+        var(const char* str) : var(std::string(str)) {}
 
         template<typename T>
         var& operator= (const T& t)
         {
             if (m_var != nullptr) delete m_var;
             m_var = new var_impl<T>(t);
-
             return *this;
         }
+
+        view to_stream() const;
+        std::string to_string() const;
+        const std::type_info& get_type() const;
+        bool is_empty() const;
 
         template<typename T>
         const T& get() const
@@ -461,10 +385,7 @@ namespace gg
         }
 
         template<typename T>
-        operator T() const
-        {
-            return this->get<T>();
-        }
+        operator T() const { return this->get<T>(); }
 
         template<typename T,
             typename = typename std::enable_if<!std::is_same<T, var>::value>::type >
@@ -493,31 +414,6 @@ namespace gg
         var cast() const
         {
             return var(*this);
-        }
-
-        view to_stream() const
-        {
-            return view(*this);
-        }
-
-        std::string to_string() const
-        {
-            std::stringstream ss;
-            ss << to_stream();
-            return ss.str();
-        }
-
-        const std::type_info& get_type() const
-        {
-            if (m_var != nullptr)
-                return m_var->get_type();
-            else
-                return typeid(void);
-        }
-
-        bool is_empty() const
-        {
-            return (m_var == nullptr);
         }
     };
 
