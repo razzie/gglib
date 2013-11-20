@@ -104,7 +104,7 @@ std::string typeinfo::name_of(const std::type_info& ti)
     char* buf = NULL;
     int status = 0;
 
-    if (abi::__cxa_demangle(ti.name(), buf, 0, &status))
+    if (NULL != (buf = abi::__cxa_demangle(ti.name(), NULL, NULL, &status)))
     {
         tname = buf;
         free (buf);

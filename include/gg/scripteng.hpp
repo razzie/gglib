@@ -13,28 +13,44 @@ namespace gg
     protected:
         virtual ~script_engine() {}
 
-        template<typename T, typename _T = typename std::decay<T>::type>
-        nulltype get_arg( std::string& args )
+        template<typename T/*, typename _T = typename std::decay<T>::type*/>
+        static nulltype get_arg( std::string& args )
         {
-            if (std::is_same<_T, varlist>::value) args.insert(0, ",( )");
-            else if (std::is_arithmetic<_T>::value) args.insert(0, ",0");
-            else if (!std::is_arithmetic<_T>::value) args.insert(0, ",\"\"");
+            if (std::is_same<T, varlist>::value) args.insert(0, ",( )");
+            else if (std::is_arithmetic<T>::value) args.insert(0, ",0");
+            else if (!std::is_arithmetic<T>::value) args.insert(0, ",\"\"");
             return {};
         }
 
         template<typename... Args>
-        std::string get_args()
+        static std::string get_args()
         {
             std::string args;
 
             struct { void operator() (...) {} } expand;
             expand( get_arg<Args>(args)... );
 
-            args.erase(args.begin());
+            if (!args.empty()) args.erase(args.begin());
             args.insert(args.begin(), '(');
             args.insert(args.end(), ')');
 
             return args;
+        }
+
+        template<typename>
+        struct get_nested_args_impl;
+
+        template<typename R, typename... Args>
+        struct get_nested_args_impl<R(Args...)>
+        {
+            std::string operator()() const { return get_args<Args...>(); }
+        };
+
+        template<typename F>
+        static std::string get_nested_args()
+        {
+            get_nested_args_impl<meta::get_signature<F>> args;
+            return args();
         }
 
     public:
@@ -60,7 +76,7 @@ namespace gg
         template<typename F>
         void add_function(std::string fn, F func, bool hidden = false)
         {
-            this->add_function(fn, func, get_args<meta::get_signature<F>>(), hidden);
+            this->add_function(fn, func, get_nested_args<F>(), hidden);
         }
     };
 };
