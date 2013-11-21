@@ -113,14 +113,14 @@ private:
     void async_open();
     void async_close();
     bool run();
-	void control_thread();
-	void cmd_async_exec();
-	void cmd_complete();
+    void control_thread();
+    void cmd_async_exec();
+    void cmd_complete();
     bool prepare_render_context(render_context* ctx);
     void finish_render_context(render_context* ctx);
-	void paint(const render_context* ctx);
-	LRESULT handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam);
-	static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
+    void paint(const render_context* ctx);
+    LRESULT handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam);
+    static LRESULT CALLBACK WndProc(HWND hWnd, UINT uMsg, WPARAM wParam, LPARAM lParam);
 
 /* public functions */
 public:
