@@ -172,25 +172,25 @@ console& c_console::c_output::get_console() const
 
 void c_console::c_output::show()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_visible = true;
 }
 
 void c_console::c_output::hide()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_visible = false;
 }
 
 void c_console::c_output::flag_dirty()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_dirty = true;
 }
 
 bool c_console::c_output::is_dirty() const
 {
-    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    //tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     return m_dirty;
 }
 
@@ -198,7 +198,7 @@ void c_console::c_output::draw(const render_context* ctx, RECT* bounds, int care
 {
     if (!m_visible) return;
 
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
 
     if (m_dirty)
     {
@@ -271,19 +271,19 @@ void c_console::c_output::draw(const render_context* ctx, RECT* bounds, int care
 
 void c_console::c_output::set_color(gg::color c)
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_color = c;
 }
 
 gg::color c_console::c_output::get_color() const
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     return m_color;
 }
 
 void c_console::c_output::align_left()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
 
     m_align |= alignment::H_LEFT;
     m_align &= ~alignment::H_CENTER;
@@ -292,7 +292,7 @@ void c_console::c_output::align_left()
 
 void c_console::c_output::align_center()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
 
     m_align &= ~alignment::H_LEFT;
     m_align |= alignment::H_CENTER;
@@ -301,7 +301,7 @@ void c_console::c_output::align_center()
 
 void c_console::c_output::align_right()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
 
     m_align &= ~alignment::H_LEFT;
     m_align &= ~alignment::H_CENTER;
@@ -310,7 +310,7 @@ void c_console::c_output::align_right()
 
 void c_console::c_output::valign_top()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
 
     m_align |= alignment::V_TOP;
     m_align &= ~alignment::V_CENTER;
@@ -319,7 +319,7 @@ void c_console::c_output::valign_top()
 
 void c_console::c_output::valign_center()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
 
     m_align &= ~alignment::V_TOP;
     m_align |= alignment::V_CENTER;
@@ -328,7 +328,7 @@ void c_console::c_output::valign_center()
 
 void c_console::c_output::valign_bottom()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
 
     m_align &= ~alignment::V_TOP;
     m_align &= ~alignment::V_CENTER;
@@ -337,7 +337,7 @@ void c_console::c_output::valign_bottom()
 
 int c_console::c_output::overflow(int c)
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
 
     m_text.push_back(c);
     m_dirty = true;
@@ -348,19 +348,19 @@ int c_console::c_output::overflow(int c)
 
 std::string c_console::c_output::to_string() const
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     return m_text;
 }
 
 bool c_console::c_output::is_empty() const
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     return (m_text.empty());
 }
 
 void c_console::c_output::erase()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_text.erase();
 }
 

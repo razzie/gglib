@@ -3,6 +3,7 @@
 
 #include "win32_aero.hpp"
 #include "tinythread.h"
+#include "fast_mutex.h"
 #include "gg/core.hpp"
 #include "gg/console.hpp"
 
@@ -42,7 +43,7 @@ private:
     {
         friend class c_console;
 
-        mutable tthread::mutex m_mutex;
+        mutable tthread::fast_mutex m_mutex;
         c_console* m_console;
         std::string m_text;
         gg::color m_color;
