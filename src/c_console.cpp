@@ -204,6 +204,8 @@ void c_console::c_output::draw(const render_context* ctx, RECT* bounds, int care
     {
         m_wrapped_text = util::convert_string<char, wchar_t>(m_text);
         m_last_height = wrap_text(ctx->secondary, m_wrapped_text, bounds);
+
+        m_dirty = false;
     }
 
     RECT rect;
