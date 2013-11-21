@@ -311,6 +311,7 @@ namespace gg
         public:
             virtual ~var_impl_base() {}
             virtual var_impl_base* clone() const = 0;
+            virtual void* get_ptr() = 0;
             virtual const void* get_ptr() const = 0;
             virtual const std::type_info& get_type() const = 0;
             virtual void extract_to(std::ostream&) const = 0;
@@ -327,6 +328,7 @@ namespace gg
             var_impl(const var_impl& v) : m_var(v.m_var), m_type(v.m_type) {}
             ~var_impl() {}
             var_impl_base* clone() const { return new var_impl<T>(m_var); }
+            void* get_ptr() { return static_cast<void*>(&m_var); }
             const void* get_ptr() const { return static_cast<const void*>(&m_var); }
             const std::type_info& get_type() const { return *m_type; }
             void extract_to(std::ostream& o) const { ostream_insert(o, m_var); }
@@ -373,15 +375,21 @@ namespace gg
         bool is_empty() const;
 
         template<typename T>
-        const T& get() const
+        T& get()
         {
             if (m_var == nullptr)
-                throw std::runtime_error("casting empty var");
+                throw std::runtime_error("get() called on empty var");
 
             if (m_var->get_type() != typeid(T))
-                throw std::runtime_error("casting var to different type");
+                throw std::runtime_error("var type mismatch");
 
-            return *static_cast<const T*>(m_var->get_ptr());
+            return *static_cast<T*>(m_var->get_ptr());
+        }
+
+        template<typename T>
+        const T& get() const
+        {
+            return get<T>();
         }
 
         template<typename T>
