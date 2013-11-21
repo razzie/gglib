@@ -13,7 +13,7 @@ namespace gg
     protected:
         virtual ~script_engine() {}
 
-        template<typename T/*, typename _T = typename std::decay<T>::type*/>
+        template<typename T>
         static nulltype get_arg( std::string& args )
         {
             if (std::is_same<T, varlist>::value) args.insert(0, ",( )");

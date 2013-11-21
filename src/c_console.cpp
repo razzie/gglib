@@ -422,7 +422,7 @@ application* c_console::get_app() const
 
 void c_console::set_controller(controller* ctrl)
 {
-    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     if (m_ctrl != nullptr) m_ctrl->drop();
     m_ctrl = ctrl;
 }
@@ -434,34 +434,34 @@ console::controller* c_console::get_controller() const
 
 void c_console::set_name(std::string name)
 {
-    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_name = name;
     if (m_open) SetWindowText(m_hWnd, TEXT(m_name.c_str()));
 }
 
 std::string c_console::get_name() const
 {
-    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     return m_name;
 }
 
 void c_console::open()
 {
-    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-    if (m_open) return; // already opened
+    //tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    //if (m_open) return; // already opened
 	m_app->get_task_manager()->async_invoke(std::bind(&c_console::control_thread, this));
 }
 
 void c_console::close()
 {
-    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     if (!m_open) return; // already closed
     m_open = false;
 }
 
 void c_console::async_open()
 {
-    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
 
     if (m_open) return; // already opened
     m_open = true;
@@ -491,7 +491,7 @@ void c_console::async_open()
 
 void c_console::async_close()
 {
-    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
 
     DeleteObject(m_hFont);
     CloseThemeData(m_hTheme);
@@ -507,7 +507,7 @@ bool c_console::is_opened() const
 
 void c_console::on_close(std::function<void(console*)> callback)
 {
-    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_close_cb = callback;
 }
 
@@ -515,6 +515,8 @@ void c_console::control_thread()
 {
     if (!this->is_opened())
         this->async_open();
+    else
+        return;
 
     while (this->run());
 
@@ -546,7 +548,7 @@ void c_console::update()
 
 console::output* c_console::create_output()
 {
-    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
 
     c_output* out = new c_output(this);
     out->grab();
@@ -559,7 +561,7 @@ console::output* c_console::create_output()
 
 void c_console::remove_output(console::output* o)
 {
-    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
 
     auto it = m_outp.begin(), end = m_outp.end();
     for (; it != end; ++it)
@@ -588,7 +590,15 @@ void c_console::clear()
 
 LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
 {
-    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    if (!m_mutex.try_lock())
+    {
+        ReplyMessage( DefWindowProc(m_hWnd, uMsg, wParam, lParam) );
+        PostMessage(m_hWnd, uMsg, wParam, lParam);
+        SwitchToThread();
+        return 0;
+    }
+
+    util::on_return([&]{ m_mutex.unlock(); });
 
 	switch(uMsg)
     {
@@ -695,7 +705,7 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
         case WM_QUIT:
 		case WM_DESTROY:
-			if (m_open) close();
+			if (m_open) m_open = false; //close();
 			break;
 	}
 

@@ -88,7 +88,7 @@ private:
 
 /* private variables */
 private:
-    mutable tthread::recursive_mutex m_mutex;
+    mutable tthread::fast_mutex m_mutex;
     mutable application* m_app;
     std::string m_name;
 	bool m_open;
@@ -112,6 +112,7 @@ private:
 private:
     void async_open();
     void async_close();
+    bool run();
 	void control_thread();
 	void cmd_async_exec();
 	void cmd_complete();
@@ -137,7 +138,6 @@ public:
     void close();
     bool is_opened() const;
     void on_close(std::function<void(console*)> callback);
-    bool run();
 	void update();
     output* create_output();
     void remove_output(output*);
