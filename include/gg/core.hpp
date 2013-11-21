@@ -429,18 +429,19 @@ namespace gg
 
     std::ostream& operator<< (std::ostream& o, const varlist& vl);
 
-    template<typename = void>
-    class function
+    template<typename>
+    class function;
+
+    template<typename R, typename... Args>
+    class function<R(Args...)>
     {
-    public:
-        function() = delete;
-        ~function() = delete;
+        std::function<R(Args...)> m_func;
 
-        template<typename R, typename... Args>
-        static R invoke(std::function<R(Args...)> func, varlist vl);
+        template<typename _R, typename... _Args>
+        static _R _invoke(std::function<_R(_Args...)> func, varlist vl);
 
-        template<typename R>
-        static R invoke(std::function<R()> func, varlist vl)
+        template<typename _R>
+        static _R _invoke(std::function<_R()> func, varlist vl)
         {
             if (vl.size() > 0)
                 throw std::runtime_error("too long argument list");
@@ -448,38 +449,32 @@ namespace gg
             return func();
         }
 
-        template<typename R, typename Arg0, typename... Args>
-        static R invoke(std::function<R(Arg0, Args...)> func, varlist vl)
+        template<typename _R, typename _Arg0, typename... _Args>
+        static _R _invoke(std::function<_R(_Arg0, _Args...)> func, varlist vl)
         {
             if (vl.size() == 0)
                 throw std::runtime_error("too short argument list");
 
-            Arg0 arg0 = vl[0].cast<Arg0>();
+            _Arg0 arg0 = vl[0].cast<_Arg0>();
             vl.erase(vl.begin());
-            std::function<R(Args... args)> lambda =
-                [=](Args... args) -> R { return func(arg0, args...); };
+            std::function<_R(_Args... args)> lambda =
+                [=](_Args... args) -> _R { return func(arg0, args...); };
 
-            return invoke(lambda, vl);
+            return _invoke(lambda, vl);
         }
 
-        template<typename R, typename... Args>
-        static R invoke(R(*func)(Args...))
+        template<typename _R, typename... _Args>
+        static _R _invoke(_R(*func)(_Args...))
         {
-            return invoke(std::function<R(Args...)>(func));
+            return _invoke(std::function<_R(_Args...)>(func));
         }
 
-        template<typename F>
-        static typename std::result_of<meta::get_signature<F>>::type
-        invoke(F func)
+        template<typename _F>
+        static typename std::result_of<meta::get_signature<_F>>::type
+        _invoke(_F func)
         {
-            return invoke(std::function<meta::get_signature<F>>(func));
+            return _invoke(std::function<meta::get_signature<_F>>(func));
         }
-    };
-
-    template<typename R, typename... Args>
-    class function<R(Args...)>
-    {
-        std::function<R(Args...)> m_func;
 
     public:
         function() {}
@@ -500,9 +495,10 @@ namespace gg
         function& operator= (const gg::function<R(Args...)>& func) { m_func = func.m_func; return *this; }
         function& operator= (gg::function<R(Args...)>&& func) { m_func = std::move(func.m_func); return *this; }
 
-        operator bool() { return static_cast<bool>(m_func); }
         R operator() (Args... args) const { return m_func(std::forward<Args>(args)...); }
-        R invoke(varlist vl) const { return gg::function<>::invoke(m_func, vl); }
+        R invoke(varlist vl) const { return _invoke(m_func, vl); }
+        operator bool() const { return static_cast<bool>(m_func); }
+        operator std::function<R(Args...)>() const { return m_func; }
     };
 
     class dynamic_function
@@ -546,8 +542,10 @@ namespace gg
         dynamic_function& operator= (const dynamic_function& func) { m_func = func.m_func; return *this; }
         dynamic_function& operator= (dynamic_function&& func) { m_func = std::move(func.m_func); return *this; }
 
-        operator bool() { return static_cast<bool>(m_func); }
         var operator() (varlist vl) const { return m_func(vl); }
+        operator bool() const { return static_cast<bool>(m_func); }
+        operator gg::function<var(varlist)>() const { return m_func; }
+        operator std::function<var(varlist)>() const { return m_func; }
     };
 };
 
