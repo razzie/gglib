@@ -477,6 +477,9 @@ namespace gg
         }
 
     public:
+        using type = R(Args...);
+        using return_type = R;
+
         function() {}
         function(const gg::function<R(Args...)>& func) : m_func(func.m_func) {}
         function(gg::function<R(Args...)>&& func) : m_func(std::move(func.m_func)) {}
