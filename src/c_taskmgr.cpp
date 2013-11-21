@@ -259,7 +259,16 @@ void c_task_manager::async_invoke(std::function<void()> func) const
         {
             async_invoke_data* f = static_cast<async_invoke_data*>(ptr);
             tthread::thread* t = f->m_thread;
-            f->m_func();
+
+            try
+            {
+                f->m_func();
+            }
+            catch (std::exception& e)
+            {
+                std::cout << "async_invoke caught exception: " << e.what() << std::endl;
+            }
+
             delete f;
             delete t;
         },
