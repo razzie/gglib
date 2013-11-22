@@ -8,7 +8,7 @@ namespace gg
 {
 namespace util
 {
-    template<typename T>
+    template<class T>
     std::basic_string<T> trim(std::basic_string<T> s,
                               std::locale loc = std::locale())
     {
@@ -27,7 +27,7 @@ namespace util
         return std::basic_string<T>(it_first, it_last);
     }
 
-    template<typename FROM, typename TO>
+    template<class FROM, class TO>
     std::basic_string<TO> convert_string(std::basic_string<FROM> s,
                                          std::locale loc = std::locale())
     {
@@ -48,7 +48,7 @@ namespace util
         return &result[0];
     }
 
-    template<typename T>
+    template<class T>
     bool is_integer(std::basic_string<T> s,
                     std::locale loc = std::locale())
     {
@@ -66,7 +66,7 @@ namespace util
         return true;
     }
 
-    template<typename T>
+    template<class T>
     bool is_float(std::basic_string<T> s,
                   std::locale loc = std::locale())
     {
@@ -88,14 +88,14 @@ namespace util
         return true;
     }
 
-    template<typename T>
+    template<class T>
     bool is_numeric(std::basic_string<T> s,
                     std::locale loc = std::locale())
     {
         return (is_float(s, loc) || is_integer(s, loc));
     }
 
-    template<typename T>
+    template<class T>
     bool contains_space(std::basic_string<T> s,
                         std::locale loc = std::locale())
     {

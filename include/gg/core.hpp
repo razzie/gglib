@@ -20,40 +20,40 @@ namespace gg
 
     namespace meta
     {
-        template< bool B, class T = void >
+        template<bool B, class T = void>
         using enable_if_t = typename std::enable_if<B,T>::type;
 
 
-        template<typename T>
+        template<class T>
         struct remove_class { };
 
-        template<typename C, typename R, typename... Args>
+        template<class C, class R, class... Args>
         struct remove_class<R(C::*)(Args...)> { using type = R(Args...); };
 
-        template<typename C, typename R, typename... Args>
+        template<class C, class R, class... Args>
         struct remove_class<R(C::*)(Args...) const> { using type = R(Args...); };
 
-        template<typename C, typename R, typename... Args>
+        template<class C, class R, class... Args>
         struct remove_class<R(C::*)(Args...) volatile> { using type = R(Args...); };
 
-        template<typename C, typename R, typename... Args>
+        template<class C, class R, class... Args>
         struct remove_class<R(C::*)(Args...) const volatile> { using type = R(Args...); };
 
 
-        template<typename T>
+        template<class T>
         struct get_signature_impl { using type = typename remove_class<
             decltype(&std::remove_reference<T>::type::operator())>::type; };
 
-        template<typename R, typename... Args>
+        template<class R, class... Args>
         struct get_signature_impl<R(Args...)> { using type = R(Args...); };
 
-        template<typename R, typename... Args>
+        template<class R, class... Args>
         struct get_signature_impl<R(&)(Args...)> { using type = R(Args...); };
 
-        template<typename R, typename... Args>
+        template<class R, class... Args>
         struct get_signature_impl<R(*)(Args...)> { using type = R(Args...); };
 
-        template<typename T>
+        template<class T>
         using get_signature = typename get_signature_impl<T>::type;
 
 
@@ -63,33 +63,33 @@ namespace gg
             class no  { char c[2]; };
         };
 
-        template<typename T> T& lvalue_of_type();
-        template<typename T> T  rvalue_of_type();
+        template<class T> T& lvalue_of_type();
+        template<class T> T  rvalue_of_type();
 
-        template<typename T>
+        template<class T>
         struct has_insert_op
         {
-            template<typename U>
+            template<class U>
             static sfinae::yes test(char(*)[sizeof(
                 lvalue_of_type<std::ostream>() << rvalue_of_type<U>()
             )]);
 
-            template<typename U>
+            template<class U>
             static sfinae::no test(...);
 
             enum { value = ( sizeof(sfinae::yes) == sizeof(test<T>(0)) ) };
             typedef std::integral_constant<bool, value> type;
         };
 
-        template<typename T>
+        template<class T>
         struct has_extract_op
         {
-            template<typename U>
+            template<class U>
             static sfinae::yes test(char(*)[sizeof(
                 lvalue_of_type<std::istream>() >> lvalue_of_type<U>()
             )]);
 
-            template<typename U>
+            template<class U>
             static sfinae::no test(...);
 
             enum { value = ( sizeof(sfinae::yes) == sizeof(test<T>(0)) ) };
@@ -97,41 +97,41 @@ namespace gg
         };
     };
 
-    template<typename T>
+    template<class T>
     void ostream_insert(std::ostream& o, const T& t,
         meta::enable_if_t<meta::has_insert_op<T>::value>* = 0)
     {
         o << t;
     }
 
-    template<typename T>
+    template<class T>
     void ostream_insert(std::ostream& o, const T& t,
         meta::enable_if_t<!meta::has_insert_op<T>::value>* = 0)
     {
         o << "???";
     }
 
-    template<typename T>
+    template<class T>
     void istream_extract(std::istream& o, T& t,
         meta::enable_if_t<meta::has_extract_op<T>::value>* = 0)
     {
         o >> t;
     }
 
-    template<typename T>
+    template<class T>
     void istream_extract(std::istream& o, T& t,
         meta::enable_if_t<!meta::has_extract_op<T>::value>* = 0)
     {
     }
 
-    template<typename From, typename To>
+    template<class From, class To>
     meta::enable_if_t<std::is_convertible<From, To>::value, To>
     cast(const From& from)
     {
         return To(from);
     }
 
-    template<typename From, typename To>
+    template<class From, class To>
     meta::enable_if_t<!std::is_convertible<From, To>::value, To>
     cast(const From& from)
     {
@@ -163,7 +163,7 @@ namespace gg
             virtual void extract_to(std::ostream&) const = 0;
         };
 
-        template<typename T>
+        template<class T>
         class var_impl : public var_impl_base
         {
             T m_var;
@@ -203,11 +203,11 @@ namespace gg
         var& operator= (const var& v);
         var& operator= (var&& v);
 
-        template<typename T>
+        template<class T>
         var(T t) { m_var = new var_impl<T>(t); }
         var(const char* str) : var(std::string(str)) {}
 
-        template<typename T>
+        template<class T>
         var& operator= (const T& t)
         {
             if (m_var != nullptr) delete m_var;
@@ -220,7 +220,7 @@ namespace gg
         const std::type_info& get_type() const;
         bool is_empty() const;
 
-        template<typename T>
+        template<class T>
         T& get()
         {
             if (m_var == nullptr)
@@ -232,19 +232,19 @@ namespace gg
             return *static_cast<T*>(m_var->get_ptr());
         }
 
-        template<typename T>
+        template<class T>
         const T& get() const
         {
             return get<T>();
         }
 
-        template<typename T>
+        template<class T>
         operator T() const { return this->get<T>(); }
 
-        template<typename T, typename = meta::enable_if_t<std::is_same<T, var>::value>>
+        template<class T, class = meta::enable_if_t<std::is_same<T, var>::value>>
         var cast() const { return var(*this); }
 
-        template<typename T, typename = meta::enable_if_t<!std::is_same<T, var>::value>>
+        template<class T, class = meta::enable_if_t<!std::is_same<T, var>::value>>
         T cast() const
         {
             if (m_var == nullptr)
@@ -270,18 +270,18 @@ namespace gg
 
     std::ostream& operator<< (std::ostream& o, const varlist& vl);
 
-    template<typename>
+    template<class>
     class function;
 
-    template<typename R, typename... Args>
+    template<class R, class... Args>
     class function<R(Args...)>
     {
         std::function<R(Args...)> m_func;
 
-        template<typename _R, typename... _Args>
+        template<class _R, class... _Args>
         static _R _invoke(std::function<_R(_Args...)> func, varlist vl);
 
-        template<typename _R>
+        template<class _R>
         static _R _invoke(std::function<_R()> func, varlist vl)
         {
             if (vl.size() > 0)
@@ -290,7 +290,7 @@ namespace gg
             return func();
         }
 
-        template<typename _R, typename _Arg0, typename... _Args>
+        template<class _R, class _Arg0, class... _Args>
         static _R _invoke(std::function<_R(_Arg0, _Args...)> func, varlist vl)
         {
             if (vl.size() == 0)
@@ -304,13 +304,13 @@ namespace gg
             return _invoke(lambda, vl);
         }
 
-        template<typename _R, typename... _Args>
+        template<class _R, class... _Args>
         static _R _invoke(_R(*func)(_Args...))
         {
             return _invoke(std::function<_R(_Args...)>(func));
         }
 
-        template<typename _F>
+        template<class _F>
         static typename std::result_of<meta::get_signature<_F>>::type
         _invoke(_F func)
         {
@@ -326,12 +326,12 @@ namespace gg
         function(gg::function<R(Args...)>&& func) : m_func(std::move(func.m_func)) {}
         ~function() {}
 
-        template<typename F>
+        template<class F>
         function(F func) : m_func(func) {}
         function(R(*func)(Args...)) : m_func(func) {}
         function(std::function<R(Args...)> func) : m_func(func) {}
 
-        template<typename F>
+        template<class F>
         function<R(Args...)>& operator= (F func) { m_func = func; return *this; }
         function<R(Args...)>& operator= (R(*func)(Args...)) { m_func = func; return *this; }
         function<R(Args...)>& operator= (std::function<R(Args...)> func) { m_func = func; return *this; }
@@ -349,13 +349,13 @@ namespace gg
     {
         gg::function<var(varlist)> m_func;
 
-        template<typename R, typename... Args>
+        template<class R, class... Args>
         static gg::function<var(varlist)> convert(gg::function<R(Args...)> func)
         {
             return ([=](varlist vl)->var { return func.invoke(vl); });
         }
 
-        template<typename... Args>
+        template<class... Args>
         static gg::function<var(varlist)> convert(gg::function<void(Args...)> func)
         {
             return ([=](varlist vl)->var { func.invoke(vl); return var(); });
@@ -367,19 +367,19 @@ namespace gg
         dynamic_function(dynamic_function&& func) : m_func(std::move(func.m_func)) {}
         ~dynamic_function() {}
 
-        template<typename R, typename... Args>
+        template<class R, class... Args>
         dynamic_function(gg::function<R(Args...)> func)
          : m_func(convert(func)) {}
 
-        template<typename R, typename... Args>
+        template<class R, class... Args>
         dynamic_function(std::function<R(Args...)> func)
          : m_func(convert( gg::function<R(Args...)>(func) )) {}
 
-        template<typename R, typename... Args>
+        template<class R, class... Args>
         dynamic_function(R(*func)(Args...))
          : m_func(convert( gg::function<R(Args...)>(func) )) {}
 
-        template<typename F>
+        template<class F>
         dynamic_function(F func)
          : m_func(convert( gg::function<meta::get_signature<F>>(func) )) {}
 
@@ -451,7 +451,7 @@ namespace gg
         operator T*() { return m_obj; }
     };
 
-    template<typename T>
+    template<class T>
     class optional
     {
         T m_val;

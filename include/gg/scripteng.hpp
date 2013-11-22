@@ -13,7 +13,7 @@ namespace gg
     protected:
         virtual ~script_engine() {}
 
-        template<typename T>
+        template<class T>
         static nulltype get_arg( std::string& args )
         {
             if (std::is_same<T, varlist>::value) args.insert(0, ",( )");
@@ -22,7 +22,7 @@ namespace gg
             return {};
         }
 
-        template<typename... Args>
+        template<class... Args>
         static std::string get_args()
         {
             std::string args;
@@ -37,16 +37,16 @@ namespace gg
             return args;
         }
 
-        template<typename>
+        template<class>
         struct get_nested_args_impl;
 
-        template<typename R, typename... Args>
+        template<class R, class... Args>
         struct get_nested_args_impl<R(Args...)>
         {
             std::string operator()() const { return get_args<Args...>(); }
         };
 
-        template<typename F>
+        template<class F>
         static std::string get_nested_args()
         {
             get_nested_args_impl<meta::get_signature<F>> args;
@@ -61,19 +61,19 @@ namespace gg
         virtual optional<var> parse_and_exec(std::string expr, std::ostream& output = std::cout) const = 0;
         virtual console::controller* get_console_controller() const = 0;
 
-        template<typename R, typename... Args>
+        template<class R, class... Args>
         void add_function(std::string fn, std::function<R(Args...)> func, bool hidden = false)
         {
             this->add_function(fn, func, get_args<Args...>(), hidden);
         }
 
-        template<typename R, typename... Args>
+        template<class R, class... Args>
         void add_function(std::string fn, R(*func)(Args...), bool hidden = false)
         {
             this->add_function(fn, func, get_args<Args...>(), hidden);
         }
 
-        template<typename F>
+        template<class F>
         void add_function(std::string fn, F func, bool hidden = false)
         {
             this->add_function(fn, func, get_nested_args<F>(), hidden);

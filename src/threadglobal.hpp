@@ -7,7 +7,7 @@
 
 namespace gg
 {
-    template<typename T>
+    template<class T>
     class thread_global
     {
         tthread::mutex sm_mutex;
@@ -49,7 +49,7 @@ namespace gg
         };
     };
 
-    template<typename T>
+    template<class T>
     class recursive_thread_global
     {
         tthread::mutex sm_mutex;
