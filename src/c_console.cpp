@@ -370,8 +370,8 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
             break;
 
-		case WM_CREATE:
-			break;
+        case WM_CREATE:
+            break;
 
         case WM_ERASEBKGND:
             //return 0; // don't call DefWindowProc here
@@ -382,8 +382,8 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
             update();
             break;
 
-		case WM_LBUTTONDOWN:
-			return DefWindowProc(m_hWnd, WM_NCLBUTTONDOWN, HTCAPTION, lParam);
+        case WM_LBUTTONDOWN:
+            return DefWindowProc(m_hWnd, WM_NCLBUTTONDOWN, HTCAPTION, lParam);
 
         case WM_LBUTTONDBLCLK:
             return DefWindowProc(m_hWnd, WM_NCLBUTTONDBLCLK, HTCAPTION, lParam);
