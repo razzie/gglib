@@ -91,6 +91,7 @@
 		<Unit filename="src/c_console.hpp">
 			<Option target="Release" />
 		</Unit>
+		<Unit filename="src/c_console_out.cpp" />
 		<Unit filename="src/c_eventmgr.cpp" />
 		<Unit filename="src/c_eventmgr.hpp" />
 		<Unit filename="src/c_scripteng.cpp" />
