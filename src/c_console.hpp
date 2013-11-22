@@ -56,8 +56,8 @@ private:
 
     public:
         c_output(c_output&&);
-        c_output(c_console* con);
-        c_output(c_console* con, gg::color c, int align, bool visible);
+        c_output(c_console*);
+        c_output(c_console*, gg::color, int align, bool visible);
         ~c_output();
         console& get_console() const;
 
@@ -65,9 +65,13 @@ private:
         void hide();
         void flag_dirty();
         bool is_dirty() const;
-        void draw(const render_context* ctx, RECT* bounds, int caret_pos = -1) const;
+        void draw(const render_context* ctx, RECT* bounds,
+                  int caret_pos = -1) const;
 
-        void set_color(gg::color c);
+        static void draw(std::string text, const render_context* ctx,
+                         RECT* bounds, int caret_pos = -1);
+
+        void set_color(gg::color);
         gg::color get_color() const ;
 
         void align_left();
@@ -83,7 +87,8 @@ private:
 
     protected:
         // inherited from std::streambuf
-        virtual int overflow (int c =  std::char_traits<char>::eof());
+        int overflow (int c =  std::char_traits<char>::eof());
+        int sync();
     };
 
 /* private variables */
@@ -92,8 +97,6 @@ private:
     mutable application* m_app;
     std::string m_name;
 	bool m_open;
-	bool m_welcome;
-	c_output m_welcome_text;
 	std::list<c_output*> m_outp;
 	std::string m_cmd;
 	std::string::iterator m_cmd_pos;
@@ -107,6 +110,8 @@ private:
 	HTHEME m_hTheme;
 	HFONT m_hFont;
 	render_context m_rendctx;
+	bool m_welcome;
+	c_output m_welcome_text;
 
 /* private functions */
 private:

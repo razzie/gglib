@@ -243,6 +243,12 @@ void c_console::c_output::draw(const render_context* ctx, RECT* bounds, int care
     }
 }
 
+void c_console::c_output::draw(std::string text, const render_context* ctx, RECT* bounds, int caret_pos)
+{
+    c_output tmp_out(nullptr);
+    tmp_out.m_text = text;
+    tmp_out.draw(ctx, bounds, caret_pos);
+}
 
 void c_console::c_output::set_color(gg::color c)
 {
@@ -310,17 +316,6 @@ void c_console::c_output::valign_bottom()
     m_align |= alignment::V_BOTTOM;
 }
 
-int c_console::c_output::overflow(int c)
-{
-    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-
-    m_text.push_back(c);
-    m_dirty = true;
-    if (m_console != nullptr) m_console->update();
-
-    return c;
-}
-
 std::string c_console::c_output::to_string() const
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
@@ -337,4 +332,25 @@ void c_console::c_output::erase()
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_text.erase();
+}
+
+int c_console::c_output::overflow(int c)
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+
+    m_text.push_back(c);
+    m_dirty = true;
+
+    if (c == '\n' && m_console != nullptr)
+        m_console->update();
+
+    return c;
+}
+
+int c_console::c_output::sync()
+{
+    if (m_console == nullptr) return -1;
+
+    m_console->update();
+    return 0;
 }

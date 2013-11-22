@@ -1,4 +1,5 @@
 #include "c_console.hpp"
+#include "c_timer.hpp"
 #include "threadglobal.hpp"
 #include "gg/util.hpp"
 #include "gg/taskmgr.hpp"
@@ -37,11 +38,11 @@ c_console::c_console(application* app, std::string name,
  : m_app(app)
  , m_name(name)
  , m_open(false)
- , m_welcome(true)
- , m_welcome_text(nullptr)
  , m_cmd_pos(m_cmd.end())
  , m_cmd_history_pos(m_cmd_history.end())
  , m_ctrl(ctrl)
+ , m_welcome(true)
+ , m_welcome_text(nullptr)
 {
     if (m_ctrl != nullptr) m_ctrl->grab();
 
@@ -267,17 +268,6 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
 	switch(uMsg)
     {
-		case WM_CREATE:
-			break;
-
-        case WM_SIZE:
-            std::for_each(m_outp.begin(), m_outp.end(), [](c_output* o){ o->flag_dirty(); });
-            update();
-            break;
-
-        case WM_ERASEBKGND:
-            return 0; // don't call DefWindowProc here
-
         case WM_PAINT:
             if (prepare_render_context(&m_rendctx))
             {
@@ -286,18 +276,13 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
             }
             break;
 
-		case WM_LBUTTONDOWN:
-			return DefWindowProc(m_hWnd, WM_NCLBUTTONDOWN, HTCAPTION, lParam);
-
-        case WM_LBUTTONDBLCLK:
-            return DefWindowProc(m_hWnd, WM_NCLBUTTONDBLCLK, HTCAPTION, lParam);
-
         case WM_CHAR:
             // handling CTRL + C
             if (/*GetKeyState(VK_CONTROL) && wParam == 'c'*/ wParam == 3) // EndOfText
             {
                 m_cmd.clear();
                 m_cmd_pos = m_cmd.end();
+                update();
                 break;
             }
             // handling currently typed command
@@ -306,19 +291,26 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
                 case VK_RETURN:
                     // execute command
                     if ((lParam & (1<<30)) == 0) // first press
-                        this->cmd_async_exec();
+                    {
+                        cmd_async_exec();
+                        update();
+                    }
                     break;
 
                 case VK_TAB:
                     // auto command completion
                     if ((lParam & (1<<30)) == 0) // first press
-                        this->cmd_complete();
+                    {
+                        cmd_complete();
+                        update();
+                    }
                     break;
 
                 case VK_BACK:
                     if (m_cmd_pos != m_cmd.begin())
                     {
                         m_cmd_pos = m_cmd.erase(m_cmd_pos - 1);
+                        update();
                     }
                     break;
 
@@ -326,10 +318,10 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
                     if (isprint(wParam))
                     {
                         m_cmd_pos = m_cmd.insert(m_cmd_pos, wParam) + 1;
+                        update();
                     }
                     break;
             }
-            update();
             break;
 
         case WM_KEYDOWN:
@@ -337,11 +329,19 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
             switch (wParam)
             {
                 case VK_LEFT:
-                    if (m_cmd_pos != m_cmd.begin()) --m_cmd_pos;
+                    if (m_cmd_pos != m_cmd.begin())
+                    {
+                        --m_cmd_pos;
+                        update();
+                    }
                     break;
 
                 case VK_RIGHT:
-                    if (m_cmd_pos != m_cmd.end()) ++m_cmd_pos;
+                    if (m_cmd_pos != m_cmd.end())
+                    {
+                        ++m_cmd_pos;
+                        update();
+                    }
                     break;
 
                 case VK_UP:
@@ -349,6 +349,7 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
                     {
                         m_cmd = *(--m_cmd_history_pos);
                         m_cmd_pos = m_cmd.end();
+                        update();
                     }
                     break;
 
@@ -357,24 +358,46 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
                     {
                         m_cmd.erase();
                         m_cmd_pos = m_cmd.end();
+                        update();
                     }
                     else if (m_cmd_history_pos != m_cmd_history.end())
                     {
                         m_cmd = *(++m_cmd_history_pos);
                         m_cmd_pos = m_cmd.end();
+                        update();
                     }
                     break;
             }
+            break;
+
+		case WM_CREATE:
+			break;
+
+        case WM_ERASEBKGND:
+            //return 0; // don't call DefWindowProc here
+            break;
+
+        case WM_SIZE:
+            std::for_each(m_outp.begin(), m_outp.end(), [](c_output* o){ o->flag_dirty(); });
             update();
             break;
+
+		case WM_LBUTTONDOWN:
+			return DefWindowProc(m_hWnd, WM_NCLBUTTONDOWN, HTCAPTION, lParam);
+
+        case WM_LBUTTONDBLCLK:
+            return DefWindowProc(m_hWnd, WM_NCLBUTTONDBLCLK, HTCAPTION, lParam);
 
         case WM_QUIT:
 		case WM_DESTROY:
 			if (m_open) m_open = false; //close();
 			break;
+
+        default:
+            return DefWindowProc(m_hWnd, uMsg, wParam, lParam);
 	}
 
-	return DefWindowProc(m_hWnd, uMsg, wParam, lParam);
+	return 0;
 }
 
 bool c_console::prepare_render_context(render_context* ctx)
@@ -458,9 +481,7 @@ void c_console::paint(const render_context* ctx)
         return;
     }
 
-    c_output cmd(nullptr);
-    cmd << m_cmd;
-    cmd.draw(ctx, &bounds, std::distance(m_cmd.begin(), m_cmd_pos));
+    c_output::draw(m_cmd, ctx, &bounds, std::distance(m_cmd.begin(), m_cmd_pos));
 
     for (auto it = m_outp.rbegin(); it != m_outp.rend() && bounds.bottom > 0; ++it)
     {
