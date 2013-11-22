@@ -18,176 +18,11 @@ namespace gg
 {
     struct nulltype {};
 
-    struct color
-    {
-        uint8_t R, G, B;
-    };
-
-    class reference_counted
-    {
-        struct refcounted_data;
-        refcounted_data* m_data;
-
-    public:
-        reference_counted();
-        virtual ~reference_counted();
-        void grab() const;
-        void drop() const;
-        uint32_t get_ref_count() const;
-    };
-
-    template<class T,
-        class = typename std::enable_if<
-            std::is_base_of<reference_counted,T>::value
-        >::type >
-    T* grab(T* o)
-    {
-        o->grab();
-        return o;
-    }
-
-    template<class T,
-        class = typename std::enable_if<
-            std::is_base_of<reference_counted,T>::value
-        >::type >
-    const T* grab(const T* o)
-    {
-        o->grab();
-        return o;
-    }
-
-    template<class T,
-        class = typename std::enable_if<
-            std::is_base_of<reference_counted,T>::value
-        >::type >
-    T* drop(T* o)
-    {
-        uint32_t refc = o->get_ref_count();
-        o->drop();
-        return (refc == 1) ? nullptr : o;
-    }
-
-    template<class T,
-        class = typename std::enable_if<
-            std::is_base_of<reference_counted,T>::value
-        >::type >
-    const T* drop(const T* o)
-    {
-        uint32_t refc = o->get_ref_count();
-        o->drop();
-        return (refc == 1) ? nullptr : o;
-    }
-
-    template<class T,
-        class = typename std::enable_if<
-            std::is_base_of<reference_counted,T>::value
-        >::type >
-    class auto_drop
-    {
-        T* m_obj;
-
-    public:
-        auto_drop(T* o) : m_obj(o) {}
-        ~auto_drop() { m_obj->drop(); }
-        operator T*() { return m_obj; }
-    };
-
-    template<typename T>
-    class optional
-    {
-        T m_val;
-        bool m_valid;
-
-    public:
-        optional()
-         : m_valid(false) {}
-
-        optional(T t)
-         : m_val(t), m_valid(true) {}
-
-        optional(const optional& o)
-         : m_val(o.m_val), m_valid(o.m_valid) {}
-
-        optional(optional&& o)
-         : m_val(std::move(o.m_val)), m_valid(o.m_valid) {}
-
-        ~optional() {}
-
-        optional& operator= (T t)
-        {
-            m_val = t;
-            m_valid = true;
-            return *this;
-        }
-
-        optional& operator= (const optional& o)
-        {
-            m_val = o.m_val;
-            m_valid = o.m_valid;
-            return *this;
-        }
-
-        optional& operator= (optional&& o)
-        {
-            m_val = std::move(o.m_val);
-            m_valid = o.m_valid;
-            return *this;
-        }
-
-        bool is_valid() const
-        {
-            return m_valid;
-        }
-
-        void set_valid(bool valid)
-        {
-            m_valid = valid;
-        }
-
-        T get() const
-        {
-            if (!m_valid) throw std::runtime_error("getting value of invalid optional<>");
-            return m_val;
-        }
-
-        operator T() const
-        {
-            return get();
-        }
-    };
-
-    class typeinfo
-    {
-        const std::type_info* m_type;
-
-    public:
-        typeinfo(const std::type_info&);
-        typeinfo(const typeinfo&);
-        typeinfo& operator= (const typeinfo&);
-        ~typeinfo();
-
-        bool operator== (const typeinfo&) const;
-        bool operator!= (const typeinfo&) const;
-        bool operator<  (const typeinfo&) const;
-        bool operator<= (const typeinfo&) const;
-        bool operator>  (const typeinfo&) const;
-        bool operator>= (const typeinfo&) const;
-
-        std::string name() const;
-        static std::string name_of(const std::type_info&);
-        operator const std::type_info& () const;
-    };
-
     namespace meta
     {
-        namespace sfinae
-        {
-            class yes { char c[1]; };
-            class no  { char c[2]; };
-        };
+        template< bool B, class T = void >
+        using enable_if_t = typename std::enable_if<B,T>::type;
 
-        template<typename T> T& lvalue_of_type();
-        template<typename T> T  rvalue_of_type();
 
         template<typename T>
         struct remove_class { };
@@ -204,6 +39,7 @@ namespace gg
         template<typename C, typename R, typename... Args>
         struct remove_class<R(C::*)(Args...) const volatile> { using type = R(Args...); };
 
+
         template<typename T>
         struct get_signature_impl { using type = typename remove_class<
             decltype(&std::remove_reference<T>::type::operator())>::type; };
@@ -219,6 +55,16 @@ namespace gg
 
         template<typename T>
         using get_signature = typename get_signature_impl<T>::type;
+
+
+        namespace sfinae
+        {
+            class yes { char c[1]; };
+            class no  { char c[2]; };
+        };
+
+        template<typename T> T& lvalue_of_type();
+        template<typename T> T  rvalue_of_type();
 
         template<typename T>
         struct has_insert_op
@@ -253,40 +99,40 @@ namespace gg
 
     template<typename T>
     void ostream_insert(std::ostream& o, const T& t,
-        typename std::enable_if<meta::has_insert_op<T>::value>::type* = 0)
+        meta::enable_if_t<meta::has_insert_op<T>::value>* = 0)
     {
         o << t;
     }
 
     template<typename T>
     void ostream_insert(std::ostream& o, const T& t,
-        typename std::enable_if<!meta::has_insert_op<T>::value>::type* = 0)
+        meta::enable_if_t<!meta::has_insert_op<T>::value>* = 0)
     {
         o << "???";
     }
 
     template<typename T>
     void istream_extract(std::istream& o, T& t,
-        typename std::enable_if<meta::has_extract_op<T>::value>::type* = 0)
+        meta::enable_if_t<meta::has_extract_op<T>::value>* = 0)
     {
         o >> t;
     }
 
     template<typename T>
     void istream_extract(std::istream& o, T& t,
-        typename std::enable_if<!meta::has_extract_op<T>::value>::type* = 0)
+        meta::enable_if_t<!meta::has_extract_op<T>::value>* = 0)
     {
     }
 
     template<typename From, typename To>
-    typename std::enable_if<std::is_convertible<From, To>::value, To>::type
+    meta::enable_if_t<std::is_convertible<From, To>::value, To>
     cast(const From& from)
     {
         return To(from);
     }
 
     template<typename From, typename To>
-    typename std::enable_if<!std::is_convertible<From, To>::value, To>::type
+    meta::enable_if_t<!std::is_convertible<From, To>::value, To>
     cast(const From& from)
     {
         if (!meta::has_insert_op<From>::value
@@ -395,8 +241,10 @@ namespace gg
         template<typename T>
         operator T() const { return this->get<T>(); }
 
-        template<typename T,
-            typename = typename std::enable_if<!std::is_same<T, var>::value>::type >
+        template<typename T, typename = meta::enable_if_t<std::is_same<T, var>::value>>
+        var cast() const { return var(*this); }
+
+        template<typename T, typename = meta::enable_if_t<!std::is_same<T, var>::value>>
         T cast() const
         {
             if (m_var == nullptr)
@@ -415,13 +263,6 @@ namespace gg
             istream_extract(ss, result);
 
             return result;
-        }
-
-        template<typename T,
-            typename = typename std::enable_if<std::is_same<T, var>::value>::type >
-        var cast() const
-        {
-            return var(*this);
         }
     };
 
@@ -549,6 +390,146 @@ namespace gg
         operator bool() const { return static_cast<bool>(m_func); }
         operator gg::function<var(varlist)>() const { return m_func; }
         operator std::function<var(varlist)>() const { return m_func; }
+    };
+
+    class reference_counted
+    {
+        struct refcounted_data;
+        refcounted_data* m_data;
+
+    public:
+        reference_counted();
+        virtual ~reference_counted();
+        void grab() const;
+        void drop() const;
+        uint32_t get_ref_count() const;
+    };
+
+    template<class T, class =
+        meta::enable_if_t<std::is_base_of<reference_counted,T>::value>>
+    T* grab(T* o)
+    {
+        o->grab();
+        return o;
+    }
+
+    template<class T, class =
+        meta::enable_if_t<std::is_base_of<reference_counted,T>::value>>
+    const T* grab(const T* o)
+    {
+        o->grab();
+        return o;
+    }
+
+    template<class T, class =
+        meta::enable_if_t<std::is_base_of<reference_counted,T>::value>>
+    T* drop(T* o)
+    {
+        uint32_t refc = o->get_ref_count();
+        o->drop();
+        return (refc == 1) ? nullptr : o;
+    }
+
+    template<class T, class =
+        meta::enable_if_t<std::is_base_of<reference_counted,T>::value>>
+    const T* drop(const T* o)
+    {
+        uint32_t refc = o->get_ref_count();
+        o->drop();
+        return (refc == 1) ? nullptr : o;
+    }
+
+    template<class T, class =
+        meta::enable_if_t<std::is_base_of<reference_counted,T>::value>>
+    class auto_drop
+    {
+        T* m_obj;
+
+    public:
+        auto_drop(T* o) : m_obj(o) {}
+        ~auto_drop() { m_obj->drop(); }
+        operator T*() { return m_obj; }
+    };
+
+    template<typename T>
+    class optional
+    {
+        T m_val;
+        bool m_valid;
+
+    public:
+        optional()
+         : m_valid(false) {}
+
+        optional(T t)
+         : m_val(t), m_valid(true) {}
+
+        optional(const optional& o)
+         : m_val(o.m_val), m_valid(o.m_valid) {}
+
+        optional(optional&& o)
+         : m_val(std::move(o.m_val)), m_valid(o.m_valid) {}
+
+        ~optional() {}
+
+        optional& operator= (T t)
+        {
+            m_val = t;
+            m_valid = true;
+            return *this;
+        }
+
+        optional& operator= (const optional& o)
+        {
+            m_val = o.m_val;
+            m_valid = o.m_valid;
+            return *this;
+        }
+
+        optional& operator= (optional&& o)
+        {
+            m_val = std::move(o.m_val);
+            m_valid = o.m_valid;
+            return *this;
+        }
+
+        T get() const
+        {
+            if (!m_valid) throw std::runtime_error("getting value of invalid optional<>");
+            return m_val;
+        }
+
+        operator T() const { return get(); }
+
+        bool is_valid() const { return m_valid; }
+        void set_valid(bool valid) { m_valid = valid; }
+    };
+
+    class typeinfo
+    {
+        const std::type_info* m_type;
+
+    public:
+        typeinfo(const std::type_info&);
+        typeinfo(const typeinfo&);
+        typeinfo& operator= (const typeinfo&);
+        ~typeinfo();
+
+        bool operator== (const typeinfo&) const;
+        bool operator!= (const typeinfo&) const;
+        bool operator<  (const typeinfo&) const;
+        bool operator<= (const typeinfo&) const;
+        bool operator>  (const typeinfo&) const;
+        bool operator>= (const typeinfo&) const;
+
+        std::string name() const;
+        static std::string name_of(const std::type_info&);
+        operator const std::type_info& () const;
+    };
+
+    struct color
+    {
+        uint8_t R, G, B;
     };
 };
 
