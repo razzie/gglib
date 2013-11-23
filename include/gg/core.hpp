@@ -205,7 +205,6 @@ namespace gg
 
         template<class T>
         var(T t) { m_var = new var_impl<T>(t); }
-        var(const char* str) : var(std::string(str)) {}
 
         template<class T>
         var& operator= (const T& t)
