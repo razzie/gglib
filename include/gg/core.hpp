@@ -362,10 +362,10 @@ namespace gg
         }
 
     public:
-        dynamic_function() {}
-        dynamic_function(const dynamic_function& func) : m_func(func.m_func) {}
-        dynamic_function(dynamic_function&& func) : m_func(std::move(func.m_func)) {}
-        ~dynamic_function() {}
+        dynamic_function();
+        dynamic_function(const dynamic_function& func);
+        dynamic_function(dynamic_function&& func);
+        ~dynamic_function();
 
         template<class R, class... Args>
         dynamic_function(gg::function<R(Args...)> func)
@@ -383,13 +383,13 @@ namespace gg
         dynamic_function(F func)
          : m_func(convert( gg::function<meta::get_signature<F>>(func) )) {}
 
-        dynamic_function& operator= (const dynamic_function& func) { m_func = func.m_func; return *this; }
-        dynamic_function& operator= (dynamic_function&& func) { m_func = std::move(func.m_func); return *this; }
+        dynamic_function& operator= (const dynamic_function& func);
+        dynamic_function& operator= (dynamic_function&& func);
 
-        var operator() (varlist vl) const { return m_func(vl); }
-        operator bool() const { return static_cast<bool>(m_func); }
-        operator gg::function<var(varlist)>() const { return m_func; }
-        operator std::function<var(varlist)>() const { return m_func; }
+        var operator() (varlist vl) const;
+        operator bool() const;
+        operator gg::function<var(varlist)>() const;
+        operator std::function<var(varlist)>() const;
     };
 
     class reference_counted
