@@ -25,8 +25,8 @@ namespace gg
         virtual const var& operator[] (const std::string& attr) const { return m_attributes.at(attr); }
     };
 
-    typedef bool(*event_filter)(const event&); // returns true if event should be skipped
-    typedef bool(*event_callback)(const event&); // return true if event is consumed
+    typedef std::function<bool(const event&)> event_filter; // returns true if event should be skipped
+    typedef std::function<bool(const event&)> event_callback; // return true if event is consumed
 
     class event_listener : public reference_counted
     {
