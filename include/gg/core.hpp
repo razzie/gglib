@@ -522,8 +522,12 @@ namespace gg
         bool operator>= (const typeinfo&) const;
 
         std::string name() const;
-        static std::string name_of(const std::type_info&);
         operator const std::type_info& () const;
+        size_t hash_code() const noexcept;
+
+        template<class T>
+        static std::string name_of() { return name_of(typeid(T)); }
+        static std::string name_of(const std::type_info&);
     };
 
     struct color

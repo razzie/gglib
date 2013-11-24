@@ -218,22 +218,22 @@ bool typeinfo::operator!= (const typeinfo& ti) const
 
 bool typeinfo::operator< (const typeinfo& ti) const
 {
-    return (std::type_index(*m_type) < std::type_index(*ti.m_type));
+    return m_type->before(*ti.m_type);
 }
 
 bool typeinfo::operator<= (const typeinfo& ti) const
 {
-    return (std::type_index(*m_type) <= std::type_index(*ti.m_type));
+    return (*this < ti || *this == ti);
 }
 
 bool typeinfo::operator> (const typeinfo& ti) const
 {
-    return (std::type_index(*m_type) > std::type_index(*ti.m_type));
+    return (ti.m_type->before(*m_type));
 }
 
 bool typeinfo::operator>= (const typeinfo& ti) const
 {
-    return (std::type_index(*m_type) >= std::type_index(*ti.m_type));
+    return (*this > ti || *this == ti);
 }
 
 std::string typeinfo::name() const
