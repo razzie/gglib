@@ -119,10 +119,12 @@ namespace util
         std::function<void()> m_func;
 
     public:
+        on_return() {}
         on_return(std::function<void()> func) : m_func(func) {}
         on_return(const on_return&) = delete;
         on_return(on_return&&) = delete;
-        ~on_return() { m_func(); }
+        ~on_return() { if (m_func) m_func(); }
+        on_return& operator= (std::function<void()> func) { m_func = func; return *this; }
     };
 };
 };
