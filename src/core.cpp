@@ -241,6 +241,16 @@ std::string typeinfo::name() const
     return typeinfo::name_of(*m_type);
 }
 
+typeinfo::operator const std::type_info& () const
+{
+    return *m_type;
+}
+
+size_t typeinfo::hash_code() const noexcept
+{
+    return m_type->hash_code();
+}
+
 std::string typeinfo::name_of(const std::type_info& ti)
 {
     std::string tname;
@@ -254,9 +264,4 @@ std::string typeinfo::name_of(const std::type_info& ti)
     }
 
     return tname;
-}
-
-typeinfo::operator const std::type_info& () const
-{
-    return *m_type;
 }
