@@ -1,4 +1,3 @@
-#include <algorithm>
 #include <cctype>
 #include <iostream>
 #include "c_expression.hpp"
@@ -210,11 +209,8 @@ c_expression::c_expression(const c_expression& e)
  : m_parent(e.m_parent)
  , m_name(e.m_name)
 {
-    std::for_each(e.m_children.begin(), e.m_children.end(),
-        [&](expression_ptr child)
-        {
-            m_children.push_back(expression_ptr( new c_expression(*child) ));
-        });
+    for (auto child : e.m_children)
+        m_children.push_back(expression_ptr( new c_expression(*child) ));
 }
 
 c_expression::c_expression(c_expression&& e)
@@ -224,14 +220,13 @@ c_expression::c_expression(c_expression&& e)
 {
     if (m_parent != nullptr)
     {
-        std::for_each(m_parent->m_children.begin(), m_parent->m_children.end(),
-            [&](expression_ptr child)
+        for (auto child : m_parent->m_children)
+        {
+            if (child.get() == &e)
             {
-                if (child.get() == &e)
-                {
-                    child = expression_ptr(this);
-                }
-            });
+                child = expression_ptr(this);
+            }
+        }
     }
 }
 
@@ -254,12 +249,11 @@ c_expression& c_expression::operator= (c_expression&& e)
     m_children.clear();
     m_children = std::move(e.m_children);
 
-    std::for_each(e.m_children.begin(), e.m_children.end(),
-        [&](expression_ptr child)
-        {
-            c_expression* ch = static_cast<c_expression*>(child.get());
-            ch->m_parent = this;
-        });
+    for (auto child : e.m_children)
+    {
+        c_expression* ch = static_cast<c_expression*>(child.get());
+        ch->m_parent = this;
+    }
 
     return *this;
 }
@@ -268,12 +262,11 @@ void c_expression::print(uint32_t level, std::ostream& o) const
 {
     for (uint32_t i = 0; i < level; ++i) o << "  ";
     o << this->get_expression() << std::endl;
-    std::for_each(m_children.cbegin(), m_children.cend(),
-        [&](expression_ptr e)
-        {
-            c_expression* _e = static_cast<c_expression*>(e.get());
-            _e->print(level+1, o);
-        });
+    for (auto e : m_children)
+    {
+        c_expression* _e = static_cast<c_expression*>(e.get());
+        _e->print(level+1, o);
+    }
 }
 
 std::string c_expression::get_name() const
@@ -367,13 +360,13 @@ void c_expression::remove_child(std::list<expression_ptr>::iterator& it)
 void c_expression::for_each(std::function<void(expression&)> func)
 {
     func(*this);
-    std::for_each(m_children.begin(), m_children.end(), [&](expression_ptr e) { e->for_each(func); });
+    for (auto e : m_children) e->for_each(func);
 }
 
 void c_expression::for_each(std::function<void(const expression&)> func) const
 {
     func(*this);
-    std::for_each(m_children.cbegin(), m_children.cend(), [&](const expression_ptr e) { e->for_each(func); });
+    for (auto e : m_children) e->for_each(func);
 }
 
 

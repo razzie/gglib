@@ -1,4 +1,3 @@
-#include <algorithm>
 #include "gglib.hpp"
 
 int main()
@@ -28,7 +27,7 @@ int main()
             [](gg::varlist vl)
             {
                 int sum = 0;
-                std::for_each(vl.begin(), vl.end(), [&](gg::var& v){ sum += v.cast<int>(); });
+                for (auto v : vl) sum += v.cast<int>();
                 return sum;
             });
 

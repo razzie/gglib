@@ -1,4 +1,3 @@
-#include <algorithm>
 #include "c_console.hpp"
 #include "c_timer.hpp"
 #include "threadglobal.hpp"
@@ -379,7 +378,7 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
             break;
 
         case WM_SIZE:
-            std::for_each(m_outp.begin(), m_outp.end(), [](c_output* o){ o->flag_dirty(); });
+            for (auto o : m_outp) o->flag_dirty();
             update();
             break;
 
