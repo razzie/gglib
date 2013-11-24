@@ -5,6 +5,19 @@ int main()
     gg::application* app = gg::application::create_instance("test app", 0, 1);
 
 
+    gg::serializer* srl = app->get_serializer();
+    srl->add_trivial_rule<int>();
+
+    gg::serializer::storage* st = srl->create_storage();
+    srl->serialize<int>(123, *st);
+
+    gg::optional<gg::var> v = srl->deserialize<int>(*st);
+    if (v.is_valid())
+        std::cerr << v.get().to_stream() << std::endl;
+    else
+        std::cerr << "invalid result" << std::endl;
+
+
     gg::console* con = app->create_console();
     con->open();
 
