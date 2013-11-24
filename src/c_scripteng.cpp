@@ -26,7 +26,7 @@ console::controller::exec_result
 
     try
     {
-        expression e(expr);
+        c_expression e(expr);
         r = m_scripteng->parse_and_exec(expr, out);
 
         if (r.is_valid() && !r.get().is_empty()
@@ -231,7 +231,7 @@ bool c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
     return true;
 }
 
-static void fill_expr_by_sign(expression& e, const expression& sg)
+static void fill_expr_by_sign(expression& e, const c_expression& sg)
 {
     std::list<expression::expression_ptr>& e_chld = e.get_children();
     const std::list<expression::expression_ptr>& sg_chld = sg.get_children();
@@ -257,7 +257,7 @@ static void fill_expr_by_sign(expression& e, const expression& sg)
 
 void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
 {
-    expression e(expr, true);
+    c_expression e(expr, true);
 
     if (e.is_leaf())
     {
@@ -277,7 +277,7 @@ void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
     {
         e.for_each([&](expression& e)
         {
-            if (!e.is_leaf() && // it's an expression
+            if (!e.is_leaf() && // it's an c_expression
                 (e.get_parent() == nullptr || !e.get_name().empty())) // not an array arg
             {
                 std::string name = e.get_name();
@@ -294,7 +294,7 @@ void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
     if (!e.is_empty()) expr = e.get_expression();
 }
 
-optional<var> c_script_engine::process_expression(const expression& e) const
+optional<var> c_script_engine::process_expression(const c_expression& e) const
 {
     std::string name = e.get_name();
 

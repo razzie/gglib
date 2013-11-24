@@ -3,7 +3,6 @@
 
 #include <utility>
 #include <stdexcept>
-#include "gg/misc.hpp"
 
 namespace gg
 {

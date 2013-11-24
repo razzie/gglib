@@ -3,7 +3,7 @@
 
 #include <map>
 #include "gg/scripteng.hpp"
-#include "expression.hpp"
+#include "c_expression.hpp"
 #include "tinythread.h"
 
 namespace gg
@@ -24,7 +24,7 @@ namespace gg
         struct function_container
         {
             dynamic_function m_func;
-            expression m_sign;
+            c_expression m_sign;
             bool m_is_hidden;
         };
 
@@ -49,7 +49,7 @@ namespace gg
         bool auto_complete(std::string& fn, bool print = false) const;
         bool auto_complete(std::string& fn, std::vector<std::string> matches, bool print = false) const;
         void auto_complete_expr(std::string& expr, bool print = false) const;
-        optional<var> process_expression(const expression& e) const;
+        optional<var> process_expression(const c_expression& e) const;
     };
 };
 

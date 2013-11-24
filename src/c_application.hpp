@@ -38,6 +38,7 @@ namespace gg
         console*       create_console();
         console*       create_console(std::string name, std::string welcome_text);
         timer*         create_timer();
+        expression*    create_expression(std::string expr, bool auto_complete = false);
 
         int  start();
         void exit(int exit_code = 0);

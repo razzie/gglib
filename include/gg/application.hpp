@@ -1,8 +1,6 @@
 #ifndef GG_APPLICATION_HPP_INCLUDED
 #define GG_APPLICATION_HPP_INCLUDED
 
-#include "gg/misc.hpp"
-
 namespace gg
 {
     class event_manager;
@@ -10,6 +8,7 @@ namespace gg
     class script_engine;
     class console;
     class timer;
+    class expression;
 
     class application : public reference_counted
     {
@@ -27,6 +26,7 @@ namespace gg
         virtual console*       create_console() = 0;
         virtual console*       create_console(std::string name, std::string welcome_text) = 0;
         virtual timer*         create_timer() = 0;
+        virtual expression*    create_expression(std::string expr, bool auto_complete = false) = 0;
 
         virtual int  start() = 0;
         virtual void exit(int exit_code = 0) = 0;
