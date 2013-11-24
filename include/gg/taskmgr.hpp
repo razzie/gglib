@@ -33,7 +33,11 @@ namespace gg
     public:
         virtual std::string get_name() const = 0;
         virtual void add_task(task*) = 0;
+        virtual void add_task(std::function<void()> func) = 0;
         virtual void add_delayed_task(task*, uint32_t delay_ms) = 0;
+        virtual void add_delayed_task(std::function<void()> func, uint32_t delay_ms) = 0;
+        virtual void add_persistent_task(std::function<bool(uint32_t)> func) = 0;
+        virtual void add_delayed_persistent_task(std::function<bool(uint32_t)> func, uint32_t delay_ms) = 0;
         virtual void suspend() = 0;
         virtual void resume() = 0;
     };

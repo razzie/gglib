@@ -14,6 +14,7 @@ class wait_task : public task
 public:
     wait_task(uint32_t wait_time)
      : task("wait"), m_wait(wait_time), m_elapsed(0) {}
+
     ~wait_task() {}
 
     bool run(uint32_t elapsed)
@@ -28,8 +29,12 @@ class function_task : public task
     std::function<bool(uint32_t)> m_func;
 
 public:
-    function_task(const std::function<bool(uint32_t)>& f)
-     : task("function"), m_func(f) {}
+    function_task(std::function<bool(uint32_t)> func)
+     : task("persistent function task"), m_func(func) {}
+
+    function_task(std::function<void()> func)
+     : task("function task"), m_func([func](uint32_t) -> bool { func(); return true; }) {}
+
     ~function_task() {}
 
     bool run(uint32_t elapsed)
@@ -37,19 +42,6 @@ public:
         return m_func(elapsed);
     }
 };
-
-/*class kill_thread_task : public task
-{
-public:
-    kill_thread_task() {}
-    ~kill_thread_task() {}
-
-    bool run(uint32_t)
-    {
-        delete static_cast<c_thread*>( task_manager::get_current_thread() );
-        return true;
-    }
-};*/
 
 
 c_thread::c_thread(std::string name)
@@ -84,6 +76,8 @@ std::string c_thread::get_name() const
 
 void c_thread::add_task(task* t)
 {
+    t->grab();
+
     m_task_pool_mutex.lock();
     m_task_pool.push_back({t, new c_timer()});
     m_task_pool_mutex.unlock();
@@ -91,11 +85,51 @@ void c_thread::add_task(task* t)
     m_cond.notify_all();
 }
 
+void c_thread::add_task(std::function<void()> func)
+{
+    task* t = new function_task(func);
+    this->add_task(t);
+    t->drop();
+}
+
 void c_thread::add_delayed_task(task* t, uint32_t delay_ms)
 {
+    t->grab();
+
     task* parent = new wait_task(delay_ms);
     parent->add_child(t);
+
     this->add_task(parent);
+    parent->drop();
+}
+
+void c_thread::add_delayed_task(std::function<void()> func, uint32_t delay_ms)
+{
+    task* t = new function_task(func);
+    task* parent = new wait_task(delay_ms);
+    parent->add_child(t);
+    t->drop();
+
+    this->add_task(parent);
+    parent->drop();
+}
+
+void c_thread::add_persistent_task(std::function<bool(uint32_t)> func)
+{
+    task* t = new function_task(func);
+    this->add_task(t);
+    t->drop();
+}
+
+void c_thread::add_delayed_persistent_task(std::function<bool(uint32_t)> func, uint32_t delay_ms)
+{
+    task* t = new function_task(func);
+    task* parent = new wait_task(delay_ms);
+    parent->add_child(t);
+    t->drop();
+
+    this->add_task(parent);
+    parent->drop();
 }
 
 void c_thread::suspend()
@@ -246,6 +280,12 @@ gg::thread* c_task_manager::get_thread(std::string name)
         return it->second;
 }
 
+thread* task_manager::get_current_thread()
+{
+    optional<thread*> t = s_threads.get();
+    return (t.is_valid() ? t.get() : nullptr);
+}
+
 void c_task_manager::async_invoke(std::function<void()> func) const
 {
     struct async_invoke_data
@@ -279,8 +319,7 @@ void c_task_manager::async_invoke(std::function<void()> func) const
 
 task* c_task_manager::create_task(std::function<void()> func) const
 {
-    return new function_task(
-        [func](uint32_t) -> bool { func(); return true; });
+    return new function_task(func);
 }
 
 task* c_task_manager::create_wait_task(uint32_t wait_time) const
@@ -291,10 +330,4 @@ task* c_task_manager::create_wait_task(uint32_t wait_time) const
 task* c_task_manager::create_persistent_task(std::function<bool(uint32_t)> func) const
 {
     return new function_task(func);
-}
-
-thread* task_manager::get_current_thread()
-{
-    optional<thread*> t = s_threads.get();
-    return (t.is_valid() ? t.get() : nullptr);
 }

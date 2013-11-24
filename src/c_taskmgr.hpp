@@ -36,7 +36,11 @@ namespace gg
         ~c_thread();
         std::string get_name() const;
         void add_task(task*);
+        void add_task(std::function<void()> func);
         void add_delayed_task(task*, uint32_t delay_ms);
+        void add_delayed_task(std::function<void()> func, uint32_t delay_ms);
+        void add_persistent_task(std::function<bool(uint32_t)> func);
+        void add_delayed_persistent_task(std::function<bool(uint32_t)> func, uint32_t delay_ms);
         void suspend();
         void resume();
         void exit_and_join();
