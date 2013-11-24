@@ -8,6 +8,47 @@ namespace gg
 {
 namespace util
 {
+    template<class T, int N>
+    meta::enable_if_t<std::is_constructible<T>::value, T>
+    construct_array()
+    {
+        return new T[N];
+    }
+
+    template<class T>
+    void destruct(meta::enable_if_t<std::is_destructible<T>::value, T>* p)
+    {
+        delete p;
+    }
+
+    template<class T>
+    void destruct_array(meta::enable_if_t<std::is_destructible<T>::value, T>* p)
+    {
+        delete[] p;
+    }
+
+
+    class on_return
+    {
+        std::function<void()> m_func;
+
+    public:
+        on_return() {}
+        on_return(std::function<void()> func) : m_func(func) {}
+        on_return(const on_return&) = delete;
+        on_return(on_return&&) = delete;
+        ~on_return() { if (m_func) m_func(); }
+        on_return& operator= (std::function<void()> func) { m_func = func; return *this; }
+    };
+
+    template<class T, class... Args>
+    meta::enable_if_t<std::is_constructible<T, Args...>::value, T>
+    construct(Args... args)
+    {
+        return new T(std::forward<Args>(args)...);
+    }
+
+
     template<class T>
     std::basic_string<T> trim(std::basic_string<T> s,
                               std::locale loc = std::locale())
@@ -112,20 +153,6 @@ namespace util
 
         return false;
     }
-
-
-    class on_return
-    {
-        std::function<void()> m_func;
-
-    public:
-        on_return() {}
-        on_return(std::function<void()> func) : m_func(func) {}
-        on_return(const on_return&) = delete;
-        on_return(on_return&&) = delete;
-        ~on_return() { if (m_func) m_func(); }
-        on_return& operator= (std::function<void()> func) { m_func = func; return *this; }
-    };
 };
 };
 
