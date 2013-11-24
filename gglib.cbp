@@ -106,6 +106,8 @@
 		<Unit filename="src/c_expression.hpp" />
 		<Unit filename="src/c_scripteng.cpp" />
 		<Unit filename="src/c_scripteng.hpp" />
+		<Unit filename="src/c_serializer.cpp" />
+		<Unit filename="src/c_serializer.hpp" />
 		<Unit filename="src/c_taskmgr.cpp" />
 		<Unit filename="src/c_taskmgr.hpp" />
 		<Unit filename="src/c_timer.cpp" />

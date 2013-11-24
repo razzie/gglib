@@ -2,9 +2,11 @@
 #define GG_SERIALIZER_HPP_INCLUDED
 
 #include <cstdint>
+#include <vector>
+#include <cstring>
 #include <typeinfo>
 #include <functional>
-#include <vector>
+#include <stdexcept>
 #include "gg/var.hpp"
 #include "gg/refcounted.hpp"
 #include "gg/optional.hpp"
@@ -24,39 +26,57 @@ namespace gg
         {
         public:
             virtual ~storage() {}
-            virtual void add(uint8_t) = 0;
-            virtual void add(uint8_t*, std::size_t) = 0;
-            virtual void add(std::vector<uint8_t>) = 0;
-            //virtual uint8_t* get(std::size_t = 1) = 0;
-            virtual std::vector<uint8_t> get(std::size_t) = 0;
-            virtual uint8_t operator[] (std::size_t) = 0;
+            virtual std::size_t get_size() const = 0;
+            virtual bool is_empty() const = 0;
+            virtual void push(uint8_t) = 0;
+            virtual void push(const uint8_t*, std::size_t) = 0;
+            virtual void push(const std::vector<uint8_t>&) = 0;
+            virtual const uint8_t* get() const = 0;
+            virtual optional<uint8_t> pop() = 0;
+            virtual std::vector<uint8_t> pop(std::size_t) = 0;
         };
 
-        typedef std::function<void(var,storage&)> constructor;
-        typedef std::function<var(storage&)> destructor;
+        typedef std::function<bool(const var&,storage&)> serializer_func;
+        typedef std::function<optional<var>(storage&)> deserializer_func;
 
+        virtual application* get_app() const = 0;
         virtual storage* create_storage() const = 0;
-        virtual void add_rule(typeinfo, constructor, destructor) = 0;
-        virtual void add_trivial_rule(typeinfo) = 0;
-        virtual bool serialize(typeinfo, uint8_t*, storage&) const = 0;
+        virtual void add_rule(typeinfo, serializer_func, deserializer_func) = 0;
+        virtual bool serialize(typeinfo, const var&, storage&) const = 0;
         virtual optional<var> deserialize(typeinfo, storage&) const = 0;
 
         template<class T>
-        void add_rule(constructor ctor, destructor dtor)
+        void add_rule(serializer_func s, deserializer_func d)
         {
-            this->add_rule(typeid(T), ctor, dtor);
+            this->add_rule(typeid(T), s, d);
         }
 
         template<class T>
         void add_trivial_rule()
         {
-            this->add_trivial_rule(typeid(T));
+            serializer_func s = [](const var& v, storage& st)
+            {
+                st.push(reinterpret_cast<const uint8_t*>(v.get_ptr<T>()), sizeof(T));
+                return true;
+            };
+
+            deserializer_func d = [](storage& st)->optional<var>
+            {
+                if (st.get_size() < sizeof(T))
+                    throw std::runtime_error("insufficient length of data for deserialization");
+
+                T t;
+                std::memcpy(&t, st.get(), sizeof(T));
+                return var(std::move(t));
+            };
+
+            this->add_rule(typeid(T), s, d);
         }
 
         template<class T>
-        bool serialize(T* p, storage& st)
+        bool serialize(const var& v, storage& st)
         {
-            return this->serialize(typeid(T), static_cast<uint8_t*>(p), st);
+            return this->serialize(typeid(T), v, st);
         }
 
         template<class T>

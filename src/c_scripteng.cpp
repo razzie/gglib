@@ -87,8 +87,8 @@ application* c_script_engine::get_app() const
 
 void c_script_engine::add_function(std::string fn, dynamic_function func, std::string args, bool hidden)
 {
-    if (m_functions.count(fn) == 1)
-        throw std::runtime_error("command already registered");
+    if (m_functions.count(fn) > 0)
+        throw std::runtime_error("function already registered");
 
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 

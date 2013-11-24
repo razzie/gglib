@@ -3,6 +3,7 @@
 #include "c_eventmgr.hpp"
 #include "c_taskmgr.hpp"
 #include "c_scripteng.hpp"
+#include "c_serializer.hpp"
 #include "c_timer.hpp"
 #include "c_expression.hpp"
 #include "managed_cout.hpp"
@@ -24,6 +25,7 @@ c_application::c_application(std::string name, uint32_t ver_major, uint32_t ver_
     m_eventmgr = new c_event_manager(this);
     m_taskmgr = new c_task_manager(this);
     m_scripteng = new c_script_engine(this);
+    m_serializer = new c_serializer(this);
 }
 
 c_application::~c_application()
@@ -64,6 +66,11 @@ task_manager* c_application::get_task_manager()
 script_engine* c_application::get_script_engine()
 {
     return m_scripteng;
+}
+
+serializer* c_application::get_serializer()
+{
+    return m_serializer;
 }
 
 console* c_application::create_console()

@@ -72,7 +72,7 @@ namespace gg
         bool is_empty() const;
 
         template<class T>
-        T& get()
+        T* get_ptr()
         {
             if (m_var == nullptr)
                 throw std::runtime_error("get() called on empty var");
@@ -80,17 +80,24 @@ namespace gg
             if (m_var->get_type() != typeid(T))
                 throw std::runtime_error("var type mismatch");
 
-            return *static_cast<T*>(m_var->get_ptr());
+            return static_cast<T*>(m_var->get_ptr());
         }
 
         template<class T>
-        const T& get() const
+        const T* get_ptr() const
         {
-            return get<T>();
+            if (m_var == nullptr)
+                throw std::runtime_error("get() called on empty var");
+
+            if (m_var->get_type() != typeid(T))
+                throw std::runtime_error("var type mismatch");
+
+            return static_cast<const T*>(m_var->get_ptr());
         }
 
-        template<class T>
-        operator T() const { return this->get<T>(); }
+        template<class T> T& get() { return *get_ptr<T>(); }
+        template<class T> const T& get() const { return *get_ptr<T>(); }
+        template<class T> operator T() const { return this->get<T>(); }
 
         template<class T, class = meta::enable_if_t<std::is_same<T, var>::value>>
         var cast() const { return var(*this); }

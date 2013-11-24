@@ -115,6 +115,9 @@ application* c_event_manager::get_app() const
 
 c_event_type* c_event_manager::create_event_type(std::string name)
 {
+    if (m_evt_types.count(name) > 0)
+        return get_event_type(name);
+
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     auto ret = m_evt_types.insert( std::make_pair(name, c_event_type(name,this)) );
