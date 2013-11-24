@@ -14,6 +14,7 @@
 #include "gg/eventmgr.hpp"
 #include "gg/taskmgr.hpp"
 #include "gg/scripteng.hpp"
+#include "gg/serializer.hpp"
 #include "gg/application.hpp"
 
 #endif // GGLIB_HPP_INCLUDED

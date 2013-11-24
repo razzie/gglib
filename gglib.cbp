@@ -82,6 +82,7 @@
 		<Unit filename="include/gg/optional.hpp" />
 		<Unit filename="include/gg/refcounted.hpp" />
 		<Unit filename="include/gg/scripteng.hpp" />
+		<Unit filename="include/gg/serializer.hpp" />
 		<Unit filename="include/gg/taskmgr.hpp" />
 		<Unit filename="include/gg/timer.hpp" />
 		<Unit filename="include/gg/typeinfo.hpp" />
