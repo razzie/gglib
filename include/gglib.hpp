@@ -1,8 +1,14 @@
 #ifndef GGLIB_HPP_INCLUDED
 #define GGLIB_HPP_INCLUDED
 
-#include "gg/core.hpp"
+#include "gg/cast.hpp"
+#include "gg/var.hpp"
+#include "gg/function.hpp"
+#include "gg/refcounted.hpp"
+#include "gg/optional.hpp"
+#include "gg/typeinfo.hpp"
 #include "gg/util.hpp"
+#include "gg/misc.hpp"
 #include "gg/timer.hpp"
 #include "gg/console.hpp"
 #include "gg/eventmgr.hpp"

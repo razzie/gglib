@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "gglib.hpp"
 
 int main()

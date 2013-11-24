@@ -1,7 +1,7 @@
 #ifndef GG_APPLICATION_HPP_INCLUDED
 #define GG_APPLICATION_HPP_INCLUDED
 
-#include "gg/core.hpp"
+#include "gg/misc.hpp"
 
 namespace gg
 {

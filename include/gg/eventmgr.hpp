@@ -1,7 +1,11 @@
 #ifndef GG_EVENTMGR_HPP_INCLUDED
 #define GG_EVENTMGR_HPP_INCLUDED
 
-#include "gg/core.hpp"
+#include <map>
+#include <list>
+#include <functional>
+#include "gg/refcounted.hpp"
+#include "gg/var.hpp"
 
 namespace gg
 {

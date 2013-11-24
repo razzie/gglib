@@ -1,9 +1,10 @@
 #ifndef GG_THREADGLOBAL_HPP_INCLUDED
 #define GG_THREADGLOBAL_HPP_INCLUDED
 
+#include <map>
 #include <stack>
 #include "tinythread.h"
-#include "gg/core.hpp"
+#include "gg/optional.hpp"
 
 namespace gg
 {

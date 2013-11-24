@@ -1,4 +1,5 @@
 #include <stdio.h>
+#include <iostream>
 #include "tinythread.h"
 #include "managed_cout.hpp"
 #include "threadglobal.hpp"

@@ -2,12 +2,25 @@
 #define GG_UTIL_HPP_INCLUDED
 
 #include <assert.h>
-#include "gg/core.hpp"
+#include <locale>
+#include <string>
+#include <vector>
+#include <functional>
+#include <type_traits>
+#include <stdexcept>
+#include "gg/misc.hpp"
 
 namespace gg
 {
 namespace util
 {
+    template<class T, class... Args>
+    meta::enable_if_t<std::is_constructible<T, Args...>::value, T>
+    construct(Args... args)
+    {
+        return new T( std::forward<Args>(args)... );
+    }
+
     template<class T, int N>
     meta::enable_if_t<std::is_constructible<T>::value, T>
     construct_array()
@@ -40,13 +53,6 @@ namespace util
         ~on_return() { if (m_func) m_func(); }
         on_return& operator= (std::function<void()> func) { m_func = func; return *this; }
     };
-
-    template<class T, class... Args>
-    meta::enable_if_t<std::is_constructible<T, Args...>::value, T>
-    construct(Args... args)
-    {
-        return new T(std::forward<Args>(args)...);
-    }
 
 
     template<class T>

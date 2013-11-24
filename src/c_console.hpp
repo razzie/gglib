@@ -2,9 +2,11 @@
 #define CCONSOLE_H_INCLUDED
 
 #include "win32_aero.hpp"
+#include <list>
+#include <vector>
 #include "tinythread.h"
 #include "fast_mutex.h"
-#include "gg/core.hpp"
+#include "gg/misc.hpp"
 #include "gg/console.hpp"
 
 namespace gg

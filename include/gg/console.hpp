@@ -1,7 +1,10 @@
 #ifndef GG_CONSOLE_HPP_INCLUDED
 #define GG_CONSOLE_HPP_INCLUDED
 
-#include "gg/core.hpp"
+#include <string>
+#include <functional>
+#include "gg/misc.hpp"
+#include "gg/refcounted.hpp"
 
 namespace gg
 {

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include "c_console.hpp"
 #include "c_timer.hpp"
 #include "threadglobal.hpp"

@@ -1,3 +1,4 @@
+#include <iostream>
 #include "threadglobal.hpp"
 #include "c_taskmgr.hpp"
 

@@ -2,7 +2,7 @@
 #define MANAGED_COUT_HPP_INCLUDED
 
 #include <stack>
-#include "gg/core.hpp"
+#include "gg/misc.hpp"
 
 namespace gg
 {

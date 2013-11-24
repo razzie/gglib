@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <cctype>
 #include "c_scripteng.hpp"
 #include "managed_cout.hpp"

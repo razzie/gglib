@@ -1,6 +1,7 @@
 #ifndef C_SCRIPTENG_HPP_INCLUDED
 #define C_SCRIPTENG_HPP_INCLUDED
 
+#include <map>
 #include "gg/scripteng.hpp"
 #include "expression.hpp"
 #include "tinythread.h"

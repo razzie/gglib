@@ -1,8 +1,10 @@
 #ifndef GG_EXPRESSION_HPP_INCLUDED
 #define GG_EXPRESSION_HPP_INCLUDED
 
+#include <cstdint>
+#include <string>
+#include <list>
 #include <memory>
-#include "gg/core.hpp"
 
 namespace gg
 {

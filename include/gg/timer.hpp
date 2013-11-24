@@ -1,7 +1,7 @@
 #ifndef GG_TIMER_HPP_INCLUDED
 #define GG_TIMER_HPP_INCLUDED
 
-#include "gg/core.hpp"
+#include "gg/refcounted.hpp"
 
 namespace gg
 {

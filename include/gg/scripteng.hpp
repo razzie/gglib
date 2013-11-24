@@ -1,7 +1,10 @@
 #ifndef GG_SCRIPTENG_HPP_INCLUDED
 #define GG_SCRIPTENG_HPP_INCLUDED
 
-#include "gg/core.hpp"
+#include <type_traits>
+#include "gg/misc.hpp"
+#include "gg/function.hpp"
+#include "gg/optional.hpp"
 #include "gg/console.hpp"
 
 namespace gg
