@@ -33,7 +33,8 @@ namespace gg
             const std::type_info* m_type;
 
         public:
-            var_impl(T t) : m_var(t), m_type(&typeid(T)) {}
+            template<class... Args>
+            var_impl(Args... args) : m_var(std::forward<Args>(args)...), m_type(&typeid(T)) {}
             var_impl(const var_impl& v) : m_var(v.m_var), m_type(v.m_type) {}
             ~var_impl() {}
             var_impl_base* clone() const { return new var_impl<T>(m_var); }
@@ -46,28 +47,16 @@ namespace gg
         const var_impl_base* m_var = nullptr;
 
     public:
-        class view
-        {
-            friend std::ostream& operator<< (std::ostream& o, const gg::var::view& vw);
-            const var& m_var;
-
-        public:
-            view(const var& var);
-            view(const view& vw);
-            ~view();
-        };
-
-        friend std::ostream& operator<< (std::ostream& o, const gg::var::view& vw);
-
         var();
         var(const var& v);
         var(var&& v);
         ~var();
-        var& operator= (const var& v);
-        var& operator= (var&& v);
 
         template<class T>
-        var(T t) { m_var = new var_impl<T>(t); }
+        var(T t) : m_var(new var_impl<T>(t)) {}
+
+        template<class T, class... Args>
+        var(Args... args) : m_var(new var_impl<T>(std::forward<Args>(args)...)) {}
 
         template<class T>
         var& operator= (const T& t)
@@ -77,8 +66,8 @@ namespace gg
             return *this;
         }
 
-        view to_stream() const;
-        std::string to_string() const;
+        var& operator= (const var& v);
+        var& operator= (var&& v);
         const std::type_info& get_type() const;
         bool is_empty() const;
 
@@ -126,6 +115,21 @@ namespace gg
 
             return result;
         }
+
+        class view
+        {
+            friend std::ostream& operator<< (std::ostream& o, const gg::var::view& vw);
+            const var& m_var;
+
+        public:
+            view(const var& var);
+            view(const view& vw);
+            ~view();
+        };
+
+        view to_stream() const;
+        std::string to_string() const;
+        friend std::ostream& operator<< (std::ostream& o, const gg::var::view& vw);
     };
 
     typedef std::vector<var> varlist;
