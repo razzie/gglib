@@ -46,12 +46,10 @@
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
 			<Add option="-static" />
-			<Add option="-DWIN32" />
 			<Add directory="." />
 			<Add directory="include" />
 			<Add directory="src" />
 			<Add directory="ext/tinythread++" />
-			<Add directory="ext/simplesockets" />
 		</Compiler>
 		<Linker>
 			<Add library="gdi32" />
@@ -62,14 +60,6 @@
 			<Add library="wsock32" />
 			<Add directory="lib" />
 		</Linker>
-		<Unit filename="ext/simplesockets/ActiveSocket.cpp" />
-		<Unit filename="ext/simplesockets/ActiveSocket.h" />
-		<Unit filename="ext/simplesockets/Host.h" />
-		<Unit filename="ext/simplesockets/PassiveSocket.cpp" />
-		<Unit filename="ext/simplesockets/PassiveSocket.h" />
-		<Unit filename="ext/simplesockets/SimpleSocket.cpp" />
-		<Unit filename="ext/simplesockets/SimpleSocket.h" />
-		<Unit filename="ext/simplesockets/StatTimer.h" />
 		<Unit filename="ext/tinythread++/fast_mutex.h" />
 		<Unit filename="ext/tinythread++/tinythread.cpp" />
 		<Unit filename="ext/tinythread++/tinythread.h" />
