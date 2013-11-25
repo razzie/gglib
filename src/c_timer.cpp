@@ -3,6 +3,12 @@
 using namespace gg;
 using namespace std::chrono;
 
+
+timer* timer::create()
+{
+    return new c_timer();
+}
+
 c_timer::c_timer()
 {
     this->reset();

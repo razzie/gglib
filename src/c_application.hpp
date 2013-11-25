@@ -11,7 +11,6 @@ namespace gg
     class c_script_engine;
     class c_serializer;
     class c_console;
-    class c_timer;
 
     class c_application : public application
     {
@@ -40,8 +39,6 @@ namespace gg
         serializer*    get_serializer();
         console*       create_console();
         console*       create_console(std::string name, std::string welcome_text);
-        timer*         create_timer();
-        expression*    create_expression(std::string expr, bool auto_complete = false);
 
         int  start();
         void exit(int exit_code = 0);

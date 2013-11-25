@@ -4,8 +4,6 @@
 #include "c_taskmgr.hpp"
 #include "c_scripteng.hpp"
 #include "c_serializer.hpp"
-#include "c_timer.hpp"
-#include "c_expression.hpp"
 #include "managed_cout.hpp"
 
 using namespace gg;
@@ -83,16 +81,6 @@ console* c_application::create_console()
 console* c_application::create_console(std::string name, std::string welcome_text)
 {
     return new c_console(this, name, nullptr, welcome_text);
-}
-
-timer* c_application::create_timer()
-{
-    return new c_timer();
-}
-
-expression* c_application::create_expression(std::string expr, bool auto_complete)
-{
-    return new c_expression(expr, auto_complete);
 }
 
 int c_application::start()

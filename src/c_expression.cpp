@@ -64,6 +64,11 @@ static void make_valid_leaf_expr(std::string& expr)
 }
 
 
+expression* create(std::string expr, bool auto_complete)
+{
+    return new c_expression(expr, auto_complete);
+}
+
 c_expression::c_expression(c_expression* parent, std::string orig_expr, bool auto_complete)
  : m_parent(parent)
 {
