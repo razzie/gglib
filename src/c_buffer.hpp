@@ -1,12 +1,14 @@
 #ifndef C_BUFFER_HPP_INCLUDED
 #define C_BUFFER_HPP_INCLUDED
 
+#include "tinythread.h"
 #include "gg/buffer.hpp"
 
 namespace gg
 {
     class c_buffer : public buffer
     {
+        mutable tthread::mutex m_mutex;
         std::deque<uint8_t> m_data;
 
     public:
