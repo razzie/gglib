@@ -163,7 +163,11 @@ void c_console::async_close()
     CloseThemeData(m_hTheme);
     DestroyWindow(m_hWnd);
 
-    if (m_close_cb) m_close_cb(this);
+    if (m_close_cb)
+    {
+        recursive_thread_global<console*>::scope invoker(&s_invokers, this);
+        m_close_cb(this);
+    }
 }
 
 bool c_console::is_opened() const
