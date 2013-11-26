@@ -2,7 +2,6 @@
 #define GG_SERIALIZER_HPP_INCLUDED
 
 #include <cstdint>
-#include <vector>
 #include <cstring>
 #include <typeinfo>
 #include <functional>
@@ -10,6 +9,7 @@
 #include "gg/var.hpp"
 #include "gg/refcounted.hpp"
 #include "gg/optional.hpp"
+#include "gg/buffer.hpp"
 #include "gg/typeinfo.hpp"
 
 namespace gg
@@ -22,28 +22,13 @@ namespace gg
         virtual ~serializer() {}
 
     public:
-        class storage : public reference_counted
-        {
-        public:
-            virtual ~storage() {}
-            virtual std::size_t get_size() const = 0;
-            virtual bool is_empty() const = 0;
-            virtual void push(uint8_t) = 0;
-            virtual void push(const uint8_t*, std::size_t) = 0;
-            virtual void push(const std::vector<uint8_t>&) = 0;
-            virtual const uint8_t* get() const = 0;
-            virtual optional<uint8_t> pop() = 0;
-            virtual std::vector<uint8_t> pop(std::size_t) = 0;
-        };
-
-        typedef std::function<bool(const var&,storage&)> serializer_func;
-        typedef std::function<optional<var>(storage&)> deserializer_func;
+        typedef std::function<bool(const var&,buffer*)> serializer_func;
+        typedef std::function<optional<var>(buffer*)> deserializer_func;
 
         virtual application* get_app() const = 0;
-        virtual storage* create_storage() const = 0;
         virtual void add_rule(typeinfo, serializer_func, deserializer_func) = 0;
-        virtual bool serialize(typeinfo, const var&, storage&) const = 0;
-        virtual optional<var> deserialize(typeinfo, storage&) const = 0;
+        virtual bool serialize(typeinfo, const var&, buffer*) const = 0;
+        virtual optional<var> deserialize(typeinfo, buffer*) const = 0;
 
         template<class T>
         void add_rule(serializer_func s, deserializer_func d)
@@ -54,19 +39,22 @@ namespace gg
         template<class T>
         void add_trivial_rule()
         {
-            serializer_func s = [](const var& v, storage& st)
+            serializer_func s = [](const var& v, buffer* buf)->bool
             {
-                st.push(reinterpret_cast<const uint8_t*>(v.get_ptr<T>()), sizeof(T));
+                if (buf == nullptr)
+                    return false;
+
+                buf->push(reinterpret_cast<const uint8_t*>(v.get_ptr<T>()), sizeof(T));
                 return true;
             };
 
-            deserializer_func d = [](storage& st)->optional<var>
+            deserializer_func d = [](buffer* buf)->optional<var>
             {
-                if (st.get_size() < sizeof(T))
-                    throw std::runtime_error("insufficient length of data for deserialization");
+                if (buf == nullptr || (buf->available() < sizeof(T)))
+                    return optional<var>();
 
                 T t;
-                std::memcpy(&t, st.get(), sizeof(T));
+                std::memcpy(&t, buf->pop(sizeof(T)).data(), sizeof(T));
                 return var(std::move(t));
             };
 
@@ -74,15 +62,15 @@ namespace gg
         }
 
         template<class T>
-        bool serialize(const var& v, storage& st)
+        bool serialize(const var& v, buffer* buf)
         {
-            return this->serialize(typeid(T), v, st);
+            return this->serialize(typeid(T), v, buf);
         }
 
         template<class T>
-        optional<var> deserialize(storage& st)
+        optional<var> deserialize(buffer* buf)
         {
-            return this->deserialize(typeid(T), st);
+            return this->deserialize(typeid(T), buf);
         }
     };
 };

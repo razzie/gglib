@@ -64,6 +64,7 @@
 		<Unit filename="ext/tinythread++/tinythread.cpp" />
 		<Unit filename="ext/tinythread++/tinythread.h" />
 		<Unit filename="include/gg/application.hpp" />
+		<Unit filename="include/gg/buffer.hpp" />
 		<Unit filename="include/gg/cast.hpp" />
 		<Unit filename="include/gg/console.hpp" />
 		<Unit filename="include/gg/eventmgr.hpp" />
@@ -85,6 +86,8 @@
 		<Unit filename="main.cpp" />
 		<Unit filename="src/c_application.cpp" />
 		<Unit filename="src/c_application.hpp" />
+		<Unit filename="src/c_buffer.cpp" />
+		<Unit filename="src/c_buffer.hpp" />
 		<Unit filename="src/c_console.cpp" />
 		<Unit filename="src/c_console.hpp">
 			<Option target="Release" />

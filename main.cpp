@@ -8,10 +8,10 @@ int main()
     gg::serializer* srl = app->get_serializer();
     srl->add_trivial_rule<int>();
 
-    gg::serializer::storage* st = srl->create_storage();
-    srl->serialize<int>(123, *st);
+    gg::buffer* buf = gg::buffer::create();
+    srl->serialize<int>(123, buf);
 
-    gg::optional<gg::var> v = srl->deserialize<int>(*st);
+    gg::optional<gg::var> v = srl->deserialize<int>(buf);
     if (v.is_valid())
         std::cerr << v.get().to_stream() << std::endl;
     else
