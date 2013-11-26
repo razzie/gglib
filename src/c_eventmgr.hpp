@@ -7,6 +7,22 @@
 
 namespace gg
 {
+    class c_event : public event
+    {
+        std::string m_name;
+        std::map<std::string,var> m_attributes;
+
+    public:
+        c_event(std::string name);
+        c_event(std::string name, std::initializer_list<attribute> il);
+        ~c_event();
+        std::string get_name() const;
+        void add(std::string key, var value);
+        void add(std::initializer_list<attribute> il);
+        var& operator[] (const std::string& attr);
+        const var& operator[] (const std::string& attr) const;
+    };
+
     class c_event_manager;
 
     class c_event_type : public event_type

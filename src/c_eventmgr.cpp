@@ -2,6 +2,7 @@
 
 using namespace gg;
 
+
 class event_task : public task
 {
     c_event_manager* m_evtmgr;
@@ -33,6 +34,52 @@ public:
     ~func_event_listener() {}
     bool on_event(const event& evt) { return m_cb(evt); }
 };
+
+
+event* event::create(std::string name, std::initializer_list<attribute> il)
+{
+    return new c_event(name, il);
+}
+
+c_event::c_event(std::string name)
+ : m_name(std::move(name))
+{
+}
+
+c_event::c_event(std::string name, std::initializer_list<attribute> il)
+ : m_name(std::move(name))
+ , m_attributes(il)
+{
+}
+
+c_event::~c_event()
+{
+}
+
+std::string c_event::get_name() const
+{
+    return m_name;
+}
+
+void c_event::add(std::string key, var value)
+{
+    m_attributes.insert(std::make_pair(key,value));
+}
+
+void c_event::add(std::initializer_list<attribute> il)
+{
+    m_attributes.insert(il);
+}
+
+var& c_event::operator[] (const std::string& attr)
+{
+    return m_attributes.at(attr);
+}
+
+const var& c_event::operator[] (const std::string& attr) const
+{
+    return m_attributes.at(attr);
+}
 
 
 c_event_type::c_event_type(std::string name, c_event_manager* mgr)

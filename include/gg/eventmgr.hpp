@@ -13,20 +13,16 @@ namespace gg
 
     class event : public reference_counted
     {
-        std::string m_name;
-        std::map<std::string,var> m_attributes;
-
+    public:
         typedef std::map<std::string,var>::value_type attribute;
 
-    public:
-        event(std::string name) : m_name(std::move(name)) {}
-        event(std::string name, std::initializer_list<attribute> il) : m_name(std::move(name)), m_attributes(il) {}
+        static event* create(std::string name, std::initializer_list<attribute> il = {});
         virtual ~event() {}
-        virtual std::string get_name() const { return m_name; }
-        virtual void add(std::string key, var value) { m_attributes.insert(std::make_pair(key,value)); }
-        virtual void add(std::initializer_list<attribute> il) { m_attributes.insert(il); }
-        virtual var& operator[] (const std::string& attr) { return m_attributes.at(attr); }
-        virtual const var& operator[] (const std::string& attr) const { return m_attributes.at(attr); }
+        virtual std::string get_name() const = 0;
+        virtual void add(std::string key, var value) = 0;
+        virtual void add(std::initializer_list<attribute> il) = 0;
+        virtual var& operator[] (const std::string& attr) = 0;
+        virtual const var& operator[] (const std::string& attr) const = 0;
     };
 
     typedef std::function<bool(const event&)> event_filter; // returns true if event should be skipped
