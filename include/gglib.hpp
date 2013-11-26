@@ -6,6 +6,7 @@
 #include "gg/function.hpp"
 #include "gg/refcounted.hpp"
 #include "gg/optional.hpp"
+#include "gg/buffer.hpp"
 #include "gg/typeinfo.hpp"
 #include "gg/util.hpp"
 #include "gg/misc.hpp"
