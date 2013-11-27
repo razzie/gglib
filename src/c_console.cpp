@@ -38,6 +38,7 @@ c_console::c_console(application* app, std::string name,
  : m_app(app)
  , m_name(name)
  , m_open(false)
+ , m_input(true)
  , m_cmd_pos(m_cmd.end())
  , m_cmd_history_pos(m_cmd_history.end())
  , m_ctrl(ctrl)
@@ -86,16 +87,10 @@ application* c_console::get_app() const
     return m_app;
 }
 
-void c_console::set_controller(controller* ctrl)
+std::string c_console::get_name() const
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-    if (m_ctrl != nullptr) m_ctrl->drop();
-    m_ctrl = ctrl;
-}
-
-console::controller* c_console::get_controller() const
-{
-    return m_ctrl;
+    return m_name;
 }
 
 void c_console::set_name(std::string name)
@@ -105,10 +100,28 @@ void c_console::set_name(std::string name)
     if (m_open) SetWindowText(m_hWnd, TEXT(m_name.c_str()));
 }
 
-std::string c_console::get_name() const
+console::controller* c_console::get_controller() const
+{
+    return m_ctrl;
+}
+
+void c_console::set_controller(controller* ctrl)
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-    return m_name;
+    if (m_ctrl != nullptr) m_ctrl->drop();
+    m_ctrl = ctrl;
+}
+
+void c_console::enable_input()
+{
+    //tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    m_input = true;
+}
+
+void c_console::disable_input()
+{
+    //tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    m_input = false;
 }
 
 void c_console::open()
@@ -281,6 +294,9 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
             break;
 
         case WM_CHAR:
+            // break if input is disable
+            if (!m_input) break;
+
             // handling CTRL + C
             if (/*GetKeyState(VK_CONTROL) && wParam == 'c'*/ wParam == 3) // EndOfText
             {
@@ -289,6 +305,7 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
                 update();
                 break;
             }
+
             // handling currently typed command
             switch (wParam)
             {
@@ -330,6 +347,10 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
         case WM_KEYDOWN:
             m_welcome = false;
+
+            // break if input is disable
+            if (!m_input) break;
+
             switch (wParam)
             {
                 case VK_LEFT:
@@ -485,7 +506,10 @@ void c_console::paint(const render_context* ctx)
         return;
     }
 
-    c_output::draw(m_cmd, ctx, &bounds, std::distance(m_cmd.begin(), m_cmd_pos));
+    if (m_input)
+    {
+        c_output::draw(m_cmd, ctx, &bounds, std::distance(m_cmd.begin(), m_cmd_pos));
+    }
 
     for (auto it = m_outp.rbegin(); it != m_outp.rend() && bounds.bottom > 0; ++it)
     {

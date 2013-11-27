@@ -99,6 +99,7 @@ private:
     mutable application* m_app;
     std::string m_name;
 	bool m_open;
+	bool m_input;
 	std::list<c_output*> m_outp;
 	std::string m_cmd;
 	std::string::iterator m_cmd_pos;
@@ -137,10 +138,12 @@ public:
     c_console(c_console&&) = delete;
     ~c_console();
     application* get_app() const;
-    void set_controller(controller* ctrl);
-    controller* get_controller() const;
-    void set_name(std::string name);
     std::string get_name() const;
+    void set_name(std::string name);
+    controller* get_controller() const;
+    void set_controller(controller* ctrl);
+    void enable_input();
+    void disable_input();
     void open();
     void close();
     bool is_opened() const;
