@@ -9,49 +9,40 @@
 
 namespace gg
 {
-    class application;
-
-    class ini_parser
+    class ini_parser : public reference_counted
     {
-    protected:
-        virtual ~ini_parser() {}
-
     public:
-        class parse_result : public reference_counted
+        struct entry
         {
-        public:
-            struct entry
-            {
-                std::string key;
-                std::string value;
-            };
-
-            class group
-            {
-            protected:
-                virtual ~group() {}
-            public:
-                virtual entry* operator[] (std::string) = 0;
-                virtual const entry* operator[] (std::string) const = 0;
-                virtual entry* get_entry(std::string) = 0;
-                virtual const entry* get_entry(std::string) const = 0;
-                virtual std::list<entry>& get_entries() = 0;
-                virtual const std::list<entry>& get_entries() const = 0;
-            };
-
-            virtual ~parse_result() {}
-            virtual group* get_group(std::string) = 0;
-            virtual const group* get_group(std::string) const = 0;
-            virtual group* create_group(std::string) = 0;
-            virtual void remove_group(std::string) = 0;
-            virtual void remove_group(group*) = 0;
-            virtual void save(std::string file) = 0;
-            virtual void save(std::ostream&) = 0;
+            std::string key;
+            std::string value;
         };
 
-        virtual application* get_app() const = 0;
-        virtual parse_result* open(std::string file) const = 0;
-        virtual parse_result* open(std::istream&) const = 0;
+        class group
+        {
+        protected:
+            virtual ~group() {}
+        public:
+            virtual std::string get_name() const = 0;
+            virtual void set_name(std::string) = 0;
+            virtual entry& operator[] (std::string) = 0;
+            virtual entry* get_entry(std::string) = 0;
+            virtual const entry* get_entry(std::string) const = 0;
+            virtual std::list<entry>& get_entries() = 0;
+            virtual const std::list<entry>& get_entries() const = 0;
+        };
+
+        static ini_parser* create(std::string file);
+        static ini_parser* create(const std::istream&);
+        virtual ~ini_parser() {}
+        virtual group& operator[] (std::string) = 0;
+        virtual group* get_group(std::string) = 0;
+        virtual const group* get_group(std::string) const = 0;
+        virtual group* create_group(std::string) = 0;
+        virtual void remove_group(std::string) = 0;
+        virtual void remove_group(group*) = 0;
+        virtual void save(std::string file) = 0;
+        virtual void save(std::ostream&) = 0;
     };
 };
 

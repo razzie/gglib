@@ -4,7 +4,6 @@
 #include "c_taskmgr.hpp"
 #include "c_scripteng.hpp"
 #include "c_serializer.hpp"
-#include "c_iniparser.hpp"
 #include "managed_cout.hpp"
 
 using namespace gg;
@@ -36,6 +35,7 @@ c_application::~c_application()
     delete m_eventmgr;
     delete m_taskmgr;
     delete m_scripteng;
+    delete m_serializer;
 }
 
 std::string c_application::get_name() const
@@ -71,11 +71,6 @@ script_engine* c_application::get_script_engine()
 serializer* c_application::get_serializer()
 {
     return m_serializer;
-}
-
-ini_parser* c_application::get_ini_parser()
-{
-    return m_ini_parser;
 }
 
 console* c_application::create_console()

@@ -10,7 +10,6 @@ namespace gg
     class c_task_manager;
     class c_script_engine;
     class c_serializer;
-    class c_ini_parser;
     class c_console;
 
     class c_application : public application
@@ -22,7 +21,6 @@ namespace gg
         c_task_manager* m_taskmgr;
         c_script_engine* m_scripteng;
         c_serializer* m_serializer;
-        c_ini_parser* m_ini_parser;
         tthread::condition_variable m_cond;
         mutable tthread::mutex m_cond_mutex;
         int m_exit_code;
@@ -39,7 +37,6 @@ namespace gg
         task_manager*  get_task_manager();
         script_engine* get_script_engine();
         serializer*    get_serializer();
-        ini_parser*    get_ini_parser();
         console*       create_console();
         console*       create_console(std::string name, std::string welcome_text);
 
