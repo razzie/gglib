@@ -16,12 +16,12 @@ namespace gg
         virtual ~buffer() {}
         virtual std::size_t available() const = 0;
         virtual void advance(std::size_t) = 0;
-        virtual std::vector<uint8_t>&& peek(std::size_t) const = 0;
+        virtual std::vector<uint8_t> peek(std::size_t) const = 0;
         virtual void push(uint8_t) = 0;
         virtual void push(const uint8_t*, std::size_t) = 0;
         virtual void push(const std::vector<uint8_t>&) = 0;
         virtual optional<uint8_t> pop() = 0;
-        virtual std::vector<uint8_t>&& pop(std::size_t) = 0;
+        virtual std::vector<uint8_t> pop(std::size_t) = 0;
     };
 };
 

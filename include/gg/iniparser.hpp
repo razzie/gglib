@@ -1,6 +1,7 @@
 #ifndef GG_INIPARSER_HPP_INCLUDED
 #define GG_INIPARSER_HPP_INCLUDED
 
+#include <iostream>
 #include <list>
 #include <string>
 #include "gg/refcounted.hpp"
@@ -19,14 +20,6 @@ namespace gg
         class parse_result : public reference_counted
         {
         public:
-            /*class entry
-            {
-            protected:
-                virtual ~entry() {}
-            public:
-                virtual std::string get_key() const = 0;
-                virtual std::string get_value() const = 0;
-            };*/
             struct entry
             {
                 std::string key;
@@ -46,24 +39,19 @@ namespace gg
                 virtual const std::list<entry>& get_entries() const = 0;
             };
 
+            virtual ~parse_result() {}
             virtual group* get_group(std::string) = 0;
             virtual const group* get_group(std::string) const = 0;
             virtual group* create_group(std::string) = 0;
-            virtual void save() = 0;
-        };
-
-        enum mode
-        {
-            READ,
-            WRITE,
-            READ_WRITE
+            virtual void remove_group(std::string) = 0;
+            virtual void remove_group(group*) = 0;
+            virtual void save(std::string file) = 0;
+            virtual void save(std::ostream&) = 0;
         };
 
         virtual application* get_app() const = 0;
-        virtual parse_result* open(std::string, mode = READ_WRITE) const = 0;
-        virtual parse_result* open(std::iostream&, mode = READ_WRITE) const = 0;
+        virtual parse_result* open(std::string file) const = 0;
         virtual parse_result* open(std::istream&) const = 0;
-        virtual parse_result* open(std::ostream&) const = 0;
     };
 };
 

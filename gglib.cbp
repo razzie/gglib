@@ -98,6 +98,7 @@
 		<Unit filename="src/c_eventmgr.hpp" />
 		<Unit filename="src/c_expression.cpp" />
 		<Unit filename="src/c_expression.hpp" />
+		<Unit filename="src/c_iniparser.cpp" />
 		<Unit filename="src/c_iniparser.hpp" />
 		<Unit filename="src/c_scripteng.cpp" />
 		<Unit filename="src/c_scripteng.hpp" />

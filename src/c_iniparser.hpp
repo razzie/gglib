@@ -6,21 +6,26 @@
 
 namespace gg
 {
-    class c_ini_parser
+    class c_ini_parser : public ini_parser
     {
         mutable application* m_app;
 
     public:
-        class c_parse_result : public parse_result
+        class c_parse_result : public ini_parser::parse_result
         {
+            mutable tthread::mutex m_mutex;
+
         public:
             class c_group : public group
             {
-                tthread::mutex m_mutex;
+                mutable tthread::mutex m_mutex;
                 std::list<entry> m_entries;
+
+                void save(std::ostream&);
 
             public:
                 c_group();
+                c_group(std::list<entry>&&);
                 ~c_group();
                 entry* operator[] (std::string);
                 const entry* operator[] (std::string) const;
@@ -30,26 +35,23 @@ namespace gg
                 const std::list<entry>& get_entries() const;
             };
 
-            group* get_group(std::string);
-            const group* get_group(std::string) const;
-            group* create_group(std::string);
-            void save();
+            c_parse_result(std::string file);
+            c_parse_result(std::istream&);
+            ~c_parse_result();
+            c_group* get_group(std::string);
+            const c_group* get_group(std::string) const;
+            c_group* create_group(std::string);
+            void remove_group(std::string);
+            void remove_group(group*);
+            void save(std::string file);
+            void save(std::ostream&);
         };
 
-        enum mode
-        {
-            READ,
-            WRITE,
-            READ_WRITE
-        };
-
-        ini_parser(application* app);
-        ~ini_parser();
+        c_ini_parser(application* app);
+        ~c_ini_parser();
         application* get_app() const;
-        parse_result* open(std::string, mode = READ_WRITE) const;
-        parse_result* open(std::iostream&, mode = READ_WRITE) const;
-        parse_result* open(std::istream&) const;
-        parse_result* open(std::ostream&) const;
+        c_parse_result* open(std::string file) const;
+        c_parse_result* open(std::istream&) const;
     };
 };
 

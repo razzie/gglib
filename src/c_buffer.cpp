@@ -30,7 +30,7 @@ void c_buffer::advance(std::size_t len)
     m_data.erase(it_begin, it_end);
 }
 
-std::vector<uint8_t>&& c_buffer::peek(std::size_t len) const
+std::vector<uint8_t> c_buffer::peek(std::size_t len) const
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
@@ -73,7 +73,7 @@ optional<uint8_t> c_buffer::pop()
     return r;
 }
 
-std::vector<uint8_t>&& c_buffer::pop(std::size_t len)
+std::vector<uint8_t> c_buffer::pop(std::size_t len)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 

@@ -4,9 +4,11 @@
 #include "c_taskmgr.hpp"
 #include "c_scripteng.hpp"
 #include "c_serializer.hpp"
+#include "c_iniparser.hpp"
 #include "managed_cout.hpp"
 
 using namespace gg;
+
 
 application* application::create_instance(std::string name, uint32_t ver_major, uint32_t ver_minor)
 {
@@ -69,6 +71,11 @@ script_engine* c_application::get_script_engine()
 serializer* c_application::get_serializer()
 {
     return m_serializer;
+}
+
+ini_parser* c_application::get_ini_parser()
+{
+    return m_ini_parser;
 }
 
 console* c_application::create_console()
