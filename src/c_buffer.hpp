@@ -14,14 +14,14 @@ namespace gg
     public:
         c_buffer();
         ~c_buffer();
-        std::size_t available() const;
-        void advance(std::size_t);
-        std::vector<uint8_t> peek(std::size_t) const;
+        size_t available() const;
+        void advance(size_t);
+        std::vector<uint8_t> peek(size_t) const;
         void push(uint8_t);
-        void push(const uint8_t*, std::size_t);
+        void push(const uint8_t*, size_t);
         void push(const std::vector<uint8_t>&);
         optional<uint8_t> pop();
-        std::vector<uint8_t> pop(std::size_t);
+        std::vector<uint8_t> pop(size_t);
     };
 };
 

@@ -18,7 +18,7 @@ namespace gg
 
         mutable tthread::mutex m_mutex;
         mutable application* m_app;
-        std::map<std::size_t, rule> m_rules;
+        std::map<size_t, rule> m_rules;
 
     public:
         c_serializer(application* app);

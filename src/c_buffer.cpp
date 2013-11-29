@@ -16,13 +16,13 @@ c_buffer::~c_buffer()
 {
 }
 
-std::size_t c_buffer::available() const
+size_t c_buffer::available() const
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
     return m_data.size();
 }
 
-void c_buffer::advance(std::size_t len)
+void c_buffer::advance(size_t len)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
@@ -30,7 +30,7 @@ void c_buffer::advance(std::size_t len)
     m_data.erase(it_begin, it_end);
 }
 
-std::vector<uint8_t> c_buffer::peek(std::size_t len) const
+std::vector<uint8_t> c_buffer::peek(size_t len) const
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
@@ -47,11 +47,11 @@ void c_buffer::push(uint8_t byte)
     m_data.push_back(byte);
 }
 
-void c_buffer::push(const uint8_t* bytes, std::size_t len)
+void c_buffer::push(const uint8_t* bytes, size_t len)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for(std::size_t i = 0; i < len; ++i)
+    for(size_t i = 0; i < len; ++i)
         m_data.push_back(bytes[i]);
 }
 
@@ -73,7 +73,7 @@ optional<uint8_t> c_buffer::pop()
     return r;
 }
 
-std::vector<uint8_t> c_buffer::pop(std::size_t len)
+std::vector<uint8_t> c_buffer::pop(size_t len)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
