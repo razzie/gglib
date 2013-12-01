@@ -72,7 +72,6 @@
 		<Unit filename="include/gg/function.hpp" />
 		<Unit filename="include/gg/iniparser.hpp" />
 		<Unit filename="include/gg/logger.hpp" />
-		<Unit filename="include/gg/misc.hpp" />
 		<Unit filename="include/gg/optional.hpp" />
 		<Unit filename="include/gg/refcounted.hpp" />
 		<Unit filename="include/gg/scripteng.hpp" />

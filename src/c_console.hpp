@@ -6,7 +6,6 @@
 #include <vector>
 #include "tinythread.h"
 #include "fast_mutex.h"
-#include "gg/misc.hpp"
 #include "gg/console.hpp"
 
 namespace gg
@@ -48,7 +47,7 @@ private:
         mutable tthread::fast_mutex m_mutex;
         c_console* m_console;
         std::string m_text;
-        gg::color m_color;
+        color m_color;
         unsigned char m_align;
         bool m_visible;
         mutable bool m_dirty;
@@ -59,7 +58,7 @@ private:
     public:
         c_output(c_output&&);
         c_output(c_console*);
-        c_output(c_console*, gg::color, int align, bool visible);
+        c_output(c_console*, color, int align, bool visible);
         ~c_output();
         console& get_console() const;
 
@@ -73,8 +72,8 @@ private:
         static void draw(std::string text, const render_context* ctx,
                          RECT* bounds, int caret_pos = -1);
 
-        void set_color(gg::color);
-        gg::color get_color() const ;
+        void set_color(color);
+        color get_color() const ;
 
         void align_left();
         void align_center();

@@ -3,7 +3,6 @@
 
 #include <cstdint>
 #include <type_traits>
-#include "gg/misc.hpp"
 
 namespace gg
 {
@@ -20,24 +19,25 @@ namespace gg
         uint32_t get_ref_count() const;
     };
 
-    template<class T, class =
-        meta::enable_if_t<std::is_base_of<reference_counted,T>::value>>
+    template<class T>
+    using reference_counted_type =
+        typename std::enable_if<std::is_base_of<reference_counted, T>::value>::type;
+
+    template<class T, class = reference_counted_type<T>>
     T* grab(T* o)
     {
         o->grab();
         return o;
     }
 
-    template<class T, class =
-        meta::enable_if_t<std::is_base_of<reference_counted,T>::value>>
+    template<class T, class = reference_counted_type<T>>
     const T* grab(const T* o)
     {
         o->grab();
         return o;
     }
 
-    template<class T, class =
-        meta::enable_if_t<std::is_base_of<reference_counted,T>::value>>
+    template<class T, class = reference_counted_type<T>>
     T* drop(T* o)
     {
         uint32_t refc = o->get_ref_count();
@@ -45,8 +45,7 @@ namespace gg
         return (refc == 1) ? nullptr : o;
     }
 
-    template<class T, class =
-        meta::enable_if_t<std::is_base_of<reference_counted,T>::value>>
+    template<class T, class = reference_counted_type<T>>
     const T* drop(const T* o)
     {
         uint32_t refc = o->get_ref_count();
@@ -54,8 +53,7 @@ namespace gg
         return (refc == 1) ? nullptr : o;
     }
 
-    template<class T, class =
-        meta::enable_if_t<std::is_base_of<reference_counted,T>::value>>
+    template<class T, class = reference_counted_type<T>>
     class auto_drop
     {
         T* m_obj;

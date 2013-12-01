@@ -5,7 +5,6 @@
 #include <sstream>
 #include <type_traits>
 #include <stdexcept>
-#include "gg/misc.hpp"
 
 namespace gg
 {
@@ -53,40 +52,40 @@ namespace gg
 
     template<class T>
     void ostream_insert(std::ostream& o, const T& t,
-        meta::enable_if_t<meta::has_insert_op<T>::value>* = 0)
+        typename std::enable_if<meta::has_insert_op<T>::value>::type* = 0)
     {
         o << t;
     }
 
     template<class T>
     void ostream_insert(std::ostream& o, const T& t,
-        meta::enable_if_t<!meta::has_insert_op<T>::value>* = 0)
+        typename std::enable_if<!meta::has_insert_op<T>::value>::type* = 0)
     {
         o << "???";
     }
 
     template<class T>
     void istream_extract(std::istream& o, T& t,
-        meta::enable_if_t<meta::has_extract_op<T>::value>* = 0)
+        typename std::enable_if<meta::has_extract_op<T>::value>::type* = 0)
     {
         o >> t;
     }
 
     template<class T>
     void istream_extract(std::istream& o, T& t,
-        meta::enable_if_t<!meta::has_extract_op<T>::value>* = 0)
+        typename std::enable_if<!meta::has_extract_op<T>::value>::type* = 0)
     {
     }
 
     template<class From, class To>
-    meta::enable_if_t<std::is_convertible<From, To>::value, To>
+    typename std::enable_if<std::is_convertible<From, To>::value, To>::type
     cast(const From& from)
     {
         return To(from);
     }
 
     template<class From, class To>
-    meta::enable_if_t<!std::is_convertible<From, To>::value, To>
+    typename std::enable_if<!std::is_convertible<From, To>::value, To>::type
     cast(const From& from)
     {
         if (!meta::has_insert_op<From>::value

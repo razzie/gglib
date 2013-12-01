@@ -2,7 +2,6 @@
 #define GG_SCRIPTENG_HPP_INCLUDED
 
 #include <type_traits>
-#include "gg/misc.hpp"
 #include "gg/function.hpp"
 #include "gg/optional.hpp"
 #include "gg/console.hpp"
@@ -17,12 +16,11 @@ namespace gg
         virtual ~script_engine() {}
 
         template<class T>
-        static nulltype get_arg( std::string& args )
+        static const char* get_arg()
         {
-            if (std::is_same<T, varlist>::value) args.insert(0, ",( )");
-            else if (std::is_arithmetic<T>::value) args.insert(0, ",0");
-            else if (!std::is_arithmetic<T>::value) args.insert(0, ",\"\"");
-            return {};
+            if (std::is_same<T, varlist>::value) return ",( )";
+            else if (std::is_arithmetic<T>::value) return ",0";
+            else return ",\"\"";
         }
 
         template<class... Args>
@@ -31,7 +29,7 @@ namespace gg
             std::string args;
 
             struct { void operator() (...) {} } expand;
-            expand( get_arg<Args>(args)... );
+            expand( & args.insert(0, get_arg<Args>())... );
 
             if (!args.empty()) args.erase(args.begin());
             args.insert(args.begin(), '(');

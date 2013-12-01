@@ -118,7 +118,7 @@ c_console::c_output::c_output(c_console* con)
 {
 }
 
-c_console::c_output::c_output(c_console* con, gg::color c, int align, bool visible)
+c_console::c_output::c_output(c_console* con, color c, int align, bool visible)
  : std::ostream(this)
  , m_console(con)
  , m_color(c)
@@ -250,13 +250,13 @@ void c_console::c_output::draw(std::string text, const render_context* ctx, RECT
     tmp_out.draw(ctx, bounds, caret_pos);
 }
 
-void c_console::c_output::set_color(gg::color c)
+void c_console::c_output::set_color(color c)
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_color = c;
 }
 
-gg::color c_console::c_output::get_color() const
+console::output::color c_console::c_output::get_color() const
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     return m_color;

@@ -1,9 +1,10 @@
 #ifndef GG_CONSOLE_HPP_INCLUDED
 #define GG_CONSOLE_HPP_INCLUDED
 
+#include <iostream>
+#include <cstdint>
 #include <string>
 #include <functional>
-#include "gg/misc.hpp"
 #include "gg/refcounted.hpp"
 
 namespace gg
@@ -18,12 +19,17 @@ namespace gg
         class output : public reference_counted, public virtual std::ostream
         {
         public:
+            struct color
+            {
+                uint8_t R, G, B;
+            };
+
             virtual ~output() {}
             virtual console& get_console() const = 0;
             virtual void show() = 0;
             virtual void hide() = 0;
-            virtual void set_color(gg::color) = 0;
-            virtual gg::color get_color() const = 0;
+            virtual void set_color(color) = 0;
+            virtual color get_color() const = 0;
             virtual void align_left() = 0;
             virtual void align_center() = 0;
             virtual void align_right() = 0;

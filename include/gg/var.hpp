@@ -8,7 +8,6 @@
 #include <typeinfo>
 #include <type_traits>
 #include <stdexcept>
-#include "gg/misc.hpp"
 #include "gg/cast.hpp"
 
 namespace gg
@@ -99,10 +98,10 @@ namespace gg
         template<class T> const T& get() const { return *get_ptr<T>(); }
         template<class T> operator T() const { return this->get<T>(); }
 
-        template<class T, class = meta::enable_if_t<std::is_same<T, var>::value>>
+        template<class T, class = typename std::enable_if<std::is_same<T, var>::value>::type>
         var cast() const { return var(*this); }
 
-        template<class T, class = meta::enable_if_t<!std::is_same<T, var>::value>>
+        template<class T, class = typename std::enable_if<!std::is_same<T, var>::value>::type>
         T cast() const
         {
             if (m_var == nullptr)
