@@ -15,8 +15,9 @@
 #include "gg/console.hpp"
 #include "gg/eventmgr.hpp"
 #include "gg/taskmgr.hpp"
-#include "gg/scripteng.hpp"
+#include "gg/logger.hpp"
 #include "gg/serializer.hpp"
+#include "gg/scripteng.hpp"
 #include "gg/iniparser.hpp"
 #include "gg/application.hpp"
 

@@ -5,8 +5,9 @@ namespace gg
 {
     class event_manager;
     class task_manager;
-    class script_engine;
+    class logger;
     class serializer;
+    class script_engine;
     class console;
 
     class application : public reference_counted
@@ -21,8 +22,9 @@ namespace gg
 
         virtual event_manager* get_event_manager() = 0;
         virtual task_manager*  get_task_manager() = 0;
-        virtual script_engine* get_script_engine() = 0;
+        virtual logger*        get_logger() = 0;
         virtual serializer*    get_serializer() = 0;
+        virtual script_engine* get_script_engine() = 0;
         virtual console*       create_console() = 0;
         virtual console*       create_console(std::string name, std::string welcome_text) = 0;
 

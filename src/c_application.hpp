@@ -8,9 +8,8 @@ namespace gg
 {
     class c_event_manager;
     class c_task_manager;
-    class c_script_engine;
     class c_serializer;
-    class c_console;
+    class c_script_engine;
 
     class c_application : public application
     {
@@ -19,8 +18,8 @@ namespace gg
         uint32_t m_ver_minor;
         c_event_manager* m_eventmgr;
         c_task_manager* m_taskmgr;
-        c_script_engine* m_scripteng;
         c_serializer* m_serializer;
+        c_script_engine* m_scripteng;
         tthread::condition_variable m_cond;
         mutable tthread::mutex m_cond_mutex;
         int m_exit_code;
@@ -35,8 +34,9 @@ namespace gg
 
         event_manager* get_event_manager();
         task_manager*  get_task_manager();
-        script_engine* get_script_engine();
+        logger*        get_logger();
         serializer*    get_serializer();
+        script_engine* get_script_engine();
         console*       create_console();
         console*       create_console(std::string name, std::string welcome_text);
 

@@ -71,6 +71,7 @@
 		<Unit filename="include/gg/expression.hpp" />
 		<Unit filename="include/gg/function.hpp" />
 		<Unit filename="include/gg/iniparser.hpp" />
+		<Unit filename="include/gg/logger.hpp" />
 		<Unit filename="include/gg/misc.hpp" />
 		<Unit filename="include/gg/optional.hpp" />
 		<Unit filename="include/gg/refcounted.hpp" />
@@ -100,6 +101,8 @@
 		<Unit filename="src/c_expression.hpp" />
 		<Unit filename="src/c_iniparser.cpp" />
 		<Unit filename="src/c_iniparser.hpp" />
+		<Unit filename="src/c_logger.cpp" />
+		<Unit filename="src/c_logger.hpp" />
 		<Unit filename="src/c_scripteng.cpp" />
 		<Unit filename="src/c_scripteng.hpp" />
 		<Unit filename="src/c_serializer.cpp" />
@@ -109,8 +112,6 @@
 		<Unit filename="src/c_timer.cpp" />
 		<Unit filename="src/c_timer.hpp" />
 		<Unit filename="src/function.cpp" />
-		<Unit filename="src/managed_cout.cpp" />
-		<Unit filename="src/managed_cout.hpp" />
 		<Unit filename="src/refcounted.cpp" />
 		<Unit filename="src/threadglobal.hpp" />
 		<Unit filename="src/typeinfo.cpp" />

@@ -1,7 +1,7 @@
 #include <algorithm>
 #include <cctype>
 #include "c_scripteng.hpp"
-#include "managed_cout.hpp"
+#include "c_logger.hpp"
 #include "gg/util.hpp"
 
 using namespace gg;
@@ -46,7 +46,7 @@ console::controller::exec_result
 
 void c_script_engine::console_controller::complete(std::string& expr, console::output& out)
 {
-    managed_cout::hook h(out);
+    logger::scoped_hook __hook(out);
     out.set_color({100,100,100});
     m_scripteng->auto_complete_expr(expr, true);
 }
@@ -116,7 +116,7 @@ optional<var> c_script_engine::exec(std::string fn, varlist vl, std::ostream& ou
 
     if (func)
     {
-        managed_cout::hook h(output);
+        logger::scoped_hook __hook(output);
         return func(vl);
     }
 
@@ -125,7 +125,7 @@ optional<var> c_script_engine::exec(std::string fn, varlist vl, std::ostream& ou
 
 optional<var> c_script_engine::parse_and_exec(std::string expr, std::ostream& output) const
 {
-    managed_cout::hook h(output);
+    logger::scoped_hook __hook(output);
     return process_expression(expr);
 }
 
@@ -198,6 +198,7 @@ bool c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
                              std::cout << "\n> " << s;
                          }
                      });
+            //std::cout.flush();
         }
     });
 
@@ -212,7 +213,6 @@ bool c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
              });
 
     size_t fn_len = fn.size();
-    //if (fn_len == min_len || fn_len == max_len) return;
     if (fn_len == max_len) return true;
     if (fn_len == min_len) return false;
 
@@ -266,7 +266,6 @@ void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
         if ( auto_complete(name, print) )
         {
             e.set_name(name);
-            //e.add_child({"\" \""});
 
             tthread::lock_guard<tthread::mutex> guard(m_mutex);
             auto pos = m_functions.find(name);

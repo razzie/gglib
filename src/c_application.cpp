@@ -2,9 +2,9 @@
 #include "c_application.hpp"
 #include "c_eventmgr.hpp"
 #include "c_taskmgr.hpp"
-#include "c_scripteng.hpp"
+#include "c_logger.hpp"
 #include "c_serializer.hpp"
-#include "managed_cout.hpp"
+#include "c_scripteng.hpp"
 
 using namespace gg;
 
@@ -15,16 +15,18 @@ application* application::create_instance(std::string name, uint32_t ver_major, 
 }
 
 c_application::c_application(std::string name, uint32_t ver_major, uint32_t ver_minor)
- : m_name(name), m_ver_major(ver_major), m_ver_minor(ver_minor)
+ : m_name(name)
+ , m_ver_major(ver_major)
+ , m_ver_minor(ver_minor)
 {
     setlocale(LC_ALL, "");
 
-    try { managed_cout::enable(); } catch(...) {};
+    c_logger::get_instance()->enable_cout_hook();
 
     m_eventmgr = new c_event_manager(this);
     m_taskmgr = new c_task_manager(this);
-    m_scripteng = new c_script_engine(this);
     m_serializer = new c_serializer(this);
+    m_scripteng = new c_script_engine(this);
 }
 
 c_application::~c_application()
@@ -34,8 +36,8 @@ c_application::~c_application()
 
     delete m_eventmgr;
     delete m_taskmgr;
-    delete m_scripteng;
     delete m_serializer;
+    delete m_scripteng;
 }
 
 std::string c_application::get_name() const
@@ -63,14 +65,19 @@ task_manager* c_application::get_task_manager()
     return m_taskmgr;
 }
 
-script_engine* c_application::get_script_engine()
+logger* c_application::get_logger()
 {
-    return m_scripteng;
+    return c_logger::get_instance();
 }
 
 serializer* c_application::get_serializer()
 {
     return m_serializer;
+}
+
+script_engine* c_application::get_script_engine()
+{
+    return m_scripteng;
 }
 
 console* c_application::create_console()

@@ -89,7 +89,7 @@ private:
 
     protected:
         // inherited from std::streambuf
-        int overflow (int c =  std::char_traits<char>::eof());
+        int overflow(int c = std::char_traits<char>::eof());
         int sync();
     };
 
