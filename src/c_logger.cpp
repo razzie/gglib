@@ -1,4 +1,5 @@
 #include <fstream>
+#include <sstream>
 #include "c_logger.hpp"
 
 using namespace gg;
@@ -56,12 +57,14 @@ void c_logger::log_to_stream(std::ostream& o)
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_stream = &o;
+    if (m_file != nullptr) delete m_file;
 }
 
 void c_logger::log_to_file(std::string filename)
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-    if (m_file != nullptr) delete m_file;;
+    m_stream = nullptr;
+    if (m_file != nullptr) delete m_file;
     m_file = new std::fstream(filename, std::ios_base::out);
 }
 
@@ -91,20 +94,62 @@ int c_logger::sync()
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
 
     std::string& msg = m_sync_log[tthread::this_thread::get_id()];
-    optional<std::ostream*> o = m_hooks.get();
+    if (msg.empty()) return 0;
 
+    optional<std::ostream*> o = m_hooks.get();
     if (o.is_valid() && o.get() != &std::cout)
     {
         o.get()->write(msg.c_str(), msg.size());
     }
     else
     {
-        m_cout_rdbuf->sputn(msg.c_str(), msg.size());
+        if (m_timestamp) add_timestamp(msg);
+
+        if (m_stream != nullptr)
+        {
+            m_stream->write(msg.c_str(), msg.size());
+        }
+        else if (m_file != nullptr)
+        {
+            m_file->write(msg.c_str(), msg.size());
+        }
+        else
+        {
+            m_cout_rdbuf->sputn(msg.c_str(), msg.size());
+        }
     }
 
     msg.erase();
 
     return 0;
+}
+
+void c_logger::add_timestamp(std::string& str) const
+{
+    uint32_t elapsed = m_timer.peek_elapsed();
+    std::stringstream ss;
+    ss << "[" << elapsed / 1000 << ":" << elapsed % 1000 << "] ";
+    str.insert(0, ss.str());
+}
+
+
+c_logger::wrapper::wrapper(c_logger* l)
+ : m_logger(l)
+{
+}
+
+c_logger::wrapper::~wrapper()
+{
+}
+
+int c_logger::wrapper::overflow(int c)
+{
+    return m_logger->overflow(c);
+}
+
+int c_logger::wrapper::sync()
+{
+    return m_logger->sync();
 }
 
 

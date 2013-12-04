@@ -15,9 +15,9 @@ int main()
     buf->drop();
 
     if (v.is_valid())
-        std::cerr << v.get().to_stream() << std::endl;
+        std::cout << v.get().to_stream() << std::endl;
     else
-        std::cerr << "invalid result" << std::endl;
+        std::cout << "invalid result" << std::endl;
 
 
     gg::console* con = app->create_console();
