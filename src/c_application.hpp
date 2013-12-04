@@ -10,6 +10,7 @@ namespace gg
     class c_task_manager;
     class c_serializer;
     class c_script_engine;
+    class c_network_manager;
 
     class c_application : public application
     {
@@ -20,6 +21,7 @@ namespace gg
         c_task_manager* m_taskmgr;
         c_serializer* m_serializer;
         c_script_engine* m_scripteng;
+        c_network_manager* m_netmgr;
         tthread::condition_variable m_cond;
         mutable tthread::mutex m_cond_mutex;
         int m_exit_code;
@@ -32,13 +34,14 @@ namespace gg
         uint32_t get_major_version() const;
         uint32_t get_minor_version() const;
 
-        event_manager* get_event_manager();
-        task_manager*  get_task_manager();
-        logger*        get_logger();
-        serializer*    get_serializer();
-        script_engine* get_script_engine();
-        console*       create_console();
-        console*       create_console(std::string name, std::string welcome_text);
+        event_manager*   get_event_manager();
+        task_manager*    get_task_manager();
+        logger*          get_logger();
+        serializer*      get_serializer();
+        script_engine*   get_script_engine();
+        network_manager* get_network_manager();
+        console*         create_console();
+        console*         create_console(std::string name, std::string welcome_text);
 
         int  start();
         void exit(int exit_code = 0);

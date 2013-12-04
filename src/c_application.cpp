@@ -5,6 +5,7 @@
 #include "c_logger.hpp"
 #include "c_serializer.hpp"
 #include "c_scripteng.hpp"
+#include "c_netmgr.hpp"
 
 using namespace gg;
 
@@ -27,6 +28,7 @@ c_application::c_application(std::string name, uint32_t ver_major, uint32_t ver_
     m_taskmgr = new c_task_manager(this);
     m_serializer = new c_serializer(this);
     m_scripteng = new c_script_engine(this);
+    m_netmgr = new c_network_manager(this);
 }
 
 c_application::~c_application()
@@ -38,6 +40,7 @@ c_application::~c_application()
     delete m_taskmgr;
     delete m_serializer;
     delete m_scripteng;
+    delete m_netmgr;
 }
 
 std::string c_application::get_name() const
@@ -78,6 +81,11 @@ serializer* c_application::get_serializer()
 script_engine* c_application::get_script_engine()
 {
     return m_scripteng;
+}
+
+network_manager* c_application::get_network_manager()
+{
+    return m_netmgr;
 }
 
 console* c_application::create_console()

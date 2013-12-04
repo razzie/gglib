@@ -57,7 +57,7 @@
 			<Add library="user32" />
 			<Add library="uxtheme" />
 			<Add library="dwmapi" />
-			<Add library="wsock32" />
+			<Add library="ws2_32" />
 			<Add directory="lib" />
 		</Linker>
 		<Unit filename="ext/tinythread++/fast_mutex.h" />
@@ -72,6 +72,7 @@
 		<Unit filename="include/gg/function.hpp" />
 		<Unit filename="include/gg/iniparser.hpp" />
 		<Unit filename="include/gg/logger.hpp" />
+		<Unit filename="include/gg/netmgr.hpp" />
 		<Unit filename="include/gg/optional.hpp" />
 		<Unit filename="include/gg/refcounted.hpp" />
 		<Unit filename="include/gg/scripteng.hpp" />
@@ -102,6 +103,8 @@
 		<Unit filename="src/c_iniparser.hpp" />
 		<Unit filename="src/c_logger.cpp" />
 		<Unit filename="src/c_logger.hpp" />
+		<Unit filename="src/c_netmgr.cpp" />
+		<Unit filename="src/c_netmgr.hpp" />
 		<Unit filename="src/c_scripteng.cpp" />
 		<Unit filename="src/c_scripteng.hpp" />
 		<Unit filename="src/c_serializer.cpp" />
