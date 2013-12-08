@@ -95,9 +95,9 @@ console* c_application::create_console()
                          "Press TAB to list available commands");
 }
 
-console* c_application::create_console(std::string name, std::string welcome_text)
+console* c_application::create_console(std::string name, std::string welcome_text, console::controller* ctrl)
 {
-    return new c_console(this, name, nullptr, welcome_text);
+    return new c_console(this, name, ctrl, welcome_text);
 }
 
 int c_application::start()

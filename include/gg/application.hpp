@@ -28,7 +28,9 @@ namespace gg
         virtual script_engine*   get_script_engine() = 0;
         virtual network_manager* get_network_manager() = 0;
         virtual console*         create_console() = 0;
-        virtual console*         create_console(std::string name, std::string welcome_text) = 0;
+        virtual console*         create_console(std::string name,
+                                                std::string welcome_text = {},
+                                                console::controller* = nullptr) = 0;
 
         virtual int  start() = 0;
         virtual void exit(int exit_code = 0) = 0;

@@ -41,7 +41,9 @@ namespace gg
         script_engine*   get_script_engine();
         network_manager* get_network_manager();
         console*         create_console();
-        console*         create_console(std::string name, std::string welcome_text);
+        console*         create_console(std::string name,
+                                        std::string welcome_text = {},
+                                        console::controller* = nullptr);
 
         int  start();
         void exit(int exit_code = 0);

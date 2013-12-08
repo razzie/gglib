@@ -2,8 +2,7 @@
 #include "c_timer.hpp"
 #include "threadglobal.hpp"
 #include "gg/util.hpp"
-#include "gg/taskmgr.hpp"
-#include "gg/application.hpp"
+#include "c_taskmgr.hpp"
 
 using namespace gg;
 
@@ -114,21 +113,21 @@ void c_console::set_controller(controller* ctrl)
 
 void c_console::enable_input()
 {
-    //tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_input = true;
 }
 
 void c_console::disable_input()
 {
-    //tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_input = false;
 }
 
 void c_console::open()
 {
-    //tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-    //if (m_open) return; // already opened
-	m_app->get_task_manager()->async_invoke(std::bind(&c_console::control_thread, this));
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    if (m_open) return; // already opened
+	c_task_manager::async_invoke(std::bind(&c_console::control_thread, this));
 }
 
 void c_console::close()
@@ -170,11 +169,12 @@ void c_console::async_open()
 
 void c_console::async_close()
 {
-    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-
+    //tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    m_mutex.lock();
     DeleteObject(m_hFont);
     CloseThemeData(m_hTheme);
     DestroyWindow(m_hWnd);
+    m_mutex.unlock();
 
     if (m_close_cb)
     {
@@ -559,7 +559,7 @@ void c_console::cmd_async_exec()
         c_output* exec_outp = static_cast<c_output*>(create_output());
         std::function<void()> async_exec_bound = std::bind(async_exec, m_cmd, cmd_outp, exec_outp, this, m_ctrl);
 
-        m_app->get_task_manager()->async_invoke(async_exec_bound);
+        c_task_manager::async_invoke(async_exec_bound);
     }
     else
     {
