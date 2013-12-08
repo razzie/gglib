@@ -69,6 +69,7 @@ namespace gg
         var& operator= (var&& v);
         const std::type_info& get_type() const;
         bool is_empty() const;
+        void clear();
 
         template<class T>
         T* get_ptr()

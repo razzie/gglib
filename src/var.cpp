@@ -3,6 +3,7 @@
 
 using namespace gg;
 
+
 var::view::view(const var& var) : m_var(var)
 {
 }
@@ -72,6 +73,15 @@ const std::type_info& var::get_type() const
 bool var::is_empty() const
 {
     return (m_var == nullptr);
+}
+
+void var::clear()
+{
+    if (m_var != nullptr)
+    {
+        delete m_var;
+        m_var = nullptr;
+    }
 }
 
 std::ostream& gg::operator<< (std::ostream& o, const gg::var::view& vw)
