@@ -55,10 +55,10 @@ namespace gg
         virtual thread* create_thread(std::string name) = 0;
         virtual thread* get_thread(std::string name) = 0;
         static thread* get_current_thread();
-        virtual void async_invoke(std::function<void()> func) const = 0;
-        virtual task* create_task(std::function<void()> func) const = 0;
-        virtual task* create_wait_task(uint32_t wait_ms) const = 0;
-        virtual task* create_persistent_task(std::function<bool(uint32_t)> func) const = 0;
+        static void async_invoke(std::function<void()> func);
+        static task* create_task(std::function<void()> func);
+        static task* create_wait_task(uint32_t wait_ms);
+        static task* create_persistent_task(std::function<bool(uint32_t)> func);
     };
 };
 

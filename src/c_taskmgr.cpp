@@ -287,7 +287,7 @@ thread* task_manager::get_current_thread()
     return (t.is_valid() ? t.get() : nullptr);
 }
 
-void c_task_manager::async_invoke(std::function<void()> func) const
+void task_manager::async_invoke(std::function<void()> func)
 {
     struct async_invoke_data
     {
@@ -318,17 +318,17 @@ void c_task_manager::async_invoke(std::function<void()> func) const
     async_invoke_thread->detach();
 }
 
-task* c_task_manager::create_task(std::function<void()> func) const
+task* task_manager::create_task(std::function<void()> func)
 {
     return new function_task(func);
 }
 
-task* c_task_manager::create_wait_task(uint32_t wait_time) const
+task* task_manager::create_wait_task(uint32_t wait_time)
 {
     return new wait_task(wait_time);
 }
 
-task* c_task_manager::create_persistent_task(std::function<bool(uint32_t)> func) const
+task* task_manager::create_persistent_task(std::function<bool(uint32_t)> func)
 {
     return new function_task(func);
 }
