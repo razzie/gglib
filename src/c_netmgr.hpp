@@ -14,8 +14,7 @@ namespace gg
         SOCKADDR_STORAGE m_sockaddr;
         uint16_t m_port;
         std::list<connection*> m_conns;
-        connection_open_callback m_open_cb;
-        connection_close_callback m_close_cb;
+        connection_handler* m_handler;
         bool m_open;
         bool m_tcp;
 
@@ -23,10 +22,9 @@ namespace gg
         c_listener(uint16_t port, bool is_tcp);
         ~c_listener();
         uint16_t get_port() const;
-        void set_connection_open_callback(connection_open_callback);
-        void set_connection_close_callback(connection_close_callback);
-        int send_to_all(buffer*);
-        int send_to_all(uint8_t*, size_t);
+        void set_connection_handler(connection_handler*);
+        void send_to_all(buffer*);
+        void send_to_all(uint8_t*, size_t);
         bool is_opened();
         bool open();
         bool close();
@@ -41,7 +39,8 @@ namespace gg
         uint16_t m_port;
         buffer* m_input_buf;
         buffer* m_output_buf;
-        packet_callback m_packet_cb;
+        packet_handler* m_handler;
+        bool m_client;
         bool m_open;
         bool m_tcp;
 
@@ -56,7 +55,7 @@ namespace gg
         uint16_t get_port() const;
         int send(buffer*);
         int send(uint8_t*, size_t);
-        void set_packet_callback(packet_callback);
+        void set_packet_handler(packet_handler*);
         bool is_opened();
         bool open();
         bool close();

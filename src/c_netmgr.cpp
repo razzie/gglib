@@ -1,10 +1,12 @@
 #include "c_netmgr.hpp"
+#include "c_buffer.hpp"
 
 using namespace gg;
 
 
 c_listener::c_listener(uint16_t port, bool is_tcp)
  : m_port(port)
+ , m_handler(nullptr)
  , m_open(false)
  , m_tcp(is_tcp)
 {
@@ -13,7 +15,7 @@ c_listener::c_listener(uint16_t port, bool is_tcp)
 
 c_listener::~c_listener()
 {
-
+    if (m_handler != nullptr) m_handler->drop();
 }
 
 uint16_t c_listener::get_port() const
@@ -21,25 +23,22 @@ uint16_t c_listener::get_port() const
     return m_port;
 }
 
-void c_listener::set_connection_open_callback(connection_open_callback cb)
+void c_listener::set_connection_handler(connection_handler* h)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
-    m_open_cb = cb;
+
+    if (m_handler != nullptr) m_handler->drop();
+    if (h != nullptr) h->grab();
+    m_handler = h;
 }
 
-void c_listener::set_connection_close_callback(connection_close_callback cb)
-{
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-    m_close_cb = cb;
-}
-
-int c_listener::send_to_all(buffer* buf)
+void c_listener::send_to_all(buffer* buf)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
     for (connection* c : m_conns) c->send(buf);
 }
 
-int c_listener::send_to_all(uint8_t* buf, size_t len)
+void c_listener::send_to_all(uint8_t* buf, size_t len)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
     for (connection* c : m_conns) c->send(buf, len);
@@ -68,6 +67,9 @@ c_connection::c_connection(std::string address, uint16_t port, bool is_tcp)
  : m_listener(nullptr)
  , m_address(address)
  , m_port(port)
+ , m_input_buf(new c_buffer())
+ , m_output_buf(new c_buffer())
+ , m_handler(nullptr)
  , m_open(false)
  , m_tcp(is_tcp)
 {
@@ -77,13 +79,17 @@ c_connection::c_connection(std::string address, uint16_t port, bool is_tcp)
 c_connection::c_connection(listener* l, SOCKADDR_STORAGE sockaddr)
  : m_listener(l)
  , m_sockaddr(sockaddr)
+ , m_input_buf(new c_buffer())
+ , m_output_buf(new c_buffer())
+ , m_handler(nullptr)
+ , m_open(true)
 {
 
 }
 
 c_connection::~c_connection()
 {
-
+    if (m_handler != nullptr) m_handler->drop();
 }
 
 listener* c_connection::get_listener()
@@ -123,10 +129,13 @@ int c_connection::send(uint8_t* buf, size_t len)
 
 }
 
-void c_connection::set_packet_callback(packet_callback cb)
+void c_connection::set_packet_handler(packet_handler* h)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
-    m_packet_cb = cb;
+
+    if (m_handler != nullptr) m_handler->drop();
+    if (h != nullptr) h->grab();
+    m_handler = h;
 }
 
 bool c_connection::is_opened()
