@@ -6,10 +6,10 @@ int main()
 
 
     gg::serializer* srl = app->get_serializer();
-    srl->add_trivial_rule<int>();
+    //srl->add_trivial_rule<int>();
 
     gg::buffer* buf = gg::buffer::create();
-    srl->serialize<int>(123, buf);
+    srl->serialize(123, buf);
 
     gg::optional<gg::var> v = srl->deserialize<int>(buf);
     buf->drop();

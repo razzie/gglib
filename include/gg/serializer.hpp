@@ -3,9 +3,7 @@
 
 #include <cstdint>
 #include <cstring>
-#include <typeinfo>
 #include <functional>
-#include <stdexcept>
 #include "gg/var.hpp"
 #include "gg/refcounted.hpp"
 #include "gg/optional.hpp"
@@ -27,7 +25,7 @@ namespace gg
 
         virtual application* get_app() const = 0;
         virtual void add_rule(typeinfo, serializer_func, deserializer_func) = 0;
-        virtual bool serialize(typeinfo, const var&, buffer*) const = 0;
+        virtual bool serialize(const var&, buffer*) const = 0;
         virtual optional<var> deserialize(typeinfo, buffer*) const = 0;
 
         template<class T>
@@ -59,12 +57,6 @@ namespace gg
             };
 
             this->add_rule(typeid(T), s, d);
-        }
-
-        template<class T>
-        bool serialize(const var& v, buffer* buf)
-        {
-            return this->serialize(typeid(T), v, buf);
         }
 
         template<class T>
