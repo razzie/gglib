@@ -77,26 +77,31 @@ bool c_serializer::serialize(const var& v, buffer* buf) const
 {
     if (buf == nullptr) return false;
 
-    typeinfo ti = v.get_type();
+    size_t hash = typeinfo(v.get_type()).hash_code();
 
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    auto rule = m_rules.find(ti.hash_code());
+    auto rule = m_rules.find(hash);
     if (rule != m_rules.end())
     {
+        buf->push(reinterpret_cast<const uint8_t*>(&hash), sizeof(size_t));
         return rule->second.m_sfunc(v, buf);
     }
 
     return false;
 }
 
-optional<var> c_serializer::deserialize(typeinfo ti, buffer* buf) const
+optional<var> c_serializer::deserialize(buffer* buf) const
 {
-    if (buf == nullptr) return {};
+    if (buf == nullptr || buf->available() < sizeof(size_t)) return {};
 
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    auto rule = m_rules.find(ti.hash_code());
+    size_t hash;
+    auto v = buf->pop(sizeof(size_t));
+    std::memcpy(&hash, v.data(), sizeof(size_t));
+
+    auto rule = m_rules.find(hash);
     if (rule != m_rules.end())
     {
         return rule->second.m_dfunc(buf);

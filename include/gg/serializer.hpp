@@ -26,7 +26,7 @@ namespace gg
         virtual application* get_app() const = 0;
         virtual void add_rule(typeinfo, serializer_func, deserializer_func) = 0;
         virtual bool serialize(const var&, buffer*) const = 0;
-        virtual optional<var> deserialize(typeinfo, buffer*) const = 0;
+        virtual optional<var> deserialize(buffer*) const = 0;
 
         template<class T>
         void add_rule(serializer_func s, deserializer_func d)
@@ -57,12 +57,6 @@ namespace gg
             };
 
             this->add_rule(typeid(T), s, d);
-        }
-
-        template<class T>
-        optional<var> deserialize(buffer* buf)
-        {
-            return this->deserialize(typeid(T), buf);
         }
     };
 };
