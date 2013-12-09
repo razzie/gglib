@@ -1,5 +1,6 @@
 #include <fstream>
 #include <sstream>
+#include <iomanip>
 #include "c_logger.hpp"
 
 using namespace gg;
@@ -128,7 +129,12 @@ void c_logger::add_timestamp(std::string& str) const
 {
     uint32_t elapsed = m_timer.peek_elapsed();
     std::stringstream ss;
-    ss << "[" << elapsed / 1000 << ":" << elapsed % 1000 << "] ";
+
+    ss << std::setfill('0') << "["
+     << std::setw(2) << elapsed / 60000 << ":"
+     << std::setw(2) << elapsed / 1000 << ":"
+     << std::setw(3) << elapsed % 1000 << "] ";
+
     str.insert(0, ss.str());
 }
 
