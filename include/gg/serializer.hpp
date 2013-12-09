@@ -49,7 +49,7 @@ namespace gg
             deserializer_func d = [](buffer* buf)->optional<var>
             {
                 if (buf == nullptr || (buf->available() < sizeof(T)))
-                    return optional<var>();
+                    return {};
 
                 T t;
                 std::memcpy(&t, buf->pop(sizeof(T)).data(), sizeof(T));

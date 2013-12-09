@@ -17,21 +17,21 @@ static bool serialize_string(const var& v, buffer* buf)
 static optional<var> deserialize_string(buffer* buf)
 {
     if (buf == nullptr || buf->available() == 0)
-        return optional<var>();
+        return {};
 
     std::string str;
 
     while (buf->available())
     {
         optional<uint8_t> b = buf->pop();
-        if (!b.is_valid()) return optional<var>();
+        if (!b.is_valid()) return {};
 
         char c = b.get();
         if (c == '\0') return var(str);
         else str += c;
     }
 
-    return optional<var>();
+    return {};
 }
 
 
@@ -75,8 +75,7 @@ void c_serializer::add_rule(typeinfo ti, serializer_func sfunc, deserializer_fun
 
 bool c_serializer::serialize(const var& v, buffer* buf) const
 {
-    if (buf == nullptr)
-        return false;
+    if (buf == nullptr) return false;
 
     typeinfo ti = v.get_type();
 
@@ -93,8 +92,7 @@ bool c_serializer::serialize(const var& v, buffer* buf) const
 
 optional<var> c_serializer::deserialize(typeinfo ti, buffer* buf) const
 {
-    if (buf == nullptr)
-        return optional<var>();
+    if (buf == nullptr) return {};
 
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
@@ -104,5 +102,5 @@ optional<var> c_serializer::deserialize(typeinfo ti, buffer* buf) const
         return rule->second.m_dfunc(buf);
     }
 
-    return optional<var>();
+    return {};
 }

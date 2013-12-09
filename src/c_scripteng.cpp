@@ -120,7 +120,7 @@ optional<var> c_script_engine::exec(std::string fn, varlist vl, std::ostream& ou
         return func(vl);
     }
 
-    return optional<var>();
+    return {};
 }
 
 optional<var> c_script_engine::parse_and_exec(std::string expr, std::ostream& output) const
@@ -304,7 +304,7 @@ optional<var> c_script_engine::process_expression(const c_expression& e) const
     else
     {
         if (!is_valid_fn_name(name) && !name.empty())
-            return optional<var>();
+            return {};
 
         varlist vl;
         auto args = e.get_children();
@@ -315,7 +315,7 @@ optional<var> c_script_engine::process_expression(const c_expression& e) const
 
             optional<var> v = process_expression(**it);
             if (v.is_valid()) vl.push_back(v);
-            else return optional<var>();
+            else return {};
         }
 
         if (name.empty())
@@ -335,5 +335,5 @@ optional<var> c_script_engine::process_expression(const c_expression& e) const
         }
     }
 
-    return optional<var>();
+    return {};
 }
