@@ -16,10 +16,13 @@ namespace gg
         ~c_buffer();
         size_t available() const;
         void advance(size_t);
+        void clear();
         std::vector<uint8_t> peek(size_t) const;
         void push(uint8_t);
         void push(const uint8_t*, size_t);
         void push(const std::vector<uint8_t>&);
+        void push(const buffer*);
+        void merge(buffer*);
         optional<uint8_t> pop();
         std::vector<uint8_t> pop(size_t);
     };

@@ -120,13 +120,13 @@ uint16_t c_connection::get_port() const
 int c_connection::send(buffer* buf)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
+    m_input_buf->push(buf);
 }
 
 int c_connection::send(uint8_t* buf, size_t len)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
+    m_input_buf->push(buf, len);
 }
 
 void c_connection::set_packet_handler(packet_handler* h)

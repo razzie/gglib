@@ -12,7 +12,8 @@ int main()
     srl->serialize(123, buf);
 
     gg::optional<gg::var> v = srl->deserialize<int>(buf);
-    buf->drop();
+    //buf->drop();
+    delete buf;
 
     if (v.is_valid())
         std::cout << v.get().to_stream() << std::endl;
