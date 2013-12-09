@@ -1,5 +1,6 @@
 #include <string>
 #include "c_serializer.hpp"
+#include "c_buffer.hpp"
 
 using namespace gg;
 
@@ -17,7 +18,7 @@ static bool serialize_string(const var& v, buffer* buf)
     return true;
 }
 
-static optional<var> deserialize_string(buffer* buf)
+static var deserialize_string(buffer* buf)
 {
     if (buf == nullptr || buf->available() == 0)
         return {};
@@ -31,7 +32,7 @@ static optional<var> deserialize_string(buffer* buf)
         if (!b.is_valid()) return {};
 
         char c = b.get();
-        if (c == '\0') return var(str);
+        if (c == '\0') return str;
         else str += c;
     }
 
@@ -96,7 +97,7 @@ bool c_serializer::serialize(const var& v, buffer* buf) const
     return false;
 }
 
-optional<var> c_serializer::deserialize(buffer* buf) const
+var c_serializer::deserialize(buffer* buf) const
 {
     if (buf == nullptr || buf->available() < sizeof(size_t)) return {};
 

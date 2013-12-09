@@ -6,15 +6,14 @@ int main()
 
 
     gg::serializer* srl = app->get_serializer();
+
     gg::buffer* buf = gg::buffer::create();
     srl->serialize(123, buf);
-    gg::optional<gg::var> v = srl->deserialize(buf);
-    buf->drop();
 
-    if (v.is_valid())
-        std::cout << v.get().to_stream() << std::endl;
-    else
-        std::cout << "invalid result" << std::endl;
+    gg::var v = srl->deserialize(buf);
+    std::cout << v.to_stream() << std::endl;
+
+    buf->drop();
 
 
     gg::console* con = app->create_console();

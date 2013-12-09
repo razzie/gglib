@@ -21,12 +21,12 @@ namespace gg
 
     public:
         typedef std::function<bool(const var&,buffer*)> serializer_func;
-        typedef std::function<optional<var>(buffer*)> deserializer_func;
+        typedef std::function<var(buffer*)> deserializer_func;
 
         virtual application* get_app() const = 0;
         virtual void add_rule(typeinfo, serializer_func, deserializer_func) = 0;
         virtual bool serialize(const var&, buffer*) const = 0;
-        virtual optional<var> deserialize(buffer*) const = 0;
+        virtual var deserialize(buffer*) const = 0;
 
         template<class T>
         void add_rule(serializer_func s, deserializer_func d)
@@ -46,14 +46,14 @@ namespace gg
                 return true;
             };
 
-            deserializer_func d = [](buffer* buf)->optional<var>
+            deserializer_func d = [](buffer* buf)->var
             {
                 if (buf == nullptr || (buf->available() < sizeof(T)))
                     return {};
 
                 T t;
                 std::memcpy(&t, buf->pop(sizeof(T)).data(), sizeof(T));
-                return var(std::move(t));
+                return std::move(t);
             };
 
             this->add_rule(typeid(T), s, d);

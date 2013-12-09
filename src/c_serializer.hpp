@@ -26,7 +26,7 @@ namespace gg
         application* get_app() const;
         void add_rule(typeinfo, serializer_func, deserializer_func);
         bool serialize(const var&, buffer*) const;
-        optional<var> deserialize(buffer*) const;
+        var deserialize(buffer*) const;
     };
 };
 
