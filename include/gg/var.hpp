@@ -55,7 +55,12 @@ namespace gg
         var(T t) : m_var(new var_impl<T>(t)) {}
 
         template<class T, class... Args>
-        var(Args... args) : m_var(new var_impl<T>(std::forward<Args>(args)...)) {}
+        var& construct(Args... args)
+        {
+            if (m_var != nullptr) delete m_var;
+            m_var = new var_impl<T>(std::forward<Args>(args)...);
+            return *this;
+        }
 
         template<class T>
         var& operator= (const T& t)
