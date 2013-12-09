@@ -19,6 +19,17 @@ namespace gg
         uint32_t get_ref_count() const;
     };
 
+    class grab_guard
+    {
+        const reference_counted* m_obj;
+
+    public:
+        grab_guard(const reference_counted*);
+        grab_guard(const grab_guard&) = delete;
+        grab_guard(grab_guard&&) = delete;
+        ~grab_guard();
+    };
+
     template<class T>
     using reference_counted_type =
         typename std::enable_if<std::is_base_of<reference_counted, T>::value>::type;
@@ -60,6 +71,8 @@ namespace gg
 
     public:
         auto_drop(T* o) : m_obj(o) {}
+        auto_drop(const auto_drop&) = delete;
+        auto_drop(auto_drop&&) = delete;
         ~auto_drop() { m_obj->drop(); }
         operator T*() { return m_obj; }
     };

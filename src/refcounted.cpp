@@ -3,11 +3,13 @@
 
 using namespace gg;
 
+
 struct reference_counted::refcounted_data
 {
     tthread::mutex m_mut;
     uint32_t m_ref = 1;
 };
+
 
 reference_counted::reference_counted()
 {
@@ -38,4 +40,16 @@ void reference_counted::drop() const
 uint32_t reference_counted::get_ref_count() const
 {
     return m_data->m_ref;
+}
+
+
+grab_guard::grab_guard(const reference_counted* obj)
+ : m_obj(obj)
+{
+    m_obj->grab();
+}
+
+grab_guard::~grab_guard()
+{
+    m_obj->drop();
 }
