@@ -9,8 +9,11 @@ static bool serialize_string(const var& v, buffer* buf)
     if (buf == nullptr || v.is_empty() || v.get_type() != typeid(std::string))
         return false;
 
+    grab_guard bufgrab(buf);
     const std::string& str = v.get<std::string>();
+
     buf->push(reinterpret_cast<const uint8_t*>(str.c_str()), str.size()+1);
+
     return true;
 }
 
@@ -19,6 +22,7 @@ static optional<var> deserialize_string(buffer* buf)
     if (buf == nullptr || buf->available() == 0)
         return {};
 
+    grab_guard bufgrab(buf);
     std::string str;
 
     while (buf->available())
@@ -79,6 +83,7 @@ bool c_serializer::serialize(const var& v, buffer* buf) const
 
     size_t hash = typeinfo(v.get_type()).hash_code();
 
+    grab_guard bufgrab(buf);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     auto rule = m_rules.find(hash);
@@ -95,6 +100,7 @@ optional<var> c_serializer::deserialize(buffer* buf) const
 {
     if (buf == nullptr || buf->available() < sizeof(size_t)) return {};
 
+    grab_guard bufgrab(buf);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     size_t hash;

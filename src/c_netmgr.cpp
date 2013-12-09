@@ -34,6 +34,7 @@ void c_listener::set_connection_handler(connection_handler* h)
 
 void c_listener::send_to_all(buffer* buf)
 {
+    grab_guard bufgrab(buf);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
     for (connection* c : m_conns) c->send(buf);
 }
@@ -119,6 +120,7 @@ uint16_t c_connection::get_port() const
 
 int c_connection::send(buffer* buf)
 {
+    grab_guard bufgrab(buf);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
     m_input_buf->push(buf);
 }

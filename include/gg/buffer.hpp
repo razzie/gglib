@@ -9,7 +9,7 @@
 
 namespace gg
 {
-    class buffer
+    class buffer : public reference_counted
     {
     public:
         static buffer* create();

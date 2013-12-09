@@ -72,6 +72,7 @@ void c_buffer::push(const buffer* _buf)
     const c_buffer* buf = static_cast<const c_buffer*>(_buf);
     if (buf == nullptr) return;
 
+    grab_guard bufgrab(buf);
     tthread::lock_guard<tthread::mutex> guard1(m_mutex);
     tthread::lock_guard<tthread::mutex> guard2(buf->m_mutex);
 
@@ -83,6 +84,7 @@ void c_buffer::merge(buffer* _buf)
     c_buffer* buf = static_cast<c_buffer*>(_buf);
     if (buf == nullptr) return;
 
+    grab_guard bufgrab(buf);
     tthread::lock_guard<tthread::mutex> guard1(m_mutex);
     tthread::lock_guard<tthread::mutex> guard2(buf->m_mutex);
 

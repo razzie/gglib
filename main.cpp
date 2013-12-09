@@ -9,7 +9,7 @@ int main()
     gg::buffer* buf = gg::buffer::create();
     srl->serialize(123, buf);
     gg::optional<gg::var> v = srl->deserialize(buf);
-    delete buf;
+    buf->drop();
 
     if (v.is_valid())
         std::cout << v.get().to_stream() << std::endl;
