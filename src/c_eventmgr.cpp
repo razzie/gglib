@@ -71,12 +71,12 @@ void c_event::add(std::initializer_list<attribute> il)
     m_attributes.insert(il);
 }
 
-var& c_event::operator[] (const std::string& attr)
+var& c_event::operator[] (std::string attr)
 {
     return m_attributes.at(attr);
 }
 
-const var& c_event::operator[] (const std::string& attr) const
+const var& c_event::operator[] (std::string attr) const
 {
     return m_attributes.at(attr);
 }

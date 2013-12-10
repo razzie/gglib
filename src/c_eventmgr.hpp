@@ -19,8 +19,8 @@ namespace gg
         std::string get_name() const;
         void add(std::string key, var value);
         void add(std::initializer_list<attribute> il);
-        var& operator[] (const std::string& attr);
-        const var& operator[] (const std::string& attr) const;
+        var& operator[] (std::string attr);
+        const var& operator[] (std::string attr) const;
     };
 
     class c_event_manager;

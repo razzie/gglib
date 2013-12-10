@@ -21,8 +21,8 @@ namespace gg
         virtual std::string get_name() const = 0;
         virtual void add(std::string key, var value) = 0;
         virtual void add(std::initializer_list<attribute> il) = 0;
-        virtual var& operator[] (const std::string& attr) = 0;
-        virtual const var& operator[] (const std::string& attr) const = 0;
+        virtual var& operator[] (std::string attr) = 0;
+        virtual const var& operator[] (std::string attr) const = 0;
     };
 
     typedef std::function<bool(const event&)> event_filter; // returns true if event should be skipped
