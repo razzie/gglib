@@ -27,6 +27,7 @@ namespace gg
         void add_rule(typeinfo, serializer_func, deserializer_func);
         bool serialize(const var&, buffer*) const;
         var deserialize(buffer*) const;
+        varlist deserialize_all(buffer*) const;
     };
 };
 

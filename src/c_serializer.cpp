@@ -186,3 +186,19 @@ var c_serializer::deserialize(buffer* buf) const
 
     return {};
 }
+
+varlist c_serializer::deserialize_all(buffer* buf) const
+{
+    grab_guard bufgrab(buf);
+    varlist vl;
+
+    for(;;)
+    {
+        gg::var v = std::move(deserialize(buf));
+
+        if (v.is_empty()) break;
+        else vl.push_back( std::move(v) );
+    }
+
+    return std::move(vl);
+}

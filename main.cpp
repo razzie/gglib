@@ -22,8 +22,8 @@ int main()
 
     srl->serialize(123, buf);
     srl->serialize(test {4,5,6}, buf);
-    std::cout << buf << std::endl;
-    std::cout << srl->deserialize(buf).to_stream() << " " << srl->deserialize(buf).to_stream() << std::endl;
+    std::cout << "\n" << buf << std::endl;
+    std::cout << srl->deserialize_all(buf) << std::endl;
 
     buf->drop();
 

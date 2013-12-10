@@ -124,17 +124,19 @@ std::vector<uint8_t> c_buffer::pop(size_t len)
 }
 
 
-std::ostream& gg::operator<< (std::ostream& o, const buffer& buf)
+std::ostream& gg::operator<< (std::ostream& o, const buffer& _buf)
 {
     std::ios state(NULL);
+    const c_buffer* buf = static_cast<const c_buffer*>(&_buf);
+    int i = 0;
+
     state.copyfmt(o);
-
     o << std::setfill('0') << std::hex;
-
-    for (uint8_t c : static_cast<const c_buffer*>(&buf)->m_data)
-        o << std::setw(2) << (int)c << " ";
-
+    for (uint8_t c : buf->m_data)
+        o << std::setw(2) << (int)c
+          << ((++i % 8 == 0) ? "\n" : " ");
     o.copyfmt(state);
+
     return o;
 }
 

@@ -27,6 +27,7 @@ namespace gg
         virtual void add_rule(typeinfo, serializer_func, deserializer_func) = 0;
         virtual bool serialize(const var&, buffer*) const = 0;
         virtual var deserialize(buffer*) const = 0;
+        virtual varlist deserialize_all(buffer*) const = 0;
 
         template<class T>
         void add_rule(serializer_func s, deserializer_func d)
