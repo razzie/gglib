@@ -6,12 +6,11 @@ int main()
 
 
     gg::serializer* srl = app->get_serializer();
-
     gg::buffer* buf = gg::buffer::create();
-    srl->serialize(123, buf);
 
-    gg::var v = srl->deserialize(buf);
-    std::cout << v.to_stream() << std::endl;
+    srl->serialize(123, buf);
+    srl->serialize(456, buf);
+    std::cout << srl->deserialize(buf).to_stream() << " " << srl->deserialize(buf).to_stream() << std::endl;
 
     buf->drop();
 
