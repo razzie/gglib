@@ -1,15 +1,27 @@
 #include "gglib.hpp"
 
+struct test
+{
+    int a, b, c;
+};
+
+std::ostream& operator<< (std::ostream& o, const test& t)
+{
+    o << "{" << t.a << "," << t.b << "," << t.c << "}";
+    return o;
+}
+
 int main()
 {
     gg::application* app = gg::application::create_instance("test app", 0, 1);
 
 
     gg::serializer* srl = app->get_serializer();
+    srl->add_trivial_rule<test>();
     gg::buffer* buf = gg::buffer::create();
 
     srl->serialize(123, buf);
-    srl->serialize(456, buf);
+    srl->serialize(test {4,5,6}, buf);
     std::cout << srl->deserialize(buf).to_stream() << " " << srl->deserialize(buf).to_stream() << std::endl;
 
     buf->drop();
