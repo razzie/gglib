@@ -1,6 +1,7 @@
 #ifndef C_BUFFER_HPP_INCLUDED
 #define C_BUFFER_HPP_INCLUDED
 
+#include <deque>
 #include "tinythread.h"
 #include "gg/buffer.hpp"
 
@@ -26,6 +27,9 @@ namespace gg
         void merge(buffer* buf);
         optional<uint8_t> pop();
         std::vector<uint8_t> pop(size_t len);
+
+        friend std::ostream& operator<< (std::ostream&, const buffer&);
+        friend std::ostream& operator<< (std::ostream&, const buffer*);
     };
 };
 

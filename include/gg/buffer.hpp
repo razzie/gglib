@@ -1,9 +1,9 @@
 #ifndef GG_BUFFER_HPP_INCLUDED
 #define GG_BUFFER_HPP_INCLUDED
 
+#include <iostream>
 #include <cstdint>
 #include <vector>
-#include <deque>
 #include "gg/refcounted.hpp"
 #include "gg/optional.hpp"
 
@@ -27,6 +27,9 @@ namespace gg
         virtual optional<uint8_t> pop() = 0;
         virtual std::vector<uint8_t> pop(size_t len) = 0;
     };
+
+    std::ostream& operator<< (std::ostream&, const buffer&);
+    std::ostream& operator<< (std::ostream&, const buffer*);
 };
 
 #endif // GG_BUFFER_HPP_INCLUDED

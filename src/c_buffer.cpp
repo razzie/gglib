@@ -1,3 +1,4 @@
+#include <iomanip>
 #include "c_buffer.hpp"
 
 using namespace gg;
@@ -93,16 +94,16 @@ void c_buffer::merge(buffer* _buf)
     tthread::lock_guard<tthread::mutex> guard1(m_mutex);
     tthread::lock_guard<tthread::mutex> guard2(buf->m_mutex);
 
-    m_data.insert(m_data.end(), buf->m_data.begin(), buf->m_data.end());
-    buf->m_data.clear();
+    m_data.insert(m_data.end(),
+                  std::make_move_iterator(buf->m_data.begin()),
+                  std::make_move_iterator(buf->m_data.end()));
 }
 
 optional<uint8_t> c_buffer::pop()
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    if (m_data.empty())
-        return optional<uint8_t>();
+    if (m_data.empty()) return {};
 
     uint8_t r = m_data.front();
     m_data.pop_front();
@@ -120,4 +121,24 @@ std::vector<uint8_t> c_buffer::pop(size_t len)
     m_data.erase(it_begin, it_end);
 
     return std::move(r);
+}
+
+
+std::ostream& gg::operator<< (std::ostream& o, const buffer& buf)
+{
+    std::ios state(NULL);
+    state.copyfmt(o);
+
+    o << std::setfill('0') << std::hex;
+
+    for (uint8_t c : static_cast<const c_buffer*>(&buf)->m_data)
+        o << std::setw(2) << (int)c << " ";
+
+    o.copyfmt(state);
+    return o;
+}
+
+std::ostream& gg::operator<< (std::ostream& o, const buffer* buf)
+{
+    return o << *buf;
 }

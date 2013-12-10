@@ -9,7 +9,7 @@ namespace gg
     class reference_counted
     {
         struct refcounted_data;
-        refcounted_data* m_data;
+        refcounted_data* m_refdata;
 
     public:
         reference_counted();

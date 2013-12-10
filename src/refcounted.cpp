@@ -13,33 +13,33 @@ struct reference_counted::refcounted_data
 
 reference_counted::reference_counted()
 {
-    m_data = new refcounted_data();
+    m_refdata = new refcounted_data();
 }
 
 reference_counted::~reference_counted()
 {
-    delete m_data;
+    delete m_refdata;
 }
 
 void reference_counted::grab() const
 {
-    m_data->m_mut.lock();
-    ++(m_data->m_ref);
-    m_data->m_mut.unlock();
+    m_refdata->m_mut.lock();
+    ++(m_refdata->m_ref);
+    m_refdata->m_mut.unlock();
 }
 
 void reference_counted::drop() const
 {
-    m_data->m_mut.lock();
-    if (--(m_data->m_ref) == 0)
+    m_refdata->m_mut.lock();
+    if (--(m_refdata->m_ref) == 0)
         delete this;
     else
-        m_data->m_mut.unlock();
+        m_refdata->m_mut.unlock();
 }
 
 uint32_t reference_counted::get_ref_count() const
 {
-    return m_data->m_ref;
+    return m_refdata->m_ref;
 }
 
 
