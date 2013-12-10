@@ -38,11 +38,16 @@ void c_buffer::clear()
 
 std::vector<uint8_t> c_buffer::peek(size_t len) const
 {
+    return std::move(peek(0, len));
+}
+
+std::vector<uint8_t> c_buffer::peek(size_t start_pos, size_t len) const
+{
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     std::vector<uint8_t> r;
 
-    auto it_begin = m_data.begin(), it_end = std::next(it_begin, len);
+    auto it_begin = std::next(m_data.begin(), start_pos), it_end = std::next(it_begin, len);
     r.insert(r.begin(), it_begin, it_end);
 
     return std::move(r);

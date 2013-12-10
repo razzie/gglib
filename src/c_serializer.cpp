@@ -5,6 +5,63 @@
 using namespace gg;
 
 
+class safe_buffer : public buffer
+{
+    buffer* m_buf;
+    size_t m_pos;
+
+public:
+    safe_buffer(buffer* buf) : m_buf(buf), m_pos(0) {}
+    ~safe_buffer() {}
+
+    void clear() { m_pos = 0; m_buf->clear(); }
+    void push(uint8_t byte) { m_buf->push(byte); }
+    void push(const uint8_t* buf, size_t len) { m_buf->push(buf, len); }
+    void push(const std::vector<uint8_t>& buf) { m_buf->push(buf); }
+    void push(const buffer* buf) { m_buf->push(buf); }
+    void merge(buffer* buf) { m_buf->merge(buf); }
+
+    size_t available() const
+    {
+        return m_buf->available() - m_pos;
+    }
+
+    void advance(size_t len)
+    {
+        m_pos += len;
+    }
+
+    std::vector<uint8_t> peek(size_t len) const
+    {
+        return std::move(m_buf->peek(m_pos, len));
+    }
+
+    std::vector<uint8_t> peek(size_t start_pos, size_t len) const
+    {
+        return std::move(m_buf->peek(start_pos + m_pos, len));
+    }
+
+    optional<uint8_t> pop()
+    {
+        auto v = m_buf->peek(m_pos++, 1);
+        if (v.empty()) return v[0];
+        else return {};
+    }
+
+    std::vector<uint8_t> pop(size_t len)
+    {
+        m_pos += len;
+        return std::move(m_buf->peek(m_pos - len, len));
+    }
+
+    void finalize()
+    {
+        m_buf->advance(m_pos);
+        m_pos = 0;
+    }
+};
+
+
 static bool serialize_string(const var& v, buffer* buf)
 {
     if (buf == nullptr || v.is_empty() || v.get_type() != typeid(std::string))
@@ -87,11 +144,17 @@ bool c_serializer::serialize(const var& v, buffer* buf) const
     grab_guard bufgrab(buf);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
+    c_buffer tmpbuf;
+
     auto rule = m_rules.find(hash);
     if (rule != m_rules.end())
     {
-        buf->push(reinterpret_cast<const uint8_t*>(&hash), sizeof(size_t));
-        return rule->second.m_sfunc(v, buf);
+        tmpbuf.push(reinterpret_cast<const uint8_t*>(&hash), sizeof(size_t));
+        if (rule->second.m_sfunc(v, &tmpbuf)) // successful serialization
+        {
+            buf->merge(&tmpbuf);
+            return true;
+        }
     }
 
     return false;
@@ -104,14 +167,21 @@ var c_serializer::deserialize(buffer* buf) const
     grab_guard bufgrab(buf);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
+    safe_buffer sbuf(buf);
+
     size_t hash;
-    auto v = buf->pop(sizeof(size_t));
+    auto v = sbuf.pop(sizeof(size_t));
     std::memcpy(&hash, v.data(), sizeof(size_t));
 
     auto rule = m_rules.find(hash);
     if (rule != m_rules.end())
     {
-        return rule->second.m_dfunc(buf);
+        var v( std::move(rule->second.m_dfunc(&sbuf)) );
+        if (!v.is_empty())
+        {
+            sbuf.finalize();
+            return std::move(v);
+        }
     }
 
     return {};
