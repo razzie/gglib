@@ -1,6 +1,7 @@
 #ifndef C_TASKMGR_HPP_INCLUDED
 #define C_TASKMGR_HPP_INCLUDED
 
+#include <map>
 #include "tinythread.h"
 #include "gg/taskmgr.hpp"
 #include "c_timer.hpp"
