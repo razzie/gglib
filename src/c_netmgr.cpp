@@ -21,7 +21,7 @@ public:
         m_status = WSAStartup(MAKEWORD(2,2), &m_wsaData);
         if (m_status != 0)
         {
-            std::cerr << "WSAStartup failed: " << m_status << std::endl;
+            std::cout << "WSAStartup failed: " << m_status << std::endl;
         }
     }
 
@@ -112,7 +112,7 @@ bool c_listener::open()
     // Resolve the local address and port to be used by the server
     if (getaddrinfo(NULL, port_str, &hints, &result) != 0)
     {
-        std::cerr << "getaddrinfo error: " << WSAGetLastError() << std::endl;
+        std::cout << "getaddrinfo error: " << WSAGetLastError() << std::endl;
         return false;
     }
 
@@ -120,7 +120,7 @@ bool c_listener::open()
     if (m_socket == INVALID_SOCKET)
     {
         freeaddrinfo(result);
-        std::cerr << "socket error: " << WSAGetLastError() << std::endl;
+        std::cout << "socket error: " << WSAGetLastError() << std::endl;
         return false;
     }
 
@@ -129,7 +129,7 @@ bool c_listener::open()
     {
         freeaddrinfo(result);
         closesocket(m_socket);
-        std::cerr << "bind error: " << WSAGetLastError() << std::endl;
+        std::cout << "bind error: " << WSAGetLastError() << std::endl;
         return false;
     }
 
@@ -169,9 +169,8 @@ bool c_listener::run(uint32_t)
 
     if (listen(m_socket, SOMAXCONN) == SOCKET_ERROR)
     {
-        std::cerr << "listen error: " << WSAGetLastError() << std::endl;
-        // maybe drop connections here?
-        closesocket(m_socket);
+        std::cout << "listen error: " << WSAGetLastError() << std::endl;
+        error_close();
         return false;
     }
 
@@ -183,9 +182,8 @@ bool c_listener::run(uint32_t)
     sock = accept(m_socket, reinterpret_cast<struct sockaddr*>(&sockaddr), &addrlen);
     if (sock == INVALID_SOCKET)
     {
-        std::cerr << "accept error: " << WSAGetLastError() << std::endl;
-        // maybe drop connections here?
-        closesocket(m_socket);
+        std::cout << "accept error: " << WSAGetLastError() << std::endl;
+        error_close();
         return false;
     }
 
@@ -310,9 +308,11 @@ bool c_connection::open()
     // Resolve the server address and port
     if (getaddrinfo(m_address.c_str(), port_str, &hints, &result) != 0)
     {
-        std::cerr << "getaddrinfo error: " << WSAGetLastError() << std::endl;
+        std::cout << "getaddrinfo error: " << WSAGetLastError() << std::endl;
         return false;
     }
+
+    m_socket = INVALID_SOCKET;
 
     // Attempt to connect to the first address returned by
     // the call to getaddrinfo
@@ -322,7 +322,7 @@ bool c_connection::open()
         m_socket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
         if (m_socket == INVALID_SOCKET)
         {
-            std::cerr << "socket error: " << WSAGetLastError() << std::endl;
+            std::cout << "socket error: " << WSAGetLastError() << std::endl;
             continue;
         }
 
@@ -331,7 +331,7 @@ bool c_connection::open()
             // Connect to server.
             if (connect(m_socket, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR)
             {
-                std::cerr << "connect error: " << WSAGetLastError() << std::endl;
+                std::cout << "connect error: " << WSAGetLastError() << std::endl;
                 closesocket(m_socket);
                 m_socket = INVALID_SOCKET;
                 continue;
@@ -341,7 +341,7 @@ bool c_connection::open()
         {
             if (bind(m_socket, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR)
             {
-                std::cerr << "bind error: " << WSAGetLastError() << std::endl;
+                std::cout << "bind error: " << WSAGetLastError() << std::endl;
                 closesocket(m_socket);
                 m_socket = INVALID_SOCKET;
                 continue;
@@ -399,7 +399,7 @@ bool c_connection::run(uint32_t)
 
         if (rc == SOCKET_ERROR)
         {
-            std::cerr << "send error: " << WSAGetLastError() << std::endl;
+            std::cout << "send error: " << WSAGetLastError() << std::endl;
             error_close();
             return false;
         }
@@ -417,7 +417,7 @@ bool c_connection::run(uint32_t)
     rc = select(0, &in, NULL, &err, &timeout);
     if (rc == SOCKET_ERROR)
     {
-        std::cerr << "select error: " << WSAGetLastError() << std::endl;
+        std::cout << "select error: " << WSAGetLastError() << std::endl;
         error_close();
         return false;
     }
@@ -425,7 +425,7 @@ bool c_connection::run(uint32_t)
     rc = recv(m_socket, m_buf, sizeof(m_buf), 0);
     if (rc == SOCKET_ERROR)
     {
-        std::cerr << "recv error: " << WSAGetLastError() << std::endl;
+        std::cout << "recv error: " << WSAGetLastError() << std::endl;
         error_close();
         return false;
     }
@@ -457,22 +457,22 @@ application* c_network_manager::get_app() const
     return m_app;
 }
 
-listener* c_network_manager::open_tcp_listener(uint16_t port) const
+listener* c_network_manager::create_tcp_listener(uint16_t port) const
 {
     return new c_listener(port, true);
 }
 
-listener* c_network_manager::open_udp_listener(uint16_t port) const
+listener* c_network_manager::create_udp_listener(uint16_t port) const
 {
     return new c_listener(port, false);
 }
 
-connection* c_network_manager::open_tcp_connection(std::string address, uint16_t port) const
+connection* c_network_manager::create_tcp_connection(std::string address, uint16_t port) const
 {
     return new c_connection(address, port, true);
 }
 
-connection* c_network_manager::open_udp_connection(std::string address, uint16_t port) const
+connection* c_network_manager::create_udp_connection(std::string address, uint16_t port) const
 {
     return new c_connection(address, port, false);
 }

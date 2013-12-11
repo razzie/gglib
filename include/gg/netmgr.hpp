@@ -65,10 +65,10 @@ namespace gg
 
     public:
         virtual application* get_app() const = 0;
-        virtual listener* open_tcp_listener(uint16_t port) const = 0;
-        virtual listener* open_udp_listener(uint16_t port) const = 0;
-        virtual connection* open_tcp_connection(std::string address, uint16_t port) const = 0;
-        virtual connection* open_udp_connection(std::string address, uint16_t port) const = 0;
+        virtual listener* create_tcp_listener(uint16_t port) const = 0;
+        virtual listener* create_udp_listener(uint16_t port) const = 0;
+        virtual connection* create_tcp_connection(std::string address, uint16_t port) const = 0;
+        virtual connection* create_udp_connection(std::string address, uint16_t port) const = 0;
     };
 };
 

@@ -1,5 +1,6 @@
 #include "gglib.hpp"
 
+
 struct test
 {
     int a, b, c;
@@ -11,6 +12,39 @@ std::ostream& operator<< (std::ostream& o, const test& t)
     return o;
 }
 
+
+class network_handler : public gg::packet_handler, public gg::connection_handler
+{
+    gg::application* m_app;
+
+public:
+    network_handler(gg::application* app)
+     : m_app(app)
+    {
+    }
+
+    ~network_handler()
+    {
+    }
+
+    void handle_packet(gg::connection* c)
+    {
+        std::cout << m_app->get_serializer()->deserialize_all(c->get_input_buffer()) << std::endl;
+    }
+
+    void handle_connection_open(gg::connection* c)
+    {
+        std::cout << "connection opened: " << c->get_address() << ":" << c->get_port() << std::endl;
+        c->set_packet_handler(this);
+    }
+
+    void handle_connection_close(gg::connection* c)
+    {
+        std::cout << "connection closed: " << c->get_address() << ":" << c->get_port() << std::endl;
+    }
+};
+
+
 int main()
 {
     gg::application* app = gg::application::create_instance("test app", 0, 1);
@@ -18,13 +52,19 @@ int main()
 
     gg::serializer* srl = app->get_serializer();
     srl->add_trivial_rule<test>();
-    gg::buffer* buf = gg::buffer::create();
 
+    gg::buffer* buf = gg::buffer::create();
     srl->serialize(123, buf);
     srl->serialize(test {4,5,6}, buf);
-    std::cout << "\n" << buf << std::endl;
-    std::cout << srl->deserialize_all(buf) << std::endl;
 
+    network_handler h(app);
+    gg::listener* l = app->get_network_manager()->create_tcp_listener(9999);
+    l->set_connection_handler(&h);
+    l->open();
+
+    gg::connection* c = app->get_network_manager()->create_tcp_connection("127.0.0.1", 9999);
+    c->open();
+    c->send(buf);
     buf->drop();
 
 

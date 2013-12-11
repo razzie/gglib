@@ -83,10 +83,10 @@ namespace gg
         c_network_manager(application*);
         ~c_network_manager();
         application* get_app() const;
-        listener* open_tcp_listener(uint16_t port) const;
-        listener* open_udp_listener(uint16_t port) const;
-        connection* open_tcp_connection(std::string address, uint16_t port) const;
-        connection* open_udp_connection(std::string address, uint16_t port) const;
+        listener* create_tcp_listener(uint16_t port) const;
+        listener* create_udp_listener(uint16_t port) const;
+        connection* create_tcp_connection(std::string address, uint16_t port) const;
+        connection* create_udp_connection(std::string address, uint16_t port) const;
     };
 };
 
