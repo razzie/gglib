@@ -1,4 +1,4 @@
-#define _WIN32_WINNT 0x501
+#define _WIN32_WINNT 0x0501
 #include <ws2tcpip.h>
 #include <cstring>
 #include <cstdio>
@@ -7,6 +7,43 @@
 #include "c_buffer.hpp"
 
 using namespace gg;
+
+
+static uint16_t get_port_from_sockaddr(SOCKADDR_STORAGE* sockaddr)
+{
+    switch (sockaddr->ss_family)
+    {
+        case AF_INET:
+            return reinterpret_cast<SOCKADDR_IN*>(sockaddr)->sin_port;
+        case AF_INET6:
+            return reinterpret_cast<SOCKADDR_IN6*>(sockaddr)->sin6_port;
+        default:
+            return 0;
+    }
+}
+
+static std::string get_addr_from_sockaddr(SOCKADDR_STORAGE* sockaddr)
+{
+    /*char str[INET6_ADDRSTRLEN];
+
+    switch (sockaddr->ss_family)
+    {
+        case AF_INET:
+            InetNtop(AF_INET, reinterpret_cast<SOCKADDR_IN*>(sockaddr)->sin_addr, str, sizeof(str));
+            return str;
+        case AF_INET6:
+            InetNtop(AF_INET6, reinterpret_cast<SOCKADDR_IN6*>(sockaddr)->sin6_addr, str, sizeof(str));
+            return str;
+        default:
+            return {};
+    }*/
+
+    char str[NI_MAXHOST];
+    str[0] = '\0';
+    getnameinfo(reinterpret_cast<SOCKADDR*>(sockaddr), sizeof(SOCKADDR_STORAGE),
+                str, sizeof(str), NULL, 0, NI_NUMERICHOST);
+    return str;
+}
 
 
 class wsa_init
@@ -99,7 +136,7 @@ bool c_listener::open()
 
     char port_str[6];
     std::sprintf(port_str, "%d", m_port);
-    struct addrinfo hints, *result = NULL/*, *ptr = NULL*/;
+    struct addrinfo hints, *result = NULL, *ptr = NULL;
 
     std::memset(&m_sockaddr, 0, sizeof(SOCKADDR_STORAGE));
 
@@ -116,20 +153,31 @@ bool c_listener::open()
         return false;
     }
 
-    m_socket = socket(result->ai_family, result->ai_socktype, result->ai_protocol);
+    m_socket = INVALID_SOCKET;
+
+    // Attempt to connect to the first address returned by
+    // the call to getaddrinfo
+    for (ptr = result; ptr != NULL; ptr = ptr->ai_next)
+    {
+        m_socket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
+        if (m_socket == INVALID_SOCKET)
+        {
+            std::cout << "socket error: " << WSAGetLastError() << std::endl;
+            continue;
+        }
+
+        // Setup the TCP listening socket
+        if (bind(m_socket, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR)
+        {
+            closesocket(m_socket);
+            std::cout << "bind error: " << WSAGetLastError() << std::endl;
+            continue;
+        }
+    }
+
     if (m_socket == INVALID_SOCKET)
     {
         freeaddrinfo(result);
-        std::cout << "socket error: " << WSAGetLastError() << std::endl;
-        return false;
-    }
-
-    // Setup the TCP listening socket
-    if (bind(m_socket, result->ai_addr, (int)result->ai_addrlen) == SOCKET_ERROR)
-    {
-        freeaddrinfo(result);
-        closesocket(m_socket);
-        std::cout << "bind error: " << WSAGetLastError() << std::endl;
         return false;
     }
 
@@ -222,6 +270,8 @@ c_connection::c_connection(listener* l, SOCKET sock, SOCKADDR_STORAGE* sockaddr,
  , m_tcp(is_tcp)
  , m_thread("connection thread")
 {
+    m_address = get_addr_from_sockaddr(sockaddr);
+    m_port = get_port_from_sockaddr(sockaddr);
     m_thread.add_task(this);
 }
 
