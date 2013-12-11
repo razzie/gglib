@@ -51,6 +51,7 @@ c_listener::c_listener(uint16_t port, bool is_tcp)
 
 c_listener::~c_listener()
 {
+    close();
     if (m_handler != nullptr) m_handler->drop();
 }
 
@@ -228,6 +229,7 @@ c_connection::c_connection(listener* l, SOCKET sock, SOCKADDR_STORAGE* sockaddr,
 
 c_connection::~c_connection()
 {
+    close();
     if (m_handler != nullptr) m_handler->drop();
 }
 
