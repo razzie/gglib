@@ -44,7 +44,7 @@ public:
     optional<uint8_t> pop()
     {
         auto v = m_buf->peek(m_pos++, 1);
-        if (v.empty()) return v[0];
+        if (!v.empty()) return v[0];
         else return {};
     }
 
