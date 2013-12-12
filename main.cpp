@@ -29,7 +29,7 @@ public:
 
     void handle_packet(gg::connection* c)
     {
-        std::cout << m_app->get_serializer()->deserialize_all(c->get_input_buffer()) << std::endl;
+        std::cout << "packet: " << m_app->get_serializer()->deserialize_all(c->get_input_buffer()) << std::endl;
     }
 
     void handle_connection_open(gg::connection* c)
@@ -50,17 +50,17 @@ int main()
     gg::application* app = gg::application::create_instance("test app", 0, 1);
 
 
-    gg::serializer* srl = app->get_serializer();
-    srl->add_trivial_rule<test>();
-
-    gg::buffer* buf = gg::buffer::create();
-    srl->serialize(123, buf);
-    srl->serialize(test {4,5,6}, buf);
-
     network_handler h(app);
     gg::listener* l = app->get_network_manager()->create_tcp_listener(9999);
     l->set_connection_handler(&h);
     l->open();
+
+
+    gg::serializer* srl = app->get_serializer();
+    gg::buffer* buf = gg::buffer::create();
+    srl->serialize(123, buf);
+    srl->add_trivial_rule<test>();
+    srl->serialize(test {4,5,6}, buf);
 
     gg::connection* c = app->get_network_manager()->create_tcp_connection("127.0.0.1", 9999);
     c->open();

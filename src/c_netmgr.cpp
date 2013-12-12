@@ -201,8 +201,13 @@ void c_listener::error_close()
 {
     for (connection* c : m_conns)
     {
-        c->close(); // handle_connection_close will be called
-        c->drop();
+        try
+        {
+            c->close(); // handle_connection_close will be called
+            c->drop();
+        }
+        catch (std::exception& e) { std::cout << e.what(); }
+        catch (...) {}
     }
 
     m_conns.clear();
@@ -213,13 +218,13 @@ void c_listener::error_close()
 bool c_listener::run(uint32_t)
 {
     //tthread::lock_guard<tthread::mutex> guard(m_mutex);
-    if (!m_open) return false;
+    if (!m_open) return true;
 
     if (listen(m_socket, SOMAXCONN) == SOCKET_ERROR)
     {
         std::cout << "listen error: " << WSAGetLastError() << std::endl;
         error_close();
-        return false;
+        return true;
     }
 
     SOCKADDR_STORAGE sockaddr;
@@ -232,18 +237,19 @@ bool c_listener::run(uint32_t)
     {
         std::cout << "accept error: " << WSAGetLastError() << std::endl;
         error_close();
-        return false;
+        return true;
     }
 
-    connection* conn = new c_connection(this, sock, &sockaddr, m_tcp);
-    m_conns.push_back(conn);
+    try
+    {
+        connection* conn = new c_connection(this, sock, &sockaddr, m_tcp);
+        m_conns.push_back(conn);
+    }
+    catch (std::exception& e) { std::cout << e.what(); }
+    catch (...) {}
 
-    if (m_handler != nullptr)
-        m_handler->handle_connection_open(conn);
-
-    return true;
+    return false;
 }
-
 
 
 c_connection::c_connection(std::string address, uint16_t port, bool is_tcp)
@@ -272,6 +278,10 @@ c_connection::c_connection(listener* l, SOCKET sock, SOCKADDR_STORAGE* sockaddr,
 {
     m_address = get_addr_from_sockaddr(sockaddr);
     m_port = get_port_from_sockaddr(sockaddr);
+
+    if (m_listener && m_listener->get_connection_handler() != nullptr)
+        m_listener->get_connection_handler()->handle_connection_open(this);
+
     m_thread.add_task(this);
 }
 
@@ -310,13 +320,13 @@ void c_connection::send(buffer* buf)
 {
     grab_guard bufgrab(buf);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
-    m_input_buf->push(buf);
+    m_output_buf->push(buf);
 }
 
 void c_connection::send(uint8_t* buf, size_t len)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
-    m_input_buf->push(buf, len);
+    m_output_buf->push(buf, len);
 }
 
 void c_connection::set_packet_handler(packet_handler* h)
@@ -433,43 +443,48 @@ void c_connection::error_close()
 bool c_connection::run(uint32_t)
 {
     //tthread::lock_guard<tthread::mutex> guard(m_mutex);
-    if (!m_open) return false;
+    if (!m_open) return true;
 
     int rc;
 
-    // sending data queued in output buffer
-    auto out = m_output_buf->peek(m_output_buf->available());
-    size_t len = out.size();
-    size_t bytes_sent = 0;
-
-    for (; bytes_sent < len;)
+    if (m_output_buf->available())
     {
-        rc = ::send(m_socket, reinterpret_cast<const char*>(out.data()), len, 0);
-        bytes_sent += rc;
+        // sending data queued in output buffer
+        auto out = m_output_buf->pop(m_output_buf->available());
+        size_t len = out.size();
+        size_t bytes_sent = 0;
 
-        if (rc == SOCKET_ERROR)
+        for (; bytes_sent < len;)
         {
-            std::cout << "send error: " << WSAGetLastError() << std::endl;
-            error_close();
-            return false;
+            rc = ::send(m_socket, reinterpret_cast<const char*>(out.data()), len, 0);
+            bytes_sent += rc;
+
+            if (rc == SOCKET_ERROR)
+            {
+                std::cout << "send error: " << WSAGetLastError() << std::endl;
+                error_close();
+                return true;
+            }
         }
     }
 
     // waiting for incoming data
-    FD_SET in, err;
-    TIMEVAL timeout = {0, 10000};
-
+    FD_SET in;
     FD_ZERO(&in);
-    FD_ZERO(&err);
     FD_SET(m_socket, &in);
-    FD_SET(m_socket, &err);
+    TIMEVAL timeout = {0, 100000};
 
-    rc = select(0, &in, NULL, &err, &timeout);
+    rc = select(0, &in, NULL, NULL, &timeout);
     if (rc == SOCKET_ERROR)
     {
         std::cout << "select error: " << WSAGetLastError() << std::endl;
         error_close();
-        return false;
+        return true;
+    }
+
+    if (FD_ISSET(m_socket, &in) == 0)
+    {
+        return false; // skipping recv
     }
 
     rc = recv(m_socket, m_buf, sizeof(m_buf), 0);
@@ -477,18 +492,19 @@ bool c_connection::run(uint32_t)
     {
         std::cout << "recv error: " << WSAGetLastError() << std::endl;
         error_close();
-        return false;
+        return true;
     }
     else if (rc == 0)
     {
+        std::cout << "connection closed from remote end" << std::endl;
         error_close();
-        return false;
+        return true;
     }
     else
     {
         m_input_buf->push(reinterpret_cast<uint8_t*>(m_buf), rc);
         if (m_handler != nullptr) m_handler->handle_packet(this);
-        return true;
+        return false;
     }
 }
 
