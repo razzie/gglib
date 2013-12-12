@@ -29,7 +29,8 @@ public:
 
     void handle_packet(gg::connection* c)
     {
-        std::cout << "packet: " << m_app->get_serializer()->deserialize_all(c->get_input_buffer()) << std::endl;
+        gg::varlist vl = m_app->get_serializer()->deserialize_all(c->get_input_buffer());
+        std::cout << "packet: " << vl << std::endl;
     }
 
     void handle_connection_open(gg::connection* c)

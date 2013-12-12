@@ -258,7 +258,8 @@ c_connection::c_connection(std::string address, uint16_t port, bool is_tcp)
  , m_port(port)
  , m_input_buf(new c_buffer())
  , m_output_buf(new c_buffer())
- , m_handler(nullptr)
+ , m_packet_handler(nullptr)
+ , m_conn_handler(nullptr)
  , m_open(false)
  , m_tcp(is_tcp)
  , m_thread("connection thread")
@@ -271,7 +272,8 @@ c_connection::c_connection(listener* l, SOCKET sock, SOCKADDR_STORAGE* sockaddr,
  , m_sockaddr(*sockaddr)
  , m_input_buf(new c_buffer())
  , m_output_buf(new c_buffer())
- , m_handler(nullptr)
+ , m_packet_handler(nullptr)
+ , m_conn_handler(nullptr)
  , m_open(true)
  , m_tcp(is_tcp)
  , m_thread("connection thread")
@@ -288,7 +290,8 @@ c_connection::c_connection(listener* l, SOCKET sock, SOCKADDR_STORAGE* sockaddr,
 c_connection::~c_connection()
 {
     close();
-    if (m_handler != nullptr) m_handler->drop();
+    if (m_packet_handler != nullptr) m_packet_handler->drop();
+    if (m_conn_handler != nullptr) m_conn_handler->drop();
 }
 
 listener* c_connection::get_listener()
@@ -333,14 +336,28 @@ void c_connection::set_packet_handler(packet_handler* h)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    if (m_handler != nullptr) m_handler->drop();
+    if (m_packet_handler != nullptr) m_packet_handler->drop();
     if (h != nullptr) h->grab();
-    m_handler = h;
+    m_packet_handler = h;
 }
 
 packet_handler* c_connection::get_packet_handler() const
 {
-    return m_handler;
+    return m_packet_handler;
+}
+
+void c_connection::set_connection_handler(connection_handler* h)
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    if (m_conn_handler != nullptr) m_conn_handler->drop();
+    if (h != nullptr) h->grab();
+    m_conn_handler = h;
+}
+
+connection_handler* c_connection::get_connection_handler() const
+{
+    return m_conn_handler;
 }
 
 bool c_connection::is_opened()
@@ -419,6 +436,12 @@ bool c_connection::open()
     m_open = true;
     m_thread.add_task(this);
 
+    if (m_listener && m_listener->get_connection_handler() != nullptr)
+        m_listener->get_connection_handler()->handle_connection_open(this);
+
+    if (m_conn_handler != nullptr)
+        m_conn_handler->handle_connection_open(this);
+
     return true;
 }
 
@@ -435,6 +458,9 @@ void c_connection::error_close()
 {
     if (m_listener && m_listener->get_connection_handler() != nullptr)
         m_listener->get_connection_handler()->handle_connection_close(this);
+
+    if (m_conn_handler != nullptr)
+        m_conn_handler->handle_connection_close(this);
 
     closesocket(m_socket);
     m_open = false;
@@ -503,7 +529,7 @@ bool c_connection::run(uint32_t)
     else
     {
         m_input_buf->push(reinterpret_cast<uint8_t*>(m_buf), rc);
-        if (m_handler != nullptr) m_handler->handle_packet(this);
+        if (m_packet_handler != nullptr) m_packet_handler->handle_packet(this);
         return false;
     }
 }

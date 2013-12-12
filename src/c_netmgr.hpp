@@ -48,7 +48,8 @@ namespace gg
         buffer* m_input_buf;
         buffer* m_output_buf;
         char m_buf[2048];
-        packet_handler* m_handler;
+        packet_handler* m_packet_handler;
+        connection_handler* m_conn_handler;
         bool m_client;
         bool m_open;
         bool m_tcp;
@@ -69,6 +70,8 @@ namespace gg
         void send(uint8_t*, size_t);
         void set_packet_handler(packet_handler*);
         packet_handler* get_packet_handler() const;
+        void set_connection_handler(connection_handler*);
+        connection_handler* get_connection_handler() const;
         bool is_opened();
         bool open();
         void close();
