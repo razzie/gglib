@@ -7,6 +7,7 @@
 #include "tinythread.h"
 #include "fast_mutex.h"
 #include "gg/console.hpp"
+#include "c_taskmgr.hpp"
 
 namespace gg
 {
@@ -106,6 +107,7 @@ private:
 	std::vector<std::string>::iterator m_cmd_history_pos;
 	controller* m_ctrl;
 	std::function<void(console*)> m_close_cb;
+	c_thread m_thread;
     HINSTANCE m_hInst;
     WNDCLASSEX m_wndClassEx;
 	HWND m_hWnd;
@@ -120,7 +122,6 @@ private:
     void async_open();
     void async_close();
     bool run();
-    void control_thread();
     void cmd_async_exec();
     void cmd_complete();
     bool prepare_render_context(render_context* ctx);

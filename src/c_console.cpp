@@ -2,7 +2,6 @@
 #include "c_timer.hpp"
 #include "threadglobal.hpp"
 #include "gg/util.hpp"
-#include "c_taskmgr.hpp"
 
 using namespace gg;
 
@@ -41,6 +40,7 @@ c_console::c_console(application* app, std::string name,
  , m_cmd_pos(m_cmd.end())
  , m_cmd_history_pos(m_cmd_history.end())
  , m_ctrl(ctrl)
+ , m_thread("console thread")
  , m_welcome(true)
  , m_welcome_text(nullptr)
 {
@@ -127,7 +127,18 @@ void c_console::open()
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     if (m_open) return; // already opened
-	c_task_manager::async_invoke(std::bind(&c_console::control_thread, this));
+	//c_task_manager::async_invoke(std::bind(&c_console::control_thread, this));
+	m_thread.add_task(std::bind(&c_console::async_open, this));
+	m_thread.add_persistent_task([&](uint32_t)
+    {
+        if (!run())
+        {
+            async_close();
+            return true;
+        }
+
+        return false;
+    });
 }
 
 void c_console::close()
@@ -192,18 +203,6 @@ void c_console::on_close(std::function<void(console*)> callback)
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_close_cb = callback;
-}
-
-void c_console::control_thread()
-{
-    if (!this->is_opened())
-        this->async_open();
-    else
-        return;
-
-    while (this->run());
-
-    this->async_close();
 }
 
 bool c_console::run()
