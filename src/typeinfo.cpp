@@ -54,9 +54,19 @@ bool typeinfo::operator>= (const typeinfo& ti) const
     return (*this > ti || *this == ti);
 }
 
-std::string typeinfo::name() const
+std::string typeinfo::get_name() const
 {
-    return typeinfo::name_of(*m_type);
+    return typeinfo::name(*m_type);
+}
+
+const std::type_info& typeinfo::get_type() const
+{
+    return *m_type;
+}
+
+size_t typeinfo::get_hash() const noexcept
+{
+    return m_type->hash_code();
 }
 
 typeinfo::operator const std::type_info& () const
@@ -64,12 +74,7 @@ typeinfo::operator const std::type_info& () const
     return *m_type;
 }
 
-size_t typeinfo::hash_code() const noexcept
-{
-    return m_type->hash_code();
-}
-
-std::string typeinfo::name_of(const std::type_info& ti)
+std::string typeinfo::name(const std::type_info& ti)
 {
     std::string tname;
     char* buf = NULL;

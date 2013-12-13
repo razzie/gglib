@@ -17,8 +17,10 @@ namespace gg
         typedef std::map<std::string,var>::value_type attribute;
 
         static event* create(std::string name, std::initializer_list<attribute> il = {});
+        static event* create(size_t hash_code, std::initializer_list<attribute> il = {});
+
         virtual ~event() {}
-        virtual std::string get_name() const = 0;
+        virtual size_t get_hash() const = 0;
         virtual void add(std::string key, var value) = 0;
         virtual void add(std::initializer_list<attribute> il) = 0;
         virtual var& operator[] (std::string attr) = 0;
@@ -46,6 +48,7 @@ namespace gg
 
     public:
         virtual std::string get_name() const = 0;
+        virtual size_t get_hash() const = 0;
         virtual void add_listener(event_listener*) = 0;
         virtual void add_listener(event_callback) = 0;
         virtual void remove_listener(event_listener*) = 0;
@@ -60,6 +63,7 @@ namespace gg
         virtual application* get_app() const = 0;
         virtual event_type* create_event_type(std::string name) = 0;
         virtual event_type* get_event_type(std::string name) = 0;
+        virtual event_type* get_event_type(size_t hash_code) = 0;
         virtual event_listener* create_event_listener(event_callback) const = 0;
         virtual void push_event(event*) = 0;
         virtual bool trigger_event(event*) = 0;

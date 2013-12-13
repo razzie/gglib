@@ -23,13 +23,14 @@ namespace gg
         bool operator>  (const typeinfo&) const;
         bool operator>= (const typeinfo&) const;
 
-        std::string name() const;
+        std::string get_name() const;
+        const std::type_info& get_type() const;
+        size_t get_hash() const noexcept;
         operator const std::type_info& () const;
-        size_t hash_code() const noexcept;
 
         template<class T>
-        static std::string name_of() { return name_of(typeid(T)); }
-        static std::string name_of(const std::type_info&);
+        static std::string name() { return name(typeid(T)); }
+        static std::string name(const std::type_info&);
     };
 };
 

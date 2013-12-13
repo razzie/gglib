@@ -1,3 +1,4 @@
+#include <functional>
 #include "c_eventmgr.hpp"
 #include "gg/application.hpp"
 
@@ -47,8 +48,9 @@ bool c_event::serialize(const var& v, buffer* buf, const serializer* s)
     const c_event& e = v.get<c_event>();
     auto it = e.m_attributes.begin(), end = e.m_attributes.end();
     uint8_t attr_count = e.m_attributes.size();
+    size_t hash_code = e.get_hash();
 
-    s->serialize(e.get_name(), buf);
+    buf->push(reinterpret_cast<uint8_t*>(&hash_code), sizeof(size_t));
     buf->push(attr_count);
 
     for (; it != end; ++it)
@@ -67,9 +69,9 @@ optional<var> c_event::deserialize(buffer* buf, const serializer* s)
 
     grab_guard bufgrab(buf);
 
-    optional<var> name = s->deserialize(buf);
-    if (!name.is_valid() || name.get().get_type() != typeid(std::string)) return {};
-    c_event e(name.get().get<std::string>());
+    size_t hash_code;
+    if (buf->pop(reinterpret_cast<uint8_t*>(&hash_code), sizeof(size_t)) != sizeof(size_t)) return {};
+    c_event e(hash_code);
 
     optional<uint8_t> attrcnt = buf->pop();
     if (!attrcnt.is_valid()) return {};
@@ -96,13 +98,19 @@ event* event::create(std::string name, std::initializer_list<attribute> il)
     return new c_event(name, il);
 }
 
-c_event::c_event(std::string name)
- : m_name(std::move(name))
+event* event::create(size_t hash_code, std::initializer_list<attribute> il)
 {
+    return new c_event(hash_code, il);
 }
 
 c_event::c_event(std::string name, std::initializer_list<attribute> il)
- : m_name(std::move(name))
+ : m_hash(std::hash<std::string>()(name))
+ , m_attributes(il)
+{
+}
+
+c_event::c_event(size_t hash_code, std::initializer_list<attribute> il)
+ : m_hash(hash_code)
  , m_attributes(il)
 {
 }
@@ -111,9 +119,9 @@ c_event::~c_event()
 {
 }
 
-std::string c_event::get_name() const
+size_t c_event::get_hash() const
 {
-    return m_name;
+    return m_hash;
 }
 
 void c_event::add(std::string key, var value)
@@ -139,12 +147,14 @@ const var& c_event::operator[] (std::string attr) const
 
 c_event_type::c_event_type(std::string name, c_event_manager* mgr)
  : m_name(name)
+ , m_hash(std::hash<std::string>()(name))
  , m_parent_mgr(mgr)
 {
 }
 
 c_event_type::c_event_type(c_event_type&& e)
  : m_name(std::move(e.m_name))
+ , m_hash(e.m_hash)
  , m_listeners(std::move(e.m_listeners))
  , m_parent_mgr(e.m_parent_mgr)
 {
@@ -165,6 +175,11 @@ c_event_type::~c_event_type()
 std::string c_event_type::get_name() const
 {
     return m_name;
+}
+
+size_t c_event_type::get_hash() const
+{
+    return m_hash;
 }
 
 void c_event_type::add_listener(event_listener* l)
@@ -218,12 +233,14 @@ application* c_event_manager::get_app() const
 
 c_event_type* c_event_manager::create_event_type(std::string name)
 {
-    if (m_evt_types.count(name) > 0)
-        return get_event_type(name);
+    size_t hash_code = std::hash<std::string>()(name);
+
+    if (m_evt_types.count(hash_code) > 0)
+        return get_event_type(hash_code);
 
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    auto ret = m_evt_types.insert( std::make_pair(name, c_event_type(name,this)) );
+    auto ret = m_evt_types.insert( std::make_pair(hash_code, c_event_type(name, this)) );
 
     if (!ret.second)
         throw std::runtime_error("failed to create event type");
@@ -233,9 +250,22 @@ c_event_type* c_event_manager::create_event_type(std::string name)
 
 c_event_type* c_event_manager::get_event_type(std::string name)
 {
+    size_t hash_code = std::hash<std::string>()(name);
+
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    auto it = m_evt_types.find(name);
+    auto it = m_evt_types.find(hash_code);
+    if (it == m_evt_types.end())
+        return nullptr;
+    else
+        return &it->second;
+}
+
+c_event_type* c_event_manager::get_event_type(size_t hash_code)
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    auto it = m_evt_types.find(hash_code);
     if (it == m_evt_types.end())
         return nullptr;
     else
@@ -251,7 +281,7 @@ void c_event_manager::push_event(event* evt)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    if (nullptr == this->get_event_type(evt->get_name()))
+    if (nullptr == this->get_event_type(evt->get_hash()))
         throw std::runtime_error("unknown event type");
 
     m_thread.add_task( new event_task(this,evt) );
@@ -259,7 +289,7 @@ void c_event_manager::push_event(event* evt)
 
 bool c_event_manager::trigger_event(event* evt)
 {
-    c_event_type* evt_type = this->get_event_type(evt->get_name());
+    c_event_type* evt_type = this->get_event_type(evt->get_hash());
 
     if (nullptr == evt_type)
         throw std::runtime_error("unknown event type");

@@ -11,14 +11,14 @@ namespace gg
 {
     class c_event : public event
     {
-        std::string m_name;
+        size_t m_hash;
         std::map<std::string,var> m_attributes;
 
     public:
-        c_event(std::string name);
-        c_event(std::string name, std::initializer_list<attribute> il);
+        c_event(std::string name, std::initializer_list<attribute> il = {});
+        c_event(size_t hash_code, std::initializer_list<attribute> il = {});
         ~c_event();
-        std::string get_name() const;
+        size_t get_hash() const;
         void add(std::string key, var value);
         void add(std::initializer_list<attribute> il);
         var& operator[] (std::string attr);
@@ -35,6 +35,7 @@ namespace gg
         friend class c_event_manager;
 
         std::string m_name;
+        size_t m_hash;
         std::list<event_listener*> m_listeners;
         tthread::mutex m_mutex;
         c_event_manager* m_parent_mgr;
@@ -44,6 +45,7 @@ namespace gg
         c_event_type(c_event_type&&);
         ~c_event_type();
         std::string get_name() const;
+        size_t get_hash() const;
         void add_listener(event_listener*);
         void add_listener(event_callback);
         void remove_listener(event_listener*);
@@ -53,7 +55,7 @@ namespace gg
     {
         mutable tthread::mutex m_mutex;
         mutable application* m_app;
-        std::map<std::string, c_event_type> m_evt_types;
+        std::map<size_t, c_event_type> m_evt_types;
         c_thread m_thread;
 
     public:
@@ -62,6 +64,7 @@ namespace gg
         application* get_app() const;
         c_event_type* create_event_type(std::string name);
         c_event_type* get_event_type(std::string name);
+        c_event_type* get_event_type(size_t hash_code);
         event_listener* create_event_listener(event_callback) const;
         void push_event(event*);
         bool trigger_event(event*);

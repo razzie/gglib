@@ -155,12 +155,12 @@ application* c_serializer::get_app() const
 
 void c_serializer::add_rule_ex(typeinfo ti, serializer_func_ex sfunc, deserializer_func_ex dfunc)
 {
-    if (m_rules.count(ti.hash_code()) > 0)
+    if (m_rules.count(ti.get_hash()) > 0)
         throw std::runtime_error("rule already added");
 
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    auto r = m_rules.insert( std::make_pair(ti.hash_code(), rule {ti, sfunc, dfunc}) );
+    auto r = m_rules.insert( std::make_pair(ti.get_hash(), rule {ti, sfunc, dfunc}) );
 
     if (!r.second)
         throw std::runtime_error("failed to add rule");
@@ -177,7 +177,7 @@ void c_serializer::remove_rule(typeinfo ti)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    auto pos = m_rules.find(ti.hash_code());
+    auto pos = m_rules.find(ti.get_hash());
     if (pos != m_rules.end())
     {
         m_rules.erase(pos);
@@ -188,7 +188,7 @@ bool c_serializer::serialize(const var& v, buffer* buf) const
 {
     if (buf == nullptr) return false;
 
-    size_t hash = typeinfo(v.get_type()).hash_code();
+    size_t hash = typeinfo(v.get_type()).get_hash();
 
     grab_guard bufgrab(buf);
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
