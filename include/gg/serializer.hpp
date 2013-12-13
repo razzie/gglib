@@ -28,6 +28,7 @@ namespace gg
         virtual application* get_app() const = 0;
         virtual void add_rule_ex(typeinfo, serializer_func_ex, deserializer_func_ex) = 0;
         virtual void add_rule(typeinfo, serializer_func, deserializer_func) = 0;
+        virtual void remove_rule(typeinfo) = 0;
         virtual bool serialize(const var&, buffer*) const = 0;
         virtual optional<var> deserialize(buffer*) const = 0;
         virtual varlist deserialize_all(buffer*) const = 0;

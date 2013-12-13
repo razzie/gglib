@@ -156,6 +156,17 @@ void c_serializer::add_rule(typeinfo ti, serializer_func sfunc, deserializer_fun
         [=](buffer* buf, const serializer*)->var { return dfunc(buf); });
 }
 
+void c_serializer::remove_rule(typeinfo ti)
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    auto pos = m_rules.find(ti.hash_code());
+    if (pos != m_rules.end())
+    {
+        m_rules.erase(pos);
+    }
+}
+
 bool c_serializer::serialize(const var& v, buffer* buf) const
 {
     if (buf == nullptr) return false;
