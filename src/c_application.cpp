@@ -24,9 +24,9 @@ c_application::c_application(std::string name, uint32_t ver_major, uint32_t ver_
 
     c_logger::get_instance()->enable_cout_hook();
 
+    m_serializer = new c_serializer(this);
     m_eventmgr = new c_event_manager(this);
     m_taskmgr = new c_task_manager(this);
-    m_serializer = new c_serializer(this);
     m_scripteng = new c_script_engine(this);
     m_netmgr = new c_network_manager(this);
 }
@@ -38,9 +38,9 @@ c_application::~c_application()
 
     delete m_eventmgr;
     delete m_taskmgr;
-    delete m_serializer;
     delete m_scripteng;
     delete m_netmgr;
+    delete m_serializer;
 }
 
 std::string c_application::get_name() const
@@ -95,9 +95,9 @@ console* c_application::create_console()
                          "Press TAB to list available commands");
 }
 
-console* c_application::create_console(std::string name, std::string welcome_text, console::controller* ctrl)
+console* c_application::create_console(std::string name, std::string welcome_text)
 {
-    return new c_console(this, name, ctrl, welcome_text);
+    return new c_console(this, name, nullptr, welcome_text);
 }
 
 int c_application::start()

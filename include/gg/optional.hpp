@@ -53,13 +53,20 @@ namespace gg
             return *this;
         }
 
-        T get() const
+        T& get()
         {
             if (!m_valid) throw std::runtime_error("getting value of invalid optional<>");
             return m_val.get<T>();
         }
 
-        operator T() const { return get(); }
+        const T& get() const
+        {
+            if (!m_valid) throw std::runtime_error("getting value of invalid optional<>");
+            return m_val.get<T>();
+        }
+
+        operator T&() { return get(); }
+        operator const T&() const { return get(); }
 
         bool is_valid() const { return m_valid; }
         void invalidate() { m_val.clear(); m_valid = false; }

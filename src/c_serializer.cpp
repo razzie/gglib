@@ -75,7 +75,7 @@ static bool serialize_string(const var& v, buffer* buf)
     return true;
 }
 
-static var deserialize_string(buffer* buf)
+static optional<var> deserialize_string(buffer* buf)
 {
     if (buf == nullptr || buf->available() == 0)
         return {};
@@ -97,6 +97,19 @@ static var deserialize_string(buffer* buf)
 }
 
 
+static bool serialize_void(const var& v, buffer* buf)
+{
+    if (buf == nullptr || !v.is_empty()) return false;
+    else return true;
+}
+
+static optional<var> deserialize_void(buffer* buf)
+{
+    if (buf == nullptr || buf->available() == 0) return {};
+    else return var();
+}
+
+
 c_serializer::c_serializer(application* app)
  : m_app(app)
 {
@@ -111,6 +124,7 @@ c_serializer::c_serializer(application* app)
     add_trivial_rule<float>();
     add_trivial_rule<double>();
     add_rule(typeid(std::string), serialize_string, deserialize_string);
+    add_rule(typeid(void), serialize_void, deserialize_void);
 }
 
 c_serializer::~c_serializer()
@@ -122,7 +136,7 @@ application* c_serializer::get_app() const
     return m_app;
 }
 
-void c_serializer::add_rule(typeinfo ti, serializer_func sfunc, deserializer_func dfunc)
+void c_serializer::add_rule_ex(typeinfo ti, serializer_func_ex sfunc, deserializer_func_ex dfunc)
 {
     if (m_rules.count(ti.hash_code()) > 0)
         throw std::runtime_error("rule already added");
@@ -133,6 +147,13 @@ void c_serializer::add_rule(typeinfo ti, serializer_func sfunc, deserializer_fun
 
     if (!r.second)
         throw std::runtime_error("failed to add rule");
+}
+
+void c_serializer::add_rule(typeinfo ti, serializer_func sfunc, deserializer_func dfunc)
+{
+    add_rule_ex(ti,
+        [=](const var& v, buffer* buf, const serializer*)->bool { return sfunc(v, buf); },
+        [=](buffer* buf, const serializer*)->var { return dfunc(buf); });
 }
 
 bool c_serializer::serialize(const var& v, buffer* buf) const
@@ -150,7 +171,7 @@ bool c_serializer::serialize(const var& v, buffer* buf) const
     if (rule != m_rules.end())
     {
         tmpbuf.push(reinterpret_cast<const uint8_t*>(&hash), sizeof(size_t));
-        if (rule->second.m_sfunc(v, &tmpbuf)) // successful serialization
+        if (rule->second.m_sfunc(v, &tmpbuf, this)) // successful serialization
         {
             buf->merge(&tmpbuf);
             return true;
@@ -160,7 +181,7 @@ bool c_serializer::serialize(const var& v, buffer* buf) const
     return false;
 }
 
-var c_serializer::deserialize(buffer* buf) const
+optional<var> c_serializer::deserialize(buffer* buf) const
 {
     if (buf == nullptr || buf->available() < sizeof(size_t)) return {};
 
@@ -176,11 +197,11 @@ var c_serializer::deserialize(buffer* buf) const
     auto rule = m_rules.find(hash);
     if (rule != m_rules.end())
     {
-        var v( std::move(rule->second.m_dfunc(&sbuf)) );
-        if (!v.is_empty())
+        optional<var> v = std::move(rule->second.m_dfunc(&sbuf, this));
+        if (v.is_valid())
         {
             sbuf.finalize();
-            return std::move(v);
+            return std::move(v.get());
         }
     }
 
@@ -194,10 +215,9 @@ varlist c_serializer::deserialize_all(buffer* buf) const
 
     for(;;)
     {
-        gg::var v = std::move(deserialize(buf));
-
-        if (v.is_empty()) break;
-        else vl.push_back( std::move(v) );
+        optional<var> v = std::move(deserialize(buf));
+        if (v.is_valid()) vl.push_back( std::move(v.get()) );
+        else break;
     }
 
     return std::move(vl);

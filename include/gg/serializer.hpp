@@ -20,14 +20,23 @@ namespace gg
         virtual ~serializer() {}
 
     public:
-        typedef std::function<bool(const var&,buffer*)> serializer_func;
-        typedef std::function<var(buffer*)> deserializer_func;
+        typedef std::function<bool(const var&, buffer*, const serializer*)> serializer_func_ex;
+        typedef std::function<bool(const var&, buffer*)> serializer_func;
+        typedef std::function<optional<var>(buffer*, const serializer*)> deserializer_func_ex;
+        typedef std::function<optional<var>(buffer*)> deserializer_func;
 
         virtual application* get_app() const = 0;
+        virtual void add_rule_ex(typeinfo, serializer_func_ex, deserializer_func_ex) = 0;
         virtual void add_rule(typeinfo, serializer_func, deserializer_func) = 0;
         virtual bool serialize(const var&, buffer*) const = 0;
-        virtual var deserialize(buffer*) const = 0;
+        virtual optional<var> deserialize(buffer*) const = 0;
         virtual varlist deserialize_all(buffer*) const = 0;
+
+        template<class T>
+        void add_rule_ex(serializer_func_ex s, deserializer_func_ex d)
+        {
+            this->add_rule_ex(typeid(T), s, d);
+        }
 
         template<class T>
         void add_rule(serializer_func s, deserializer_func d)
@@ -47,7 +56,7 @@ namespace gg
                 return true;
             };
 
-            deserializer_func d = [](buffer* buf)->var
+            deserializer_func d = [](buffer* buf)->optional<var>
             {
                 if (buf == nullptr || (buf->available() < sizeof(T)))
                     return {};

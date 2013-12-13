@@ -43,7 +43,7 @@ namespace gg
             void extract_to(std::ostream& o) const { ostream_insert(o, m_var); }
         };
 
-        const var_impl_base* m_var = nullptr;
+        var_impl_base* m_var = nullptr;
 
     public:
         var();

@@ -3,6 +3,8 @@
 
 #include "tinythread.h"
 #include "gg/eventmgr.hpp"
+#include "gg/optional.hpp"
+#include "gg/serializer.hpp"
 #include "c_taskmgr.hpp"
 
 namespace gg
@@ -21,6 +23,9 @@ namespace gg
         void add(std::initializer_list<attribute> il);
         var& operator[] (std::string attr);
         const var& operator[] (std::string attr) const;
+
+        static bool serialize(const var& v, buffer* buf, const serializer*);
+        static optional<var> deserialize(buffer* buf, const serializer*);
     };
 
     class c_event_manager;

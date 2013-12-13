@@ -1,4 +1,5 @@
 #include "c_eventmgr.hpp"
+#include "gg/application.hpp"
 
 using namespace gg;
 
@@ -34,6 +35,60 @@ public:
     ~func_event_listener() {}
     bool on_event(const event& evt) { return m_cb(evt); }
 };
+
+
+bool c_event::serialize(const var& v, buffer* buf, const serializer* s)
+{
+    if (buf == nullptr || v.is_empty() || v.get_type() != typeid(c_event))
+        return false;
+
+    grab_guard bufgrab(buf);
+
+    const c_event& e = v.get<c_event>();
+    auto it = e.m_attributes.begin(), end = e.m_attributes.end();
+    uint8_t attr_count = e.m_attributes.size();
+
+    s->serialize(e.get_name(), buf);
+    buf->push(attr_count);
+
+    for (; it != end; ++it)
+    {
+        s->serialize(it->first, buf);
+        if (!s->serialize(it->second, buf)) return false;
+    }
+
+    return true;
+}
+
+optional<var> c_event::deserialize(buffer* buf, const serializer* s)
+{
+    if (buf == nullptr || buf->available() == 0)
+        return {};
+
+    grab_guard bufgrab(buf);
+
+    optional<var> name = s->deserialize(buf);
+    if (!name.is_valid() || name.get().get_type() != typeid(std::string)) return {};
+    c_event e(name.get().get<std::string>());
+
+    optional<uint8_t> attrcnt = buf->pop();
+    if (!attrcnt.is_valid()) return {};
+    uint8_t attr_count = attrcnt.get();
+
+    for (uint8_t i = 0; i < attr_count; ++i)
+    {
+        optional<var> attr = s->deserialize(buf);
+        optional<var> val = s->deserialize(buf);
+
+        if (!attr.is_valid() || !val.is_valid()
+            || attr.get().get_type() != typeid(std::string))
+            return {};
+
+        e.add(std::move(attr.get().get<std::string>()), std::move(val.get()));
+    }
+
+    return {};
+}
 
 
 event* event::create(std::string name, std::initializer_list<attribute> il)
@@ -149,6 +204,7 @@ c_event_manager::c_event_manager(application* app)
  : m_app(app)
  , m_thread("event manager")
 {
+    m_app->get_serializer()->add_rule_ex<c_event>(c_event::serialize, c_event::deserialize);
 }
 
 c_event_manager::~c_event_manager()
