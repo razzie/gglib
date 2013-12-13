@@ -37,21 +37,53 @@ void c_buffer::clear()
     m_data.clear();
 }
 
-std::vector<uint8_t> c_buffer::peek(size_t len) const
+buffer::byte_array c_buffer::peek(size_t len) const
 {
-    return std::move(peek(0, len));
+    return std::move(peek((size_t)0, len));
 }
 
-std::vector<uint8_t> c_buffer::peek(size_t start_pos, size_t len) const
+buffer::byte_array c_buffer::peek(size_t start_pos, size_t len) const
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    std::vector<uint8_t> r;
+    byte_array r;
 
     auto it_begin = std::next(m_data.begin(), start_pos), it_end = std::next(it_begin, len);
     r.insert(r.begin(), it_begin, it_end);
 
     return std::move(r);
+}
+
+size_t c_buffer::peek(uint8_t* buf, size_t len) const
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    auto it_begin = m_data.begin(), it_end = std::next(it_begin, len);
+    auto it = it_begin;
+    size_t i = 0;
+
+    for (; it_begin != it_end; ++it, ++i)
+    {
+        buf[i] = *it;
+    }
+
+    return i;
+}
+
+size_t c_buffer::peek(size_t start_pos, uint8_t* buf, size_t len) const
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    auto it_begin = std::next(m_data.begin(), start_pos), it_end = std::next(it_begin, len);
+    auto it = it_begin;
+    size_t i = 0;
+
+    for (; it_begin != it_end; ++it, ++i)
+    {
+        buf[i] = *it;
+    }
+
+    return i;
 }
 
 void c_buffer::push(uint8_t byte)
@@ -67,7 +99,7 @@ void c_buffer::push(const uint8_t* buf, size_t len)
         m_data.push_back(buf[i]);
 }
 
-void c_buffer::push(const std::vector<uint8_t>& buf)
+void c_buffer::push(const byte_array& buf)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
     m_data.insert(m_data.end(), buf.begin(), buf.end());
@@ -110,17 +142,35 @@ optional<uint8_t> c_buffer::pop()
     return r;
 }
 
-std::vector<uint8_t> c_buffer::pop(size_t len)
+buffer::byte_array c_buffer::pop(size_t len)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    std::vector<uint8_t> r;
+    byte_array r;
 
     auto it_begin = m_data.begin(), it_end = std::next(it_begin, len);
     r.insert(r.begin(), it_begin, it_end);
     m_data.erase(it_begin, it_end);
 
     return std::move(r);
+}
+
+size_t c_buffer::pop(uint8_t* buf, size_t len)
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    auto it_begin = m_data.begin(), it_end = std::next(it_begin, len);
+    auto it = it_begin;
+    size_t i = 0;
+
+    for (; it_begin != it_end; ++it, ++i)
+    {
+        buf[i] = *it;
+    }
+
+    m_data.erase(it_begin, it_end);
+
+    return i;
 }
 
 

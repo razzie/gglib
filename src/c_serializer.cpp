@@ -17,7 +17,7 @@ public:
     void clear() { m_pos = 0; m_buf->clear(); }
     void push(uint8_t byte) { m_buf->push(byte); }
     void push(const uint8_t* buf, size_t len) { m_buf->push(buf, len); }
-    void push(const std::vector<uint8_t>& buf) { m_buf->push(buf); }
+    void push(const byte_array& buf) { m_buf->push(buf); }
     void push(const buffer* buf) { m_buf->push(buf); }
     void merge(buffer* buf) { m_buf->merge(buf); }
 
@@ -31,14 +31,24 @@ public:
         m_pos += len;
     }
 
-    std::vector<uint8_t> peek(size_t len) const
+    byte_array peek(size_t len) const
     {
         return std::move(m_buf->peek(m_pos, len));
     }
 
-    std::vector<uint8_t> peek(size_t start_pos, size_t len) const
+    byte_array peek(size_t start_pos, size_t len) const
     {
         return std::move(m_buf->peek(start_pos + m_pos, len));
+    }
+
+    size_t peek(uint8_t* buf, size_t len) const
+    {
+        return m_buf->peek(m_pos, buf, len);
+    }
+
+    size_t peek(size_t start_pos, uint8_t* buf, size_t len) const
+    {
+        return m_buf->peek(start_pos + m_pos, buf, len);
     }
 
     optional<uint8_t> pop()
@@ -48,10 +58,17 @@ public:
         else return {};
     }
 
-    std::vector<uint8_t> pop(size_t len)
+    byte_array pop(size_t len)
     {
         m_pos += len;
         return std::move(m_buf->peek(m_pos - len, len));
+    }
+
+    size_t pop(uint8_t* buf, size_t len)
+    {
+        size_t rc = m_buf->peek(m_pos, buf, len);
+        m_pos += len;
+        return rc;
     }
 
     void finalize()
