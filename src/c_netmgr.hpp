@@ -47,7 +47,6 @@ namespace gg
         uint16_t m_port;
         buffer* m_input_buf;
         buffer* m_output_buf;
-        char m_buf[2048];
         packet_handler* m_packet_handler;
         connection_handler* m_conn_handler;
         bool m_client;
