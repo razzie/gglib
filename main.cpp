@@ -63,9 +63,9 @@ int main()
     srl->serialize(std::string("abc"), buf);
     srl->add_trivial_rule<test>();
     srl->serialize(test {4,5,6}, buf);
-    std::cout << buf << std::endl;
 
     gg::connection* c = app->get_network_manager()->create_tcp_connection("127.0.0.1", 9999);
+    c->set_connection_handler(&h);
     c->open();
     c->send(buf);
     buf->drop();

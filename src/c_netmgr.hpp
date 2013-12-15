@@ -11,7 +11,7 @@ namespace gg
 {
     class c_listener : public listener, public task
     {
-        mutable tthread::mutex m_mutex;
+        mutable tthread::recursive_mutex m_mutex;
         SOCKET m_socket;
         SOCKADDR_STORAGE m_sockaddr;
         uint16_t m_port;
@@ -39,7 +39,7 @@ namespace gg
 
     class c_connection : public connection, public task
     {
-        mutable tthread::mutex m_mutex;
+        mutable tthread::recursive_mutex m_mutex;
         listener* m_listener;
         SOCKET m_socket;
         SOCKADDR_STORAGE m_sockaddr;

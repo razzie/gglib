@@ -99,7 +99,7 @@ uint16_t c_listener::get_port() const
 
 void c_listener::set_connection_handler(connection_handler* h)
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     if (m_handler != nullptr) m_handler->drop();
     if (h != nullptr) h->grab();
@@ -114,13 +114,13 @@ connection_handler* c_listener::get_connection_handler() const
 void c_listener::send_to_all(buffer* buf)
 {
     grab_guard bufgrab(buf);
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     for (connection* c : m_conns) c->send(buf);
 }
 
 void c_listener::send_to_all(uint8_t* buf, size_t len)
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     for (connection* c : m_conns) c->send(buf, len);
 }
 
@@ -131,7 +131,7 @@ bool c_listener::is_opened()
 
 bool c_listener::open()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     if (m_open) return false;
 
     char port_str[6];
@@ -190,7 +190,7 @@ bool c_listener::open()
 
 void c_listener::close()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     if (!m_open) return;
 
     error_close();
@@ -217,7 +217,7 @@ void c_listener::error_close()
 
 bool c_listener::run(uint32_t)
 {
-    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     if (!m_open) return true;
 
     if (listen(m_socket, SOMAXCONN) == SOCKET_ERROR)
@@ -322,19 +322,19 @@ uint16_t c_connection::get_port() const
 void c_connection::send(buffer* buf)
 {
     grab_guard bufgrab(buf);
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     m_output_buf->push(buf);
 }
 
 void c_connection::send(uint8_t* buf, size_t len)
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     m_output_buf->push(buf, len);
 }
 
 void c_connection::set_packet_handler(packet_handler* h)
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     if (m_packet_handler != nullptr) m_packet_handler->drop();
     if (h != nullptr) h->grab();
@@ -348,7 +348,7 @@ packet_handler* c_connection::get_packet_handler() const
 
 void c_connection::set_connection_handler(connection_handler* h)
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     if (m_conn_handler != nullptr) m_conn_handler->drop();
     if (h != nullptr) h->grab();
@@ -367,7 +367,7 @@ bool c_connection::is_opened()
 
 bool c_connection::open()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     if (m_open || (!m_open && m_client)) return false;
 
     char port_str[6];
@@ -447,7 +447,7 @@ bool c_connection::open()
 
 void c_connection::close()
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     if (!m_open) return;
 
     error_close();
@@ -468,7 +468,7 @@ void c_connection::error_close()
 
 bool c_connection::run(uint32_t)
 {
-    //tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     if (!m_open) return true;
 
     char buf[2048];
