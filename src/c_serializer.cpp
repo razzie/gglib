@@ -79,38 +79,38 @@ public:
 };
 
 
-static bool serialize_string(const var& v, buffer* buf)
+bool serialize_string(const var& v, buffer* buf)
 {
     if (buf == nullptr || v.is_empty() || v.get_type() != typeid(std::string))
         return false;
 
     grab_guard bufgrab(buf);
     const std::string& str = v.get<std::string>();
+    uint16_t len = str.length();
 
-    buf->push(reinterpret_cast<const uint8_t*>(str.c_str()), str.size()+1);
+    buf->push(reinterpret_cast<uint8_t*>(&len), sizeof(uint16_t));
+    buf->push(reinterpret_cast<const uint8_t*>(str.c_str()), len);
 
     return true;
 }
 
-static optional<var> deserialize_string(buffer* buf)
+optional<var> deserialize_string(buffer* buf)
 {
-    if (buf == nullptr || buf->available() == 0)
+    if (buf == nullptr || buf->available() < 2)
         return {};
 
     grab_guard bufgrab(buf);
+
+    uint16_t len;
+    buf->pop(reinterpret_cast<uint8_t*>(&len), sizeof(uint16_t));
+
+    if (buf->available() < len) return {};
+
     std::string str;
+    for (int i = 0; i < len; ++i)
+        str += static_cast<char>(buf->pop().get());
 
-    while (buf->available())
-    {
-        optional<uint8_t> b = buf->pop();
-        if (!b.is_valid()) return {};
-
-        char c = b.get();
-        if (c == '\0') return str;
-        else str += c;
-    }
-
-    return {};
+    return std::move(str);
 }
 
 

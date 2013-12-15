@@ -38,6 +38,9 @@ public:
 };
 
 
+bool serialize_string(const var& v, buffer* buf);
+optional<var> deserialize_string(buffer* buf);
+
 bool c_event::serialize(const var& v, buffer* buf, const serializer* s)
 {
     if (buf == nullptr || v.is_empty() || v.get_type() != typeid(c_event))
@@ -55,7 +58,7 @@ bool c_event::serialize(const var& v, buffer* buf, const serializer* s)
 
     for (; it != end; ++it)
     {
-        s->serialize(it->first, buf);
+        serialize_string(it->first, buf);
         if (!s->serialize(it->second, buf)) return false;
     }
 
@@ -79,7 +82,7 @@ optional<var> c_event::deserialize(buffer* buf, const serializer* s)
 
     for (uint8_t i = 0; i < attr_count; ++i)
     {
-        optional<var> attr = s->deserialize(buf);
+        optional<var> attr = deserialize_string(buf);
         optional<var> val = s->deserialize(buf);
 
         if (!attr.is_valid() || !val.is_valid()
