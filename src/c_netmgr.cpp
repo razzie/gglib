@@ -471,19 +471,20 @@ bool c_connection::run(uint32_t)
     //tthread::lock_guard<tthread::mutex> guard(m_mutex);
     if (!m_open) return true;
 
-    uint8_t buf[2048];
+    char buf[2048];
     int rc;
 
     if (m_output_buf->available())
     {
         // sending data queued in output buffer
         size_t len = m_output_buf->available();
-        len = m_output_buf->pop(buf, (len > sizeof(buf)) ? sizeof(buf) : len);
+        len = m_output_buf->pop(reinterpret_cast<uint8_t*>(buf), (len > sizeof(buf)) ? sizeof(buf) : len);
         size_t bytes_sent = 0;
 
         for (; bytes_sent < len;)
         {
-            rc = ::send(m_socket, reinterpret_cast<char*>(buf), len, 0);
+            rc = ::send(m_socket, &buf[bytes_sent] , len, 0);
+            len -= rc;
             bytes_sent += rc;
 
             if (rc == SOCKET_ERROR)
@@ -514,7 +515,7 @@ bool c_connection::run(uint32_t)
         return false; // skipping recv
     }
 
-    rc = recv(m_socket, reinterpret_cast<char*>(buf), sizeof(buf), 0);
+    rc = recv(m_socket, buf, sizeof(buf), 0);
     if (rc == SOCKET_ERROR)
     {
         std::cout << "recv error: " << WSAGetLastError() << std::endl;
@@ -529,7 +530,7 @@ bool c_connection::run(uint32_t)
     }
     else
     {
-        m_input_buf->push(buf, rc);
+        m_input_buf->push(reinterpret_cast<uint8_t*>(buf), rc);
         if (m_packet_handler != nullptr) m_packet_handler->handle_packet(this);
         return false;
     }

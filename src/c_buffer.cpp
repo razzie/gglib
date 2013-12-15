@@ -56,13 +56,14 @@ buffer::byte_array c_buffer::peek(size_t start_pos, size_t len) const
 
 size_t c_buffer::peek(uint8_t* buf, size_t len) const
 {
+    if (buf == nullptr || len == 0) return 0;
+
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    auto it_begin = m_data.begin(), it_end = std::next(it_begin, len);
-    auto it = it_begin;
+    auto it = m_data.begin(), end = m_data.end();
     size_t i = 0;
 
-    for (; it_begin != it_end; ++it, ++i)
+    for (; it != end && i < len; ++it, ++i)
     {
         buf[i] = *it;
     }
@@ -72,13 +73,16 @@ size_t c_buffer::peek(uint8_t* buf, size_t len) const
 
 size_t c_buffer::peek(size_t start_pos, uint8_t* buf, size_t len) const
 {
+    if (buf == nullptr || len == 0) return 0;
+
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    auto it_begin = std::next(m_data.begin(), start_pos), it_end = std::next(it_begin, len);
-    auto it = it_begin;
+    if (start_pos > m_data.size()) return 0;
+
+    auto it = std::next(m_data.begin(), start_pos), end = m_data.end();
     size_t i = 0;
 
-    for (; it_begin != it_end; ++it, ++i)
+    for (; it != end && i < len; ++it, ++i)
     {
         buf[i] = *it;
     }
@@ -157,18 +161,19 @@ buffer::byte_array c_buffer::pop(size_t len)
 
 size_t c_buffer::pop(uint8_t* buf, size_t len)
 {
+    if (buf == nullptr || len == 0) return 0;
+
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    auto it_begin = m_data.begin(), it_end = std::next(it_begin, len);
-    auto it = it_begin;
+    auto it = m_data.begin(), end = m_data.end();
     size_t i = 0;
 
-    for (; it_begin != it_end; ++it, ++i)
+    for (; it != end && i < len; ++it, ++i)
     {
         buf[i] = *it;
     }
 
-    m_data.erase(it_begin, it_end);
+    m_data.erase(m_data.begin(), it);
 
     return i;
 }
