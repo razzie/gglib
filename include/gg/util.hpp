@@ -13,17 +13,18 @@ namespace gg
 {
 namespace util
 {
-    class on_return
+    class scope_callback
     {
         std::function<void()> m_func;
 
     public:
-        on_return() {}
-        on_return(std::function<void()> func) : m_func(func) {}
-        on_return(const on_return&) = delete;
-        on_return(on_return&&) = delete;
-        ~on_return() { if (m_func) m_func(); }
-        on_return& operator= (std::function<void()> func) { m_func = func; return *this; }
+        scope_callback();
+        scope_callback(std::function<void()> func);
+        scope_callback(const scope_callback&) = delete;
+        scope_callback(scope_callback&&) = delete;
+        ~scope_callback();
+        scope_callback& operator= (std::function<void()> func);
+        void reset();
     };
 
 
@@ -46,6 +47,10 @@ namespace util
         return std::basic_string<T>(it_first, it_last);
     }
 
+    extern template std::basic_string<char> trim<char>(std::basic_string<char>, std::locale);
+    extern template std::basic_string<wchar_t> trim<wchar_t>(std::basic_string<wchar_t>, std::locale);
+
+
     template<class FROM, class TO>
     std::basic_string<TO> convert_string(std::basic_string<FROM> s,
                                          std::locale loc = std::locale())
@@ -67,6 +72,10 @@ namespace util
         return &result[0];
     }
 
+    extern template std::basic_string<char> convert_string<char>(std::basic_string<char>, std::locale);
+    extern template std::basic_string<wchar_t> convert_string<wchar_t>(std::basic_string<wchar_t>, std::locale);
+
+
     template<class T>
     bool is_integer(std::basic_string<T> s,
                     std::locale loc = std::locale())
@@ -84,6 +93,10 @@ namespace util
 
         return true;
     }
+
+    extern template bool is_integer<char>(std::basic_string<char>, std::locale);
+    extern template bool is_integer<wchar_t>(std::basic_string<wchar_t>, std::locale);
+
 
     template<class T>
     bool is_float(std::basic_string<T> s,
@@ -107,12 +120,20 @@ namespace util
         return true;
     }
 
+    extern template bool is_float<char>(std::basic_string<char>, std::locale);
+    extern template bool is_float<wchar_t>(std::basic_string<wchar_t>, std::locale);
+
+
     template<class T>
     bool is_numeric(std::basic_string<T> s,
                     std::locale loc = std::locale())
     {
         return (is_float(s, loc) || is_integer(s, loc));
     }
+
+    extern template bool is_numeric<char>(std::basic_string<char>, std::locale);
+    extern template bool is_numeric<wchar_t>(std::basic_string<wchar_t>, std::locale);
+
 
     template<class T>
     bool contains_space(std::basic_string<T> s,
@@ -131,6 +152,9 @@ namespace util
 
         return false;
     }
+
+    extern template bool contains_space<char>(std::basic_string<char>, std::locale);
+    extern template bool contains_space<wchar_t>(std::basic_string<wchar_t>, std::locale);
 };
 };
 

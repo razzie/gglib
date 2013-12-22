@@ -149,4 +149,6 @@ namespace gg
     std::ostream& operator<< (std::ostream& o, const varlist& vl);
 };
 
+extern template class std::vector<gg::var>;
+
 #endif // GG_VAR_HPP_INCLUDED

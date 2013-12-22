@@ -3,6 +3,8 @@
 
 using namespace gg;
 
+template class std::vector<var>;
+
 
 var::view::view(const var& var) : m_var(var)
 {

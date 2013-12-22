@@ -71,6 +71,8 @@ namespace gg
         bool is_valid() const { return m_valid; }
         void invalidate() { m_val.clear(); m_valid = false; }
     };
+
+    extern template class optional<var>;
 };
 
 #endif // OPTIONAL_HPP_INCLUDED

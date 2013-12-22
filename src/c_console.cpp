@@ -280,7 +280,7 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
         return 0;
     }
 
-    util::on_return([&]{ m_mutex.unlock(); });
+    util::scope_callback([&]{ m_mutex.unlock(); });
 
 	switch(uMsg)
     {

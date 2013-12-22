@@ -186,7 +186,7 @@ bool c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
 
     fn = util::trim(fn);
 
-    util::on_return o([&]
+    util::scope_callback o([&]
     {
         if (print && matches.size() > 1)
         {

@@ -21,7 +21,8 @@
 				<Option type="1" />
 				<Option compiler="gcc" />
 				<Compiler>
-					<Add option="-O2" />
+					<Add option="-Os" />
+					<Add option="-O3" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -114,9 +115,11 @@
 		<Unit filename="src/c_timer.cpp" />
 		<Unit filename="src/c_timer.hpp" />
 		<Unit filename="src/function.cpp" />
+		<Unit filename="src/optional.cpp" />
 		<Unit filename="src/refcounted.cpp" />
 		<Unit filename="src/threadglobal.hpp" />
 		<Unit filename="src/typeinfo.cpp" />
+		<Unit filename="src/util.cpp" />
 		<Unit filename="src/var.cpp" />
 		<Unit filename="src/win32_aero.hpp" />
 		<Extensions>
