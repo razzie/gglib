@@ -95,7 +95,7 @@ std::ostream& gg::operator<< (std::ostream& o, const gg::var::view& vw)
 
 std::ostream& gg::operator<< (std::ostream& o, const varlist& vl)
 {
-    if (vl.empty()) return o;
+    //if (vl.empty()) return o;
     auto it = vl.begin();
 
     o << "[" << (it++)->to_stream();

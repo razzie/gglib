@@ -11,63 +11,43 @@ namespace gg
 {
     class c_event : public event
     {
-        size_t m_hash;
-        std::map<std::string,var> m_attributes;
+        mutable event_manager* m_evtmgr;
+        event_type m_type;
+        attribute_list m_attributes;
 
     public:
-        c_event(std::string name, std::initializer_list<attribute> il = {});
-        c_event(size_t hash_code, std::initializer_list<attribute> il = {});
+        c_event(event_type, std::initializer_list<attribute> = {});
         ~c_event();
-        size_t get_hash() const;
-        void add(std::string key, var value);
-        void add(std::initializer_list<attribute> il);
-        var& operator[] (std::string attr);
-        const var& operator[] (std::string attr) const;
+        event_manager* get_event_manager() const;
+        event_type get_type() const;
+        void add(std::string, var);
+        const var& operator[] (std::string) const;
+        const var& get_attribute(std::string) const;
+        const attribute_list& get_attributes() const;
 
         static bool serialize(const var& v, buffer* buf, const serializer*);
         static optional<var> deserialize(buffer* buf, const serializer*);
-    };
-
-    class c_event_manager;
-
-    class c_event_type : public event_type
-    {
-        friend class c_event_manager;
-
-        std::string m_name;
-        size_t m_hash;
-        std::list<event_listener*> m_listeners;
-        tthread::mutex m_mutex;
-        c_event_manager* m_parent_mgr;
-
-    public:
-        c_event_type(std::string name, c_event_manager*);
-        c_event_type(c_event_type&&);
-        ~c_event_type();
-        std::string get_name() const;
-        size_t get_hash() const;
-        void add_listener(event_listener*);
-        void add_listener(event_callback);
-        void remove_listener(event_listener*);
     };
 
     class c_event_manager : public event_manager
     {
         mutable tthread::mutex m_mutex;
         mutable application* m_app;
-        std::map<size_t, c_event_type> m_evt_types;
+        std::map<event_type, std::list<event_listener*>, event_type::comparator> m_evt_types;
         c_thread m_thread;
 
     public:
         c_event_manager(application* app);
         ~c_event_manager();
         application* get_app() const;
-        c_event_type* create_event_type(std::string name);
-        c_event_type* get_event_type(std::string name);
-        c_event_type* get_event_type(size_t hash_code);
-        event_listener* create_event_listener(event_callback) const;
-        void push_event(event*);
-        bool trigger_event(event*);
+        void add_event_type(event_type);
+        void remove_event_type(event_type);
+        event_listener* add_listener(event_type, event_callback);
+        void add_listener(event_type, event_listener*);
+        void remove_listener(event_type, event_listener*);
+        void push_event(event_type, std::initializer_list<event::attribute>);
+        bool trigger_event(event_type, std::initializer_list<event::attribute>) const;
+        bool trigger_event(const event*) const;
     };
 };
 

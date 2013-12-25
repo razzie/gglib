@@ -51,6 +51,16 @@ int main()
     gg::application* app = gg::application::create_instance("test app", 0, 1);
 
 
+    gg::event_manager* evtmgr = app->get_event_manager();
+    evtmgr->add_event_type("test_event_type");
+    evtmgr->add_listener("test_event_type", [](const gg::event& e)->bool
+    {
+        std::cout << e["arg1"].to_stream() << std::endl;
+        return true;
+    });
+    evtmgr->trigger_event("test_event_type", {{"arg1", 123}});
+
+
     network_handler h(app);
     gg::listener* l = app->get_network_manager()->create_tcp_listener(9999);
     l->set_connection_handler(&h);

@@ -1,3 +1,4 @@
+#include <algorithm>
 #include <functional>
 #include "c_eventmgr.hpp"
 #include "gg/application.hpp"
@@ -8,31 +9,31 @@ using namespace gg;
 class event_task : public task
 {
     c_event_manager* m_evtmgr;
-    event* m_evt;
+    c_event m_evt;
 
 public:
-    event_task(c_event_manager* evtmgr,
-               event* evt)
+    event_task(c_event_manager* evtmgr, event_type t,
+               std::initializer_list<event::attribute> il)
+     : m_evtmgr(evtmgr)
+     , m_evt(t, il)
     {
-        m_evtmgr = evtmgr;
-        m_evt = evt;
     }
 
     ~event_task() {}
 
     bool run(uint32_t)
     {
-        m_evtmgr->trigger_event(m_evt);
+        m_evtmgr->trigger_event(&m_evt);
         return true;
     }
 };
 
 class func_event_listener : public event_listener
 {
-    event_callback m_cb;
+    event_manager::event_callback m_cb;
 
 public:
-    func_event_listener(event_callback cb) : m_cb(cb) {}
+    func_event_listener(event_manager::event_callback cb) : m_cb(cb) {}
     ~func_event_listener() {}
     bool on_event(const event& evt) { return m_cb(evt); }
 };
@@ -51,7 +52,7 @@ bool c_event::serialize(const var& v, buffer* buf, const serializer* s)
     const c_event& e = v.get<c_event>();
     auto it = e.m_attributes.begin(), end = e.m_attributes.end();
     uint8_t attr_count = e.m_attributes.size();
-    size_t hash_code = e.get_hash();
+    size_t hash_code = e.get_type().get_hash();
 
     buf->push(reinterpret_cast<uint8_t*>(&hash_code), sizeof(size_t));
     buf->push(attr_count);
@@ -96,24 +97,8 @@ optional<var> c_event::deserialize(buffer* buf, const serializer* s)
 }
 
 
-event* event::create(std::string name, std::initializer_list<attribute> il)
-{
-    return new c_event(name, il);
-}
-
-event* event::create(size_t hash_code, std::initializer_list<attribute> il)
-{
-    return new c_event(hash_code, il);
-}
-
-c_event::c_event(std::string name, std::initializer_list<attribute> il)
- : m_hash(std::hash<std::string>()(name))
- , m_attributes(il)
-{
-}
-
-c_event::c_event(size_t hash_code, std::initializer_list<attribute> il)
- : m_hash(hash_code)
+c_event::c_event(event_type t, std::initializer_list<attribute> il)
+ : m_type(t)
  , m_attributes(il)
 {
 }
@@ -122,24 +107,19 @@ c_event::~c_event()
 {
 }
 
-size_t c_event::get_hash() const
+event_manager* c_event::get_event_manager() const
 {
-    return m_hash;
+    return m_evtmgr;
 }
 
-void c_event::add(std::string key, var value)
+event_type c_event::get_type() const
 {
-    m_attributes.insert(std::make_pair(key,value));
+    return m_type;
 }
 
-void c_event::add(std::initializer_list<attribute> il)
+void c_event::add(std::string addr, var val)
 {
-    m_attributes.insert(il);
-}
-
-var& c_event::operator[] (std::string attr)
-{
-    return m_attributes.at(attr);
+    m_attributes[addr] = val;
 }
 
 const var& c_event::operator[] (std::string attr) const
@@ -147,74 +127,97 @@ const var& c_event::operator[] (std::string attr) const
     return m_attributes.at(attr);
 }
 
+const var& c_event::get_attribute(std::string attr) const
+{
+    return m_attributes.at(attr);
+}
 
-c_event_type::c_event_type(std::string name, c_event_manager* mgr)
+const event::attribute_list& c_event::get_attributes() const
+{
+    return m_attributes;
+}
+
+std::ostream& gg::operator<< (std::ostream& o, const event::attribute& a)
+{
+    return o << a.first << ":" << a.second.to_stream();
+}
+
+std::ostream& gg::operator<< (std::ostream& o, const event::attribute_list& al)
+{
+    auto it = al.begin();
+
+    o << "[" << it->first << ":" << it->second.to_stream();
+    std::for_each(++it, al.end(), [&](const event::attribute& a)
+    {
+        o << "," << it->first << ":" << it->second.to_stream();
+    });
+    o << "]";
+
+    return o;
+}
+
+std::ostream& gg::operator<< (std::ostream& o, const event& e)
+{
+    return o << e.get_attributes();
+}
+
+
+event_type::event_type(std::string name)
  : m_name(name)
  , m_hash(std::hash<std::string>()(name))
- , m_parent_mgr(mgr)
 {
 }
 
-c_event_type::c_event_type(c_event_type&& e)
- : m_name(std::move(e.m_name))
- , m_hash(e.m_hash)
- , m_listeners(std::move(e.m_listeners))
- , m_parent_mgr(e.m_parent_mgr)
+event_type::event_type(const char* str)
+ : m_name(str)
+ , m_hash(std::hash<std::string>()(m_name))
 {
 }
 
-c_event_type::~c_event_type()
+event_type::event_type(size_t hash_code)
+ : m_hash(hash_code)
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-    for (auto it=m_listeners.begin();
-         it!=m_listeners.end();
-         it=m_listeners.erase(it))
-    {
-        (*it)->drop();
-    }
 }
 
-std::string c_event_type::get_name() const
+event_type::event_type(const event_type& t)
+ : m_name(t.m_name)
+ , m_hash(t.m_hash)
+{
+}
+
+event_type::event_type(event_type&& t)
+ : m_name(std::move(t.m_name))
+ , m_hash(t.m_hash)
+{
+}
+
+event_type::~event_type()
+{
+}
+
+std::string event_type::get_name() const
 {
     return m_name;
 }
 
-size_t c_event_type::get_hash() const
+size_t event_type::get_hash() const
 {
     return m_hash;
 }
 
-void c_event_type::add_listener(event_listener* l)
+event_type::operator std::string() const
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-    l->grab();
-    m_listeners.push_back(l);
+    return m_name;
 }
 
-void c_event_type::add_listener(event_callback cb)
+event_type::operator size_t() const
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-    event_listener* l = m_parent_mgr->create_event_listener(cb);
-    this->add_listener(l);
+    return m_hash;
 }
 
-void c_event_type::remove_listener(event_listener* l)
+bool event_type::comparator::operator() (const event_type& a, const event_type& b) const
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-    m_listeners.remove_if([l](event_listener* elem) -> bool
-        {
-            if (elem == l)
-            {
-                elem->drop();
-                return true;
-            }
-            else
-                return false;
-        });
+    return (a.get_hash() < b.get_hash());
 }
 
 
@@ -234,84 +237,112 @@ application* c_event_manager::get_app() const
     return m_app;
 }
 
-c_event_type* c_event_manager::create_event_type(std::string name)
+void c_event_manager::add_event_type(event_type t)
 {
-    size_t hash_code = std::hash<std::string>()(name);
-
-    if (m_evt_types.count(hash_code) > 0)
-        return get_event_type(hash_code);
+    if (m_evt_types.count(t) > 0) return;
 
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    auto ret = m_evt_types.insert( std::make_pair(hash_code, c_event_type(name, this)) );
+    auto ret = m_evt_types.insert( std::make_pair(t, std::list<event_listener*> {}) );
 
     if (!ret.second)
-        throw std::runtime_error("failed to create event type");
+        throw std::runtime_error("failed to add event type");
 
-    return &ret.first->second;
+    return;
 }
 
-c_event_type* c_event_manager::get_event_type(std::string name)
+void c_event_manager::remove_event_type(event_type t)
 {
-    size_t hash_code = std::hash<std::string>()(name);
-
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    auto it = m_evt_types.find(hash_code);
+    auto it = m_evt_types.find(t);
     if (it == m_evt_types.end())
-        return nullptr;
-    else
-        return &it->second;
+        m_evt_types.erase(it);
+
+    return;
 }
 
-c_event_type* c_event_manager::get_event_type(size_t hash_code)
+event_listener* c_event_manager::add_listener(event_type t, event_manager::event_callback cb)
+{
+    event_listener* l = new func_event_listener(cb);
+    this->add_listener(t, l);
+    return l;
+}
+
+void c_event_manager::add_listener(event_type t, event_listener* l)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    auto it = m_evt_types.find(hash_code);
-    if (it == m_evt_types.end())
-        return nullptr;
-    else
-        return &it->second;
-}
-
-event_listener* c_event_manager::create_event_listener(event_callback cb) const
-{
-    return new func_event_listener(cb);
-}
-
-void c_event_manager::push_event(event* evt)
-{
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-    if (nullptr == this->get_event_type(evt->get_hash()))
-        throw std::runtime_error("unknown event type");
-
-    m_thread.add_task( new event_task(this,evt) );
-}
-
-bool c_event_manager::trigger_event(event* evt)
-{
-    c_event_type* evt_type = this->get_event_type(evt->get_hash());
-
-    if (nullptr == evt_type)
-        throw std::runtime_error("unknown event type");
-
-    tthread::lock_guard<tthread::mutex> guard(evt_type->m_mutex);
-
-    auto_drop<event> evt_releaser(evt); // it will call evt->drop() when this function returns
-
-    for (auto l=evt_type->m_listeners.begin(); l!=evt_type->m_listeners.end(); l++)
+    auto it = m_evt_types.find(t);
+    if (it != m_evt_types.end())
     {
-        auto filters = (*l)->get_filters();
-        for (auto f=filters.begin(); f!=filters.end(); f++)
+        l->grab();
+        it->second.push_back(l);
+    }
+
+    return;
+}
+
+void c_event_manager::remove_listener(event_type t, event_listener* l)
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    auto it = m_evt_types.find(t);
+    if (it != m_evt_types.end())
+    {
+        auto l_it = it->second.begin(), l_end = it->second.end();
+        for (; l_it != l_end; ++l_it)
+        {
+            if (*l_it == l)
+            {
+                it->second.erase(l_it);
+                (*l_it)->drop();
+                return;
+            }
+        }
+    }
+
+    return;
+}
+
+void c_event_manager::push_event(event_type t, std::initializer_list<event::attribute> il)
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    if (m_evt_types.count(t) == 0)
+        throw std::runtime_error("unknown event type");
+
+    m_thread.add_task( new event_task(this, t, il) );
+}
+
+bool c_event_manager::trigger_event(event_type t, std::initializer_list<event::attribute> il) const
+{
+    c_event evt(t, il);
+    return this->trigger_event(&evt);
+}
+
+bool c_event_manager::trigger_event(const event* evt) const
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    auto evt_type = m_evt_types.find(evt->get_type());
+    if (evt_type == m_evt_types.end())
+        throw std::runtime_error("unknown event type");
+
+    auto l_it = evt_type->second.begin(), l_end = evt_type->second.end();
+    for (; l_it != l_end; ++l_it)
+    {
+        auto filters = (*l_it)->get_filters();
+        auto f = filters.begin(), f_end = filters.end();
+
+        for (; f != f_end; ++f)
         {
             // this listener should be skipped if one of its filters return true
             if ((*f)(*evt)) goto skip_listener;
         }
 
         // we don't continue if the event is consumed
-        if ((*l)->on_event(*evt)) return true;
+        if ((*l_it)->on_event(*evt)) return true;
 
         skip_listener: continue;
     }
