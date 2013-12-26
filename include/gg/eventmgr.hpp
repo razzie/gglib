@@ -74,12 +74,29 @@ namespace gg
         std::list<event_filter> m_filters;
     };
 
+    typedef std::function<bool(const event&)> event_callback; // returns true if event is consumed
+
+    class remote_event_manager : public reference_counted
+    {
+    public:
+        virtual ~remote_event_manager() {}
+        virtual bool connect() = 0;
+        virtual void disconnect() = 0;
+        virtual bool is_connected() const = 0;
+        virtual event_listener* add_listener(event_type, event_callback) = 0;
+        virtual void add_listener(event_type, event_listener*) = 0;
+        virtual void remove_listener(event_type, event_listener*) = 0;
+        virtual void push_event(event_type, std::initializer_list<event::attribute>) = 0;
+    };
+
     class event_manager
     {
     public:
-        typedef std::function<bool(const event&)> event_callback; // returns true if event is consumed
-
         virtual application* get_app() const = 0;
+        virtual bool open_port(uint16_t port) = 0;
+        virtual void close_port(uint16_t port) = 0;
+        virtual void close_ports() = 0;
+        virtual remote_event_manager* get_remote_event_manager(std::string addr, uint16_t port) = 0;
         virtual void add_event_type(event_type) = 0;
         virtual void remove_event_type(event_type) = 0;
         virtual event_listener* add_listener(event_type, event_callback) = 0;

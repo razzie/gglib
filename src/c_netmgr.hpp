@@ -31,7 +31,7 @@ namespace gg
         connection_handler* get_connection_handler() const;
         void send_to_all(buffer*);
         void send_to_all(uint8_t*, size_t);
-        bool is_opened();
+        bool is_opened() const;
         bool open();
         void close();
         bool run(uint32_t); // inherited from gg::task
@@ -71,7 +71,7 @@ namespace gg
         packet_handler* get_packet_handler() const;
         void set_connection_handler(connection_handler*);
         connection_handler* get_connection_handler() const;
-        bool is_opened();
+        bool is_opened() const;
         bool open();
         void close();
         bool run(uint32_t); // inherited from gg::task

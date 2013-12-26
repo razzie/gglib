@@ -124,7 +124,7 @@ void c_listener::send_to_all(uint8_t* buf, size_t len)
     for (connection* c : m_conns) c->send(buf, len);
 }
 
-bool c_listener::is_opened()
+bool c_listener::is_opened() const
 {
     return m_open;
 }
@@ -360,7 +360,7 @@ connection_handler* c_connection::get_connection_handler() const
     return m_conn_handler;
 }
 
-bool c_connection::is_opened()
+bool c_connection::is_opened() const
 {
     return m_open;
 }

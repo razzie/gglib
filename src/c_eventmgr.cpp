@@ -30,10 +30,10 @@ public:
 
 class func_event_listener : public event_listener
 {
-    event_manager::event_callback m_cb;
+    event_callback m_cb;
 
 public:
-    func_event_listener(event_manager::event_callback cb) : m_cb(cb) {}
+    func_event_listener(event_callback cb) : m_cb(cb) {}
     ~func_event_listener() {}
     bool on_event(const event& evt) { return m_cb(evt); }
 };
@@ -237,6 +237,26 @@ application* c_event_manager::get_app() const
     return m_app;
 }
 
+bool c_event_manager::open_port(uint16_t port)
+{
+
+}
+
+void c_event_manager::close_port(uint16_t port)
+{
+
+}
+
+void c_event_manager::close_ports()
+{
+
+}
+
+remote_event_manager* c_event_manager::get_remote_event_manager(std::string addr, uint16_t port)
+{
+    return new c_remote_event_manager(this, addr, port);
+}
+
 void c_event_manager::add_event_type(event_type t)
 {
     if (m_evt_types.count(t) > 0) return;
@@ -262,7 +282,7 @@ void c_event_manager::remove_event_type(event_type t)
     return;
 }
 
-event_listener* c_event_manager::add_listener(event_type t, event_manager::event_callback cb)
+event_listener* c_event_manager::add_listener(event_type t, event_callback cb)
 {
     event_listener* l = new func_event_listener(cb);
     this->add_listener(t, l);
@@ -348,4 +368,70 @@ bool c_event_manager::trigger_event(const event* evt) const
     }
 
     return false;
+}
+
+void c_event_manager::handle_connection_open(connection* c)
+{
+
+}
+
+void c_event_manager::handle_connection_close(connection* c)
+{
+
+}
+
+void c_event_manager::handle_packet(connection* c)
+{
+
+}
+
+
+c_remote_event_manager::c_remote_event_manager(event_manager* evtmgr, std::string addr, uint16_t port)
+ : m_evtmgr(evtmgr)
+ , m_conn(addr, port, true)
+{
+}
+
+c_remote_event_manager::~c_remote_event_manager()
+{
+}
+
+bool c_remote_event_manager::connect()
+{
+    return m_conn.open();
+}
+
+void c_remote_event_manager::disconnect()
+{
+    m_conn.close();
+}
+
+bool c_remote_event_manager::is_connected() const
+{
+    return m_conn.is_opened();
+}
+
+event_listener* c_remote_event_manager::add_listener(event_type t, event_callback cb)
+{
+
+}
+
+void c_remote_event_manager::add_listener(event_type t, event_listener* l)
+{
+
+}
+
+void c_remote_event_manager::remove_listener(event_type t, event_listener* l)
+{
+
+}
+
+void c_remote_event_manager::push_event(event_type t, std::initializer_list<event::attribute> il)
+{
+
+}
+
+void c_remote_event_manager::handle_packet(connection* c)
+{
+
 }

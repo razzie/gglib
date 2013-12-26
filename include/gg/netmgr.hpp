@@ -28,7 +28,7 @@ namespace gg
         virtual connection_handler* get_connection_handler() const = 0;
         virtual void send_to_all(buffer*) = 0;
         virtual void send_to_all(uint8_t*, size_t) = 0;
-        virtual bool is_opened() = 0;
+        virtual bool is_opened() const = 0;
         virtual bool open() = 0;
         virtual void close() = 0;
     };
@@ -55,7 +55,7 @@ namespace gg
         virtual connection_handler* get_connection_handler() const = 0;
         virtual void send(buffer*) = 0;
         virtual void send(uint8_t*, size_t) = 0;
-        virtual bool is_opened() = 0;
+        virtual bool is_opened() const = 0;
         virtual bool open() = 0;
         virtual void close() = 0;
     };
