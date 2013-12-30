@@ -23,6 +23,8 @@ namespace gg
         event_type(const event_type&);
         event_type(event_type&&);
         ~event_type();
+        event_type& operator= (const event_type&);
+        event_type& operator= (event_type&&);
         std::string get_name() const;
         size_t get_hash() const;
         operator std::string() const;

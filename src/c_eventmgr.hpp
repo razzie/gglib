@@ -18,6 +18,9 @@ namespace gg
 
     public:
         c_event(event_type, std::initializer_list<attribute> = {});
+        c_event(buffer*, const serializer*); // deserialize
+        c_event(const c_event&);
+        c_event(c_event&&);
         ~c_event();
         event_manager* get_event_manager() const;
         event_type get_type() const;
@@ -25,9 +28,7 @@ namespace gg
         const var& operator[] (std::string) const;
         const var& get_attribute(std::string) const;
         const attribute_list& get_attributes() const;
-
-        static bool serialize(const var& v, buffer* buf, const serializer*);
-        static optional<var> deserialize(buffer* buf, const serializer*);
+        bool serialize(buffer* buf, const serializer*) const;
     };
 
     class c_remote_event_manager : public remote_event_manager, public packet_handler

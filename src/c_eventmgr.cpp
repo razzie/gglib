@@ -1,5 +1,6 @@
 #include <algorithm>
 #include <functional>
+#include <stdexcept>
 #include "c_eventmgr.hpp"
 #include "gg/application.hpp"
 
@@ -42,17 +43,94 @@ public:
 bool serialize_string(const var& v, buffer* buf);
 optional<var> deserialize_string(buffer* buf);
 
-bool c_event::serialize(const var& v, buffer* buf, const serializer* s)
+bool serialize_event(const var& v, buffer* buf, const serializer* s)
 {
-    if (buf == nullptr || v.is_empty() || v.get_type() != typeid(c_event))
+    if (buf == nullptr || buf->available() == 0 || s == nullptr || v.get_type() != typeid(c_event))
         return false;
+
+    const c_event& e = v.get<c_event>();
+    return e.serialize(buf, s);
+}
+
+optional<var> deserialize_event(buffer* buf, const serializer* s)
+{
+    if (buf == nullptr || s == nullptr) return {};
+
+    try
+    {
+        return var(c_event(buf, s));
+    }
+    catch (std::exception& e)
+    {
+        return {};
+    }
+}
+
+
+c_event::c_event(event_type t, std::initializer_list<attribute> il)
+ : m_type(t)
+ , m_attributes(il)
+{
+}
+
+c_event::c_event(const c_event& e)
+ : m_type(e.m_type)
+ , m_attributes(e.m_attributes)
+{
+}
+
+c_event::c_event(c_event&& e)
+ : m_type(std::move(e.m_type))
+ , m_attributes(std::move(e.m_attributes))
+{
+}
+
+c_event::~c_event()
+{
+}
+
+c_event::c_event(buffer* buf, const serializer* s) // deserialize
+ : m_type(static_cast<size_t>(0))
+{
+    if (buf == nullptr || buf->available() == 0 || s == nullptr)
+        throw std::runtime_error("unable to deserialize event");
 
     grab_guard bufgrab(buf);
 
-    const c_event& e = v.get<c_event>();
-    auto it = e.m_attributes.begin(), end = e.m_attributes.end();
-    uint8_t attr_count = e.m_attributes.size();
-    size_t hash_code = e.get_type().get_hash();
+    size_t hash_code;
+    if (buf->pop(reinterpret_cast<uint8_t*>(&hash_code), sizeof(size_t)) != sizeof(size_t))
+        throw std::runtime_error("unable to deserialize event");
+
+    m_type = event_type(hash_code);
+
+    optional<uint8_t> attrcnt = buf->pop();
+    if (!attrcnt.is_valid())
+        throw std::runtime_error("unable to deserialize event");
+
+    uint8_t attr_count = attrcnt.get();
+
+    for (uint8_t i = 0; i < attr_count; ++i)
+    {
+        optional<var> attr = deserialize_string(buf);
+        optional<var> val = s->deserialize(buf);
+
+        if (!attr.is_valid() || !val.is_valid()
+            || attr.get().get_type() != typeid(std::string))
+            throw std::runtime_error("unable to deserialize event");
+
+        add(std::move(attr.get().get<std::string>()), std::move(val.get()));
+    }
+}
+
+bool c_event::serialize(buffer* buf, const serializer* s) const
+{
+    if (buf == nullptr || s == nullptr) return false;
+
+    grab_guard bufgrab(buf);
+
+    auto it = m_attributes.begin(), end = m_attributes.end();
+    uint8_t attr_count = m_attributes.size();
+    size_t hash_code = m_type.get_hash();
 
     buf->push(reinterpret_cast<uint8_t*>(&hash_code), sizeof(size_t));
     buf->push(attr_count);
@@ -64,47 +142,6 @@ bool c_event::serialize(const var& v, buffer* buf, const serializer* s)
     }
 
     return true;
-}
-
-optional<var> c_event::deserialize(buffer* buf, const serializer* s)
-{
-    if (buf == nullptr || buf->available() == 0)
-        return {};
-
-    grab_guard bufgrab(buf);
-
-    size_t hash_code;
-    if (buf->pop(reinterpret_cast<uint8_t*>(&hash_code), sizeof(size_t)) != sizeof(size_t)) return {};
-    c_event e(hash_code);
-
-    optional<uint8_t> attrcnt = buf->pop();
-    if (!attrcnt.is_valid()) return {};
-    uint8_t attr_count = attrcnt.get();
-
-    for (uint8_t i = 0; i < attr_count; ++i)
-    {
-        optional<var> attr = deserialize_string(buf);
-        optional<var> val = s->deserialize(buf);
-
-        if (!attr.is_valid() || !val.is_valid()
-            || attr.get().get_type() != typeid(std::string))
-            return {};
-
-        e.add(std::move(attr.get().get<std::string>()), std::move(val.get()));
-    }
-
-    return {};
-}
-
-
-c_event::c_event(event_type t, std::initializer_list<attribute> il)
- : m_type(t)
- , m_attributes(il)
-{
-}
-
-c_event::~c_event()
-{
 }
 
 event_manager* c_event::get_event_manager() const
@@ -195,6 +232,20 @@ event_type::~event_type()
 {
 }
 
+event_type& event_type::operator= (const event_type& t)
+{
+    m_name = t.m_name;
+    m_hash = t.m_hash;
+    return *this;
+}
+
+event_type& event_type::operator= (event_type&& t)
+{
+    m_name = std::move(t.m_name);
+    m_hash = t.m_hash;
+    return *this;
+}
+
 std::string event_type::get_name() const
 {
     return m_name;
@@ -225,7 +276,7 @@ c_event_manager::c_event_manager(application* app)
  : m_app(app)
  , m_thread("event manager")
 {
-    m_app->get_serializer()->add_rule_ex<c_event>(c_event::serialize, c_event::deserialize);
+    m_app->get_serializer()->add_rule_ex<c_event>(serialize_event, deserialize_event);
 }
 
 c_event_manager::~c_event_manager()
