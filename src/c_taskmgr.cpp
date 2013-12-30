@@ -62,11 +62,10 @@ c_thread::~c_thread()
     m_task_pool.clear();
     m_task_pool_mutex.unlock();
 
-    auto it = m_tasks.begin(), end = m_tasks.end();
-    for (; it != end; ++it)
+    for (auto& it : m_tasks)
     {
-        delete it->m_timer;
-        it->m_task->drop();
+        delete it.m_timer;
+        it.m_task->drop();
     }
 }
 
@@ -202,14 +201,9 @@ void c_thread::mainloop()
 
             if (result) // run() returned 'true', so let's remove it
             {
-                auto subs = it->m_task->get_children();
-                auto sub_it = subs.begin(), sub_end = subs.end();
-
                 // adding child tasks to the pool
-                for (; sub_it != sub_end; ++sub_it)
-                {
-                    m_task_pool.push_back({*sub_it, new c_timer()});
-                }
+                auto subs = it->m_task->get_children();
+                for (task* t : subs) m_task_pool.push_back({t, new c_timer()});
 
                 // deleting task (and its timer) as it is finished now
                 delete it->m_timer;
