@@ -308,6 +308,11 @@ remote_event_manager* c_event_manager::get_remote_event_manager(std::string addr
     return new c_remote_event_manager(this, addr, port);
 }
 
+remote_event_manager* c_event_manager::get_this_as_remote_event_manager()
+{
+    return new c_fake_remote_event_manager(this);
+}
+
 void c_event_manager::add_event_type(event_type t)
 {
     if (m_evt_types.count(t) > 0) return;
@@ -485,4 +490,49 @@ void c_remote_event_manager::push_event(event_type t, std::initializer_list<even
 void c_remote_event_manager::handle_packet(connection* c)
 {
 
+}
+
+
+c_fake_remote_event_manager::c_fake_remote_event_manager(event_manager* evtmgr)
+ : m_evtmgr(evtmgr)
+{
+}
+
+c_fake_remote_event_manager::~c_fake_remote_event_manager()
+{
+}
+
+bool c_fake_remote_event_manager::connect()
+{
+    return true;
+}
+
+void c_fake_remote_event_manager::disconnect()
+{
+    return;
+}
+
+bool c_fake_remote_event_manager::is_connected() const
+{
+    return true;
+}
+
+event_listener* c_fake_remote_event_manager::add_listener(event_type t, event_callback cb)
+{
+    return m_evtmgr->add_listener(t, cb);
+}
+
+void c_fake_remote_event_manager::add_listener(event_type t, event_listener* l)
+{
+    m_evtmgr->add_listener(t, l);
+}
+
+void c_fake_remote_event_manager::remove_listener(event_type t, event_listener* l)
+{
+    m_evtmgr->remove_listener(t, l);
+}
+
+void c_fake_remote_event_manager::push_event(event_type t, std::initializer_list<event::attribute> il)
+{
+    m_evtmgr->push_event(t, il);
 }

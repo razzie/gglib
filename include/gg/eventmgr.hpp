@@ -99,6 +99,7 @@ namespace gg
         virtual void close_port(uint16_t port) = 0;
         virtual void close_ports() = 0;
         virtual remote_event_manager* get_remote_event_manager(std::string addr, uint16_t port) = 0;
+        virtual remote_event_manager* get_this_as_remote_event_manager() = 0;
         virtual void add_event_type(event_type) = 0;
         virtual void remove_event_type(event_type) = 0;
         virtual event_listener* add_listener(event_type, event_callback) = 0;

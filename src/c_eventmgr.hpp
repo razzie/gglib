@@ -52,6 +52,22 @@ namespace gg
         void handle_packet(connection*);
     };
 
+    class c_fake_remote_event_manager : public remote_event_manager
+    {
+        event_manager* m_evtmgr;
+
+    public:
+        c_fake_remote_event_manager(event_manager* evtmgr);
+        ~c_fake_remote_event_manager();
+        bool connect();
+        void disconnect();
+        bool is_connected() const;
+        event_listener* add_listener(event_type, event_callback);
+        void add_listener(event_type, event_listener*);
+        void remove_listener(event_type, event_listener*);
+        void push_event(event_type, std::initializer_list<event::attribute>);
+    };
+
     class c_event_manager : public event_manager, public connection_handler, public packet_handler
     {
         mutable tthread::mutex m_mutex;
@@ -68,6 +84,7 @@ namespace gg
         void close_port(uint16_t port);
         void close_ports();
         remote_event_manager* get_remote_event_manager(std::string addr, uint16_t port);
+        remote_event_manager* get_this_as_remote_event_manager();
         void add_event_type(event_type);
         void remove_event_type(event_type);
         event_listener* add_listener(event_type, event_callback);
