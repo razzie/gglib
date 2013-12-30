@@ -25,6 +25,7 @@ namespace gg
         virtual ~listener() {}
         virtual uint16_t get_port() const = 0;
         virtual void set_connection_handler(connection_handler*) = 0;
+        virtual void set_connection_handler(std::function<void(connection*, bool is_opened)>) = 0;
         virtual connection_handler* get_connection_handler() const = 0;
         virtual void send_to_all(buffer*) = 0;
         virtual void send_to_all(uint8_t*, size_t) = 0;
@@ -50,6 +51,7 @@ namespace gg
         virtual std::string get_address() const = 0;
         virtual uint16_t get_port() const = 0;
         virtual void set_packet_handler(packet_handler*) = 0;
+        virtual void set_packet_handler(std::function<void(connection*)>) = 0;
         virtual packet_handler* get_packet_handler() const = 0;
         virtual void set_connection_handler(connection_handler*) = 0;
         virtual connection_handler* get_connection_handler() const = 0;

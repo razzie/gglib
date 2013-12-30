@@ -76,6 +76,28 @@ public:
 static wsa_init __wsa_init;
 
 
+class func_connection_handler : public connection_handler
+{
+    std::function<void(connection*, bool)> m_func;
+
+public:
+    func_connection_handler(std::function<void(connection*, bool)> f) : m_func(f) {}
+    ~func_connection_handler() {}
+    void handle_connection_open(connection* c) { m_func(c, true); }
+    void handle_connection_close(connection* c) { m_func(c, false); }
+};
+
+class func_packet_handler : public packet_handler
+{
+    std::function<void(connection*)> m_func;
+
+public:
+    func_packet_handler(std::function<void(connection*)> f) : m_func(f) {}
+    ~func_packet_handler() {}
+    void handle_packet(connection* c) { m_func(c); }
+};
+
+
 c_listener::c_listener(uint16_t port, bool is_tcp)
  : m_socket(INVALID_SOCKET)
  , m_port(port)
@@ -104,6 +126,13 @@ void c_listener::set_connection_handler(connection_handler* h)
     if (m_handler != nullptr) m_handler->drop();
     if (h != nullptr) h->grab();
     m_handler = h;
+}
+
+void c_listener::set_connection_handler(std::function<void(connection*, bool is_opened)> f)
+{
+    connection_handler* h = new func_connection_handler(f);
+    this->set_connection_handler(h);
+    h->drop();
 }
 
 connection_handler* c_listener::get_connection_handler() const
@@ -339,6 +368,13 @@ void c_connection::set_packet_handler(packet_handler* h)
     if (m_packet_handler != nullptr) m_packet_handler->drop();
     if (h != nullptr) h->grab();
     m_packet_handler = h;
+}
+
+void c_connection::set_packet_handler(std::function<void(connection*)> f)
+{
+    packet_handler* h = new func_packet_handler(f);
+    this->set_packet_handler(h);
+    h->drop();
 }
 
 packet_handler* c_connection::get_packet_handler() const

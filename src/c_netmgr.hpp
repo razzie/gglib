@@ -28,6 +28,7 @@ namespace gg
         ~c_listener();
         uint16_t get_port() const;
         void set_connection_handler(connection_handler*);
+        void set_connection_handler(std::function<void(connection*, bool is_opened)>);
         connection_handler* get_connection_handler() const;
         void send_to_all(buffer*);
         void send_to_all(uint8_t*, size_t);
@@ -68,6 +69,7 @@ namespace gg
         void send(buffer*);
         void send(uint8_t*, size_t);
         void set_packet_handler(packet_handler*);
+        void set_packet_handler(std::function<void(connection*)>);
         packet_handler* get_packet_handler() const;
         void set_connection_handler(connection_handler*);
         connection_handler* get_connection_handler() const;
