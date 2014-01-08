@@ -34,9 +34,24 @@ namespace gg
         public:
             template<class... Args>
             var_impl(Args... args) : m_var(std::forward<Args>(args)...), m_type(&typeid(T)) {}
-            var_impl(const var_impl& v) : m_var(v.m_var), m_type(v.m_type) {}
             ~var_impl() {}
             var_impl_base* clone() const { return new var_impl<T>(m_var); }
+            void* get_ptr() { return static_cast<void*>(&m_var); }
+            const void* get_ptr() const { return static_cast<const void*>(&m_var); }
+            const std::type_info& get_type() const { return *m_type; }
+            void extract_to(std::ostream& o) const { ostream_insert(o, m_var); }
+        };
+
+        template<class T>
+        class var_ref_impl : public var_impl_base
+        {
+            T& m_var;
+            const std::type_info* m_type;
+
+        public:
+            var_ref_impl(T& t) : m_var(t), m_type(&typeid(T)) {}
+            ~var_ref_impl() {}
+            var_impl_base* clone() const { return new var_ref_impl<T>(m_var); }
             void* get_ptr() { return static_cast<void*>(&m_var); }
             const void* get_ptr() const { return static_cast<const void*>(&m_var); }
             const std::type_info& get_type() const { return *m_type; }
@@ -59,6 +74,14 @@ namespace gg
         {
             if (m_var != nullptr) delete m_var;
             m_var = new var_impl<T>(std::forward<Args>(args)...);
+            return *this;
+        }
+
+        template<class T>
+        var& reference(T& t)
+        {
+            if (m_var != nullptr) delete m_var;
+            m_var = new var_ref_impl<T>(t);
             return *this;
         }
 
