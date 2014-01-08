@@ -19,6 +19,7 @@ namespace gg
         std::streambuf* m_cout_rdbuf;
         std::ostream* m_stream;
         std::fstream* m_file;
+        console* m_console;
         bool m_log_to_file;
         bool m_timestamp;
 
@@ -54,6 +55,7 @@ namespace gg
         void disable_timestamp();
         void log_to_stream(std::ostream& = std::cout);
         void log_to_file(std::string);
+        void log_to_console(console*);
     };
 };
 

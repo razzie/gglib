@@ -2,6 +2,7 @@
 #include <sstream>
 #include <iomanip>
 #include "c_logger.hpp"
+#include "gg/console.hpp"
 
 using namespace gg;
 
@@ -58,15 +59,29 @@ void c_logger::log_to_stream(std::ostream& o)
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_stream = &o;
-    if (m_file != nullptr) delete m_file;
+    if (m_file != nullptr) { delete m_file; m_file = nullptr; }
+    if (m_console != nullptr) { m_console->drop(); m_console = nullptr; }
 }
 
 void c_logger::log_to_file(std::string filename)
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_stream = nullptr;
-    if (m_file != nullptr) delete m_file;
+    if (m_file != nullptr) { delete m_file; m_file = nullptr; }
+    if (m_console != nullptr) { m_console->drop(); m_console = nullptr; }
     m_file = new std::fstream(filename, std::ios_base::out);
+}
+
+void c_logger::log_to_console(console* c)
+{
+    if (c == nullptr) return;
+
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    m_stream = nullptr;
+    if (m_file != nullptr) { delete m_file; m_file = nullptr; }
+    if (m_console != nullptr) { m_console->drop(); m_console = nullptr; }
+    m_console = c;
+    m_console->grab();
 }
 
 void c_logger::push_hook(std::ostream& o)
@@ -113,6 +128,12 @@ int c_logger::sync()
         else if (m_file != nullptr)
         {
             m_file->write(msg.c_str(), msg.size());
+        }
+        else if (m_console != nullptr)
+        {
+            console::output* out = m_console->create_output();
+            *out << msg;
+            out->drop();
         }
         else
         {
