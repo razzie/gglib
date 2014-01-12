@@ -70,6 +70,11 @@ namespace gg
 
         bool is_valid() const { return m_valid; }
         void invalidate() { m_val.clear(); m_valid = false; }
+
+        friend std::ostream& operator<< (std::ostream& o, const optional& opt)
+        {
+            return o << opt.m_val.to_stream();
+        }
     };
 
     extern template class optional<var>;

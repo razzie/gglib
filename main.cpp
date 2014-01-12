@@ -48,6 +48,14 @@ public:
 
 int main()
 {
+    std::vector<int> intv = { 1, 2, 3, 4, 5 };
+    for (gg::enumerator<int> en(intv.begin(), intv.end()); en.has_next(); en.next())
+    {
+        std::cout << en.get() << ", ";
+    }
+    std::cout << std::endl;
+
+
     gg::application* app = gg::application::create_instance("test app", 0, 1);
 
 
