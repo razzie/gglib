@@ -49,7 +49,7 @@ public:
 int main()
 {
     std::vector<int> intv = { 1, 2, 3, 4, 5 };
-    for (gg::enumerator<int> en(intv.begin(), intv.end()); en.has_next(); en.next())
+    for (gg::enumerator<int> en(intv); en.has_next(); en.next())
     {
         std::cout << en.get() << ", ";
     }

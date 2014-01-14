@@ -35,10 +35,30 @@ namespace gg
             enumerator_impl(iterator begin, iterator end) : m_begin(begin), m_end(end), m_current(begin) {}
             enumerator_impl(const enumerator_impl& e) : m_begin(e.m_begin), m_end(e.m_end), m_current(e.m_current) {}
             ~enumerator_impl() {}
-            enumerator_impl_base* clone() const { return new enumerator_impl<iterator>(*this); }
+            enumerator_impl_base* clone() const { return new enumerator_impl(*this); }
             void next() { if (has_next()) std::advance(m_current, 1); }
             bool has_next() const { return (m_current != m_end); }
             void reset() { m_current = m_begin; }
+            optional<T> get() { if (has_next()) return *m_current; else return {}; }
+        };
+
+        template<class container>
+        using compatible_container = typename std::enable_if<std::is_same<T, typename container::value_type>::value>::type;
+
+        template<class container>
+        class container_enumerator_impl : public enumerator_impl_base
+        {
+            container* m_cont;
+            typename container::iterator m_current;
+
+        public:
+            container_enumerator_impl(container& c) : m_cont(&c), m_current(m_cont->begin()) {}
+            container_enumerator_impl(const container_enumerator_impl& c) : m_cont(c.m_cont), m_current(c.m_current) {}
+            ~container_enumerator_impl() {}
+            enumerator_impl_base* clone() const { return new container_enumerator_impl(*this); }
+            void next() { if (has_next()) std::advance(m_current, 1); }
+            bool has_next() const { return (m_current != m_cont->end()); }
+            void reset() { m_current = m_cont->begin(); }
             optional<T> get() { if (has_next()) return *m_current; else return {}; }
         };
 
@@ -47,6 +67,10 @@ namespace gg
     public:
         template<class iterator, class = compatible_iterator<iterator>>
         enumerator(iterator begin, iterator end) : m_enum(new enumerator_impl<iterator>(begin, end)) {}
+
+        template<class container, class = compatible_container<container>>
+        enumerator(container& cont) : m_enum(new container_enumerator_impl<container>(cont)) {}
+
         enumerator(const enumerator& e) : m_enum((e.m_enum == nullptr) ? nullptr : e.m_enum->clone()) {}
         enumerator(enumerator&& e) : m_enum(e.m_enum) { e.m_enum = nullptr; }
         ~enumerator() { if (m_enum != nullptr) delete m_enum; }
