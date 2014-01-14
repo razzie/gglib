@@ -1,7 +1,6 @@
 #ifndef GG_ENUMERATOR_HPP_INCLUDED
 #define GG_ENUMERATOR_HPP_INCLUDED
 
-#include <iterator>
 #include <functional>
 #include <type_traits>
 #include "gg/optional.hpp"
@@ -31,33 +30,23 @@ namespace gg
             iterator m_begin;
             iterator m_end;
             iterator m_current;
-            std::function<void(T&)> m_get_callback;
 
         public:
-            enumerator_impl(iterator begin, iterator end, std::function<void(T&)> get_cb = {})
-             : m_begin(begin), m_end(end), m_current(begin), m_get_callback(get_cb) {}
-            enumerator_impl(const enumerator_impl& e)
-             : m_begin(e.m_begin), m_end(e.m_end), m_current(e.m_current), m_get_callback(e.m_get_callback) {}
+            enumerator_impl(iterator begin, iterator end) : m_begin(begin), m_end(end), m_current(begin) {}
+            enumerator_impl(const enumerator_impl& e) : m_begin(e.m_begin), m_end(e.m_end), m_current(e.m_current) {}
             ~enumerator_impl() {}
             enumerator_impl_base* clone() const { return new enumerator_impl<iterator>(*this); }
             void next() { if (has_next()) std::advance(m_current, 1); }
             bool has_next() const { return (m_current != m_end); }
             void reset() { m_current = m_begin; }
-            optional<T> get()
-            {
-                if (!has_next()) return {};
-                else if (m_get_callback) { m_get_callback(*m_current); return *m_current; }
-                else { return *m_current; }
-            }
+            optional<T> get() { if (has_next()) return *m_current; else return {}; }
         };
 
         enumerator_impl_base* m_enum;
 
     public:
         template<class iterator, class = compatible_iterator<iterator>>
-        enumerator(iterator begin, iterator end, std::function<void(T&)> get_cb = {})
-         : m_enum(new enumerator_impl<iterator>(begin, end, get_cb)) {}
-
+        enumerator(iterator begin, iterator end) : m_enum(new enumerator_impl<iterator>(begin, end)) {}
         enumerator(const enumerator& e) : m_enum((e.m_enum == nullptr) ? nullptr : e.m_enum->clone()) {}
         enumerator(enumerator&& e) : m_enum(e.m_enum) { e.m_enum = nullptr; }
         ~enumerator() { if (m_enum != nullptr) delete m_enum; }
