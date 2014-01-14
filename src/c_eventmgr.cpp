@@ -43,9 +43,38 @@ public:
 bool serialize_string(const var& v, buffer* buf);
 optional<var> deserialize_string(buffer* buf);
 
+bool serialize_event_type(const var& v, buffer* buf)
+{
+    if (buf == nullptr || v.get_type() != typeid(event_type))
+        return false;
+
+    const event_type& e = v.get<event_type>();
+    size_t hash_code = e.get_hash();
+
+    buf->push(reinterpret_cast<const uint8_t*>(&hash_code), sizeof(size_t));
+    if (!serialize_string(e.get_name(), buf)) return false;
+
+    return true;
+}
+
+optional<var> deserialize_event_type(buffer* buf)
+{
+    if (buf == nullptr || buf->available() == 0) return {};
+
+    size_t hash_code;
+    if (buf->pop(reinterpret_cast<uint8_t*>(&hash_code), sizeof(size_t)) != sizeof(size_t)) return {};
+
+    optional<var> opt_name = deserialize_string(buf);
+    if (!opt_name.is_valid() || opt_name.get().get_type() != typeid(std::string)) return {};
+    std::string name = opt_name.get().get<std::string>();
+
+    if (name.empty()) return event_type(hash_code);
+    else return event_type(name);
+}
+
 bool serialize_event(const var& v, buffer* buf, const serializer* s)
 {
-    if (buf == nullptr || buf->available() == 0 || s == nullptr || v.get_type() != typeid(c_event))
+    if (buf == nullptr || s == nullptr || v.get_type() != typeid(c_event))
         return false;
 
     const c_event& e = v.get<c_event>();
@@ -54,7 +83,7 @@ bool serialize_event(const var& v, buffer* buf, const serializer* s)
 
 optional<var> deserialize_event(buffer* buf, const serializer* s)
 {
-    if (buf == nullptr || s == nullptr) return {};
+    if (buf == nullptr || buf->available() == 0 || s == nullptr) return {};
 
     try
     {
@@ -97,11 +126,17 @@ c_event::c_event(buffer* buf, const serializer* s) // deserialize
 
     grab_guard bufgrab(buf);
 
-    size_t hash_code;
+    /*size_t hash_code;
     if (buf->pop(reinterpret_cast<uint8_t*>(&hash_code), sizeof(size_t)) != sizeof(size_t))
         throw std::runtime_error("unable to deserialize event");
 
-    m_type = event_type(hash_code);
+    m_type = event_type(hash_code);*/
+
+    optional<var> opt_event_type = deserialize_event_type(buf);
+    if (!opt_event_type.is_valid() || opt_event_type.get().get_type() != typeid(event_type))
+        throw std::runtime_error("unable to deserialize event");
+
+    m_type = opt_event_type.get().get<event_type>();
 
     optional<uint8_t> attrcnt = buf->pop();
     if (!attrcnt.is_valid())
@@ -128,16 +163,17 @@ bool c_event::serialize(buffer* buf, const serializer* s) const
 
     grab_guard bufgrab(buf);
 
-    auto it = m_attributes.begin(), end = m_attributes.end();
-    uint8_t attr_count = m_attributes.size();
-    size_t hash_code = m_type.get_hash();
+    //size_t hash_code = m_type.get_hash();
+    //buf->push(reinterpret_cast<uint8_t*>(&hash_code), sizeof(size_t));
+    if (!serialize_event_type(m_type, buf)) return false;
 
-    buf->push(reinterpret_cast<uint8_t*>(&hash_code), sizeof(size_t));
+    uint8_t attr_count = m_attributes.size();
     buf->push(attr_count);
 
+    auto it = m_attributes.begin(), end = m_attributes.end();
     for (; it != end; ++it)
     {
-        serialize_string(it->first, buf);
+        if (!serialize_string(it->first, buf)) return false;
         if (!s->serialize(it->second, buf)) return false;
     }
 
@@ -276,6 +312,7 @@ c_event_manager::c_event_manager(application* app)
  : m_app(app)
  , m_thread("event manager")
 {
+    m_app->get_serializer()->add_rule<event_type>(serialize_event_type, deserialize_event_type);
     m_app->get_serializer()->add_rule_ex<c_event>(serialize_event, deserialize_event);
 }
 
