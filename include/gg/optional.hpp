@@ -73,7 +73,8 @@ namespace gg
 
         friend std::ostream& operator<< (std::ostream& o, const optional& opt)
         {
-            return o << opt.m_val.to_stream();
+            if (opt.is_valid()) return o << opt.m_val.to_stream();
+            else return o << "(invalid)";
         }
     };
 
