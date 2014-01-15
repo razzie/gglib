@@ -4,6 +4,7 @@
 #include "gg/cast.hpp"
 #include "gg/var.hpp"
 #include "gg/function.hpp"
+#include "gg/atomic.hpp"
 #include "gg/refcounted.hpp"
 #include "gg/optional.hpp"
 #include "gg/smart_iterator.hpp"

@@ -43,6 +43,7 @@
 			</Target>
 		</Build>
 		<Compiler>
+			<Add option="-march=i486" />
 			<Add option="-std=c++11" />
 			<Add option="-Wall" />
 			<Add option="-fexceptions" />
@@ -65,6 +66,7 @@
 		<Unit filename="ext/tinythread++/tinythread.cpp" />
 		<Unit filename="ext/tinythread++/tinythread.h" />
 		<Unit filename="include/gg/application.hpp" />
+		<Unit filename="include/gg/atomic.hpp" />
 		<Unit filename="include/gg/buffer.hpp" />
 		<Unit filename="include/gg/cast.hpp" />
 		<Unit filename="include/gg/console.hpp" />

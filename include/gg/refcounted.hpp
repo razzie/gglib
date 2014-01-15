@@ -3,13 +3,13 @@
 
 #include <cstdint>
 #include <type_traits>
+#include "gg/atomic.hpp"
 
 namespace gg
 {
     class reference_counted
     {
-        struct refcounted_data;
-        refcounted_data* m_refdata;
+        mutable atomic<uint32_t> m_ref_count;
 
     public:
         reference_counted();

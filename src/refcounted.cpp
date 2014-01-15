@@ -4,42 +4,29 @@
 using namespace gg;
 
 
-struct reference_counted::refcounted_data
-{
-    tthread::mutex m_mut;
-    uint32_t m_ref = 1;
-};
-
-
 reference_counted::reference_counted()
+ : m_ref_count(1)
 {
-    m_refdata = new refcounted_data();
 }
 
 reference_counted::~reference_counted()
 {
-    delete m_refdata;
 }
 
 void reference_counted::grab() const
 {
-    m_refdata->m_mut.lock();
-    ++(m_refdata->m_ref);
-    m_refdata->m_mut.unlock();
+    ++m_ref_count;
 }
 
 void reference_counted::drop() const
 {
-    m_refdata->m_mut.lock();
-    if (--(m_refdata->m_ref) == 0)
+    if (--m_ref_count == 0)
         delete this;
-    else
-        m_refdata->m_mut.unlock();
 }
 
 uint32_t reference_counted::get_ref_count() const
 {
-    return m_refdata->m_ref;
+    return m_ref_count;
 }
 
 
