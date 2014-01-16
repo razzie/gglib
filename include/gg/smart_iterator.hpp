@@ -34,6 +34,7 @@ namespace gg
         T& operator* () { return m_get(*m_iter); }
         T* operator-> () { return &m_get(*m_iter); }
         bool operator== (const smart_iterator& it) { return (m_iter == it.m_iter); }
+        bool operator!= (const smart_iterator& it) { return (m_iter != it.m_iter); }
         smart_iterator& operator++ () { m_incr(m_iter); return *this; }
     };
 

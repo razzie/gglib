@@ -49,8 +49,10 @@ public:
 int main()
 {
     std::vector<int> intv = { 1, 2, 3, 4, 5 };
-    for (gg::enumerator<int> en(intv); en.has_next(); en.next())
+    for (gg::enumerator<int> en(intv); !en.is_finished(); en.next())
     {
+        int tmp = en.get();
+        if (tmp == 3) en.erase();
         std::cout << en.get() << ", ";
     }
     std::cout << std::endl;

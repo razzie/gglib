@@ -15,8 +15,9 @@ namespace gg
         public:
             virtual ~enumerator_impl_base() {}
             virtual void next() = 0;
-            virtual bool has_next() const = 0;
+            virtual bool is_finished() const = 0;
             virtual void reset() = 0;
+            virtual void erase() = 0;
             virtual optional<T> get() = 0;
             virtual enumerator_impl_base* clone() const = 0;
         };
@@ -36,10 +37,11 @@ namespace gg
             enumerator_impl(const enumerator_impl& e) : m_begin(e.m_begin), m_end(e.m_end), m_current(e.m_current) {}
             ~enumerator_impl() {}
             enumerator_impl_base* clone() const { return new enumerator_impl(*this); }
-            void next() { if (has_next()) std::advance(m_current, 1); }
-            bool has_next() const { return (m_current != m_end); }
+            void next() { if (!is_finished()) std::advance(m_current, 1); }
+            bool is_finished() const { return (m_current == m_end); }
             void reset() { m_current = m_begin; }
-            optional<T> get() { if (has_next()) return *m_current; else return {}; }
+            void erase() {} // only for container based enumerators
+            optional<T> get() { if (!is_finished()) return *m_current; else return {}; }
         };
 
         template<class container>
@@ -50,16 +52,18 @@ namespace gg
         {
             container* m_cont;
             typename container::iterator m_current;
+            typename container::iterator m_next;
 
         public:
-            container_enumerator_impl(container& c) : m_cont(&c), m_current(m_cont->begin()) {}
-            container_enumerator_impl(const container_enumerator_impl& c) : m_cont(c.m_cont), m_current(c.m_current) {}
+            container_enumerator_impl(container& c) : m_cont(&c), m_current(m_cont->begin()), m_next(std::next(m_current, 1)) {}
+            container_enumerator_impl(const container_enumerator_impl& c) : m_cont(c.m_cont), m_current(c.m_current), m_next(c.m_next) {}
             ~container_enumerator_impl() {}
             enumerator_impl_base* clone() const { return new container_enumerator_impl(*this); }
-            void next() { if (has_next()) std::advance(m_current, 1); }
-            bool has_next() const { return (m_current != m_cont->end()); }
-            void reset() { m_current = m_cont->begin(); }
-            optional<T> get() { if (has_next()) return *m_current; else return {}; }
+            void next() { if (!is_finished()) { m_current = m_next; std::advance(m_next, 1); } }
+            bool is_finished() const { return (m_current == m_cont->end()); }
+            void reset() { m_current = m_cont->begin(); m_next = std::next(m_current, 1); }
+            void erase() { if (!is_finished()) { m_current = m_next = m_cont->erase(m_current); } }
+            optional<T> get() { if (!is_finished() && m_current != m_next) return *m_current; else return {}; }
         };
 
         enumerator_impl_base* m_enum;
@@ -81,8 +85,9 @@ namespace gg
         { if (m_enum != nullptr) delete m_enum; m_enum = e.m_enum; e.m_enum = nullptr; }
 
         void next() { if (m_enum != nullptr) m_enum->next(); }
-        bool has_next() const { if (m_enum != nullptr) return m_enum->has_next(); else return false; }
+        bool is_finished() const { if (m_enum != nullptr) return m_enum->is_finished(); else return true; }
         void reset() { if (m_enum != nullptr) m_enum->reset(); }
+        void erase() { if (m_enum != nullptr) m_enum->erase(); }
         optional<T> get() { if (m_enum != nullptr) return m_enum->get(); else return {}; }
     };
 };
