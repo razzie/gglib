@@ -3,6 +3,7 @@
 
 #include <functional>
 #include <type_traits>
+#include <stdexcept>
 #include "gg/optional.hpp"
 
 namespace gg
@@ -18,6 +19,8 @@ namespace gg
             virtual bool is_finished() const = 0;
             virtual void reset() = 0;
             virtual void erase() = 0;
+            virtual void insert(const T&) = 0;
+            virtual void insert(T&&) = 0;
             virtual optional<T> get() = 0;
             virtual enumerator_impl_base* clone() const = 0;
         };
@@ -40,7 +43,9 @@ namespace gg
             void next() { if (!is_finished()) std::advance(m_current, 1); }
             bool is_finished() const { return (m_current == m_end); }
             void reset() { m_current = m_begin; }
-            void erase() {} // only for container based enumerators
+            void erase() { throw std::runtime_error("erase error"); }
+            void insert(const T&) { throw std::runtime_error("insert error"); }
+            void insert(T&&) { throw std::runtime_error("insert error"); }
             optional<T> get() { if (!is_finished()) return *m_current; else return {}; }
         };
 
@@ -63,6 +68,8 @@ namespace gg
             bool is_finished() const { return (m_current == m_cont->end()); }
             void reset() { m_current = m_cont->begin(); m_next = std::next(m_current, 1); }
             void erase() { if (!is_finished()) { m_current = m_next = m_cont->erase(m_current); } }
+            void insert(const T& t) { m_next = m_cont->insert(m_next, t); }
+            void insert(T&& t) { m_next = m_cont->insert(m_next, t); }
             optional<T> get() { if (!is_finished() && m_current != m_next) return *m_current; else return {}; }
         };
 
@@ -84,10 +91,12 @@ namespace gg
         enumerator& operator= (enumerator&& e)
         { if (m_enum != nullptr) delete m_enum; m_enum = e.m_enum; e.m_enum = nullptr; }
 
-        void next() { if (m_enum != nullptr) m_enum->next(); }
-        bool is_finished() const { if (m_enum != nullptr) return m_enum->is_finished(); else return true; }
-        void reset() { if (m_enum != nullptr) m_enum->reset(); }
-        void erase() { if (m_enum != nullptr) m_enum->erase(); }
+        void next() { if (m_enum != nullptr) m_enum->next(); else throw std::runtime_error("empty enumerator"); }
+        bool is_finished() const { if (m_enum != nullptr) return m_enum->is_finished(); else throw std::runtime_error("empty enumerator"); }
+        void reset() { if (m_enum != nullptr) m_enum->reset(); else throw std::runtime_error("empty enumerator"); }
+        void erase() { if (m_enum != nullptr) m_enum->erase(); else throw std::runtime_error("empty enumerator"); }
+        void insert(const T& t) { if (m_enum != nullptr) m_enum->insert(t); else throw std::runtime_error("empty enumerator"); }
+        void insert(T&& t) { if (m_enum != nullptr) m_enum->insert(t); else throw std::runtime_error("empty enumerator"); }
         optional<T> get() { if (m_enum != nullptr) return m_enum->get(); else return {}; }
     };
 };

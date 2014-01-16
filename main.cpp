@@ -52,7 +52,11 @@ int main()
     for (gg::enumerator<int> en(intv); !en.is_finished(); en.next())
     {
         int tmp = en.get();
-        if (tmp == 3) en.erase();
+        if (tmp == 3)
+        {
+            en.erase();
+            en.insert(33);
+        }
         std::cout << en.get() << ", ";
     }
     std::cout << std::endl;
