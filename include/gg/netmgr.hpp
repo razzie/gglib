@@ -13,8 +13,10 @@ namespace gg
 
     class connection_handler : public reference_counted
     {
-    public:
+    protected:
         virtual ~connection_handler() {}
+
+    public:
         virtual void handle_connection_open(connection*) = 0;
         virtual void handle_connection_close(connection*) = 0;
     };
@@ -36,15 +38,19 @@ namespace gg
 
     class packet_handler : public reference_counted
     {
-    public:
+    protected:
         virtual ~packet_handler() {}
+
+    public:
         virtual void handle_packet(connection*) = 0;
     };
 
     class connection : public reference_counted
     {
-    public:
+    protected:
         virtual ~connection() {}
+
+    public:
         virtual listener* get_listener() = 0;
         virtual buffer* get_input_buffer() = 0;
         virtual buffer* get_output_buffer() = 0;

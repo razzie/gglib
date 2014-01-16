@@ -19,6 +19,7 @@ namespace gg
         {
         protected:
             virtual ~section() {}
+
         public:
             virtual std::string get_name() const = 0;
             virtual void set_name(std::string) = 0;
@@ -36,6 +37,7 @@ namespace gg
         {
         protected:
             virtual ~entry() {}
+
         public:
             virtual section* get_section() = 0;
             virtual const section* get_section() const = 0;

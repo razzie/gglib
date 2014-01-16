@@ -15,10 +15,12 @@ namespace gg
         std::string m_name;
         std::list<task*> m_children;
 
+    protected:
+        virtual ~task() {}
+
     public:
         task() : m_name("unknown") {}
         task(std::string name) : m_name(name) {}
-        virtual ~task() {}
 
         void rename(std::string name) { m_name = name; }
         void add_child(task* t) { t->grab(); m_children.push_back(t); }

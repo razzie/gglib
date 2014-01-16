@@ -11,11 +11,13 @@ namespace gg
 {
     class buffer : public reference_counted
     {
+    protected:
+        virtual ~buffer() {}
+
     public:
         typedef std::vector<uint8_t> byte_array;
 
         static buffer* create();
-        virtual ~buffer() {}
 
         virtual size_t available() const = 0;
         virtual void advance(size_t len) = 0;

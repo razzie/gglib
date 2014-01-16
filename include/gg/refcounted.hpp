@@ -11,9 +11,11 @@ namespace gg
     {
         mutable atomic<uint32_t> m_ref_count;
 
+    protected:
+        virtual ~reference_counted();
+
     public:
         reference_counted();
-        virtual ~reference_counted();
         void grab() const;
         void drop() const;
         uint32_t get_ref_count() const;

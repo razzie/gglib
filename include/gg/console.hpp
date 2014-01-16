@@ -13,18 +13,23 @@ namespace gg
 
     class console : public reference_counted
     {
+    protected:
+        virtual ~console() {};
+
     public:
         static console* get_invoker_console();
 
         class output : public reference_counted, public virtual std::ostream
         {
+        protected:
+            virtual ~output() {}
+
         public:
             struct color
             {
                 uint8_t R, G, B;
             };
 
-            virtual ~output() {}
             virtual console& get_console() const = 0;
             virtual void show() = 0;
             virtual void hide() = 0;
@@ -39,6 +44,9 @@ namespace gg
 
         class controller : public reference_counted
         {
+        protected:
+            virtual ~controller() {}
+
         public:
             enum class exec_result
             {
@@ -47,12 +55,10 @@ namespace gg
                 NO_EXEC
             };
 
-            virtual ~controller() {}
             virtual exec_result exec(std::string& cmd, output&) = 0;
             virtual void complete(std::string& cmd, output&) = 0;
         };
 
-        virtual ~console() {};
         virtual application* get_app() const = 0;
         virtual std::string get_name() const = 0;
         virtual void set_name(std::string name) = 0;
