@@ -126,7 +126,7 @@ optional<var> c_script_engine::exec(std::string fn, varlist vl, std::ostream& ou
 optional<var> c_script_engine::parse_and_exec(std::string expr, std::ostream& output) const
 {
     logger::scoped_hook __hook(output);
-    return process_expression(expr);
+    return process_expression(c_expression(expr));
 }
 
 console::controller* c_script_engine::get_console_controller() const
@@ -233,7 +233,7 @@ bool c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
 
 static void fill_expr_by_sign(expression& e, const c_expression& sg)
 {
-    std::list<expression::expression_ptr>& e_chld = e.get_children();
+    /*std::list<expression::expression_ptr>& e_chld = e.get_children();
     const std::list<expression::expression_ptr>& sg_chld = sg.get_children();
 
     size_t e_chld_size = e_chld.size();
@@ -252,6 +252,24 @@ static void fill_expr_by_sign(expression& e, const c_expression& sg)
         {
             e.remove_child(it);
         }
+    }*/
+
+    auto e_children = e.get_children();
+    auto sg_children = sg.get_children();
+
+    size_t e_children_cnt = e_children.count();
+    size_t sg_children_cnt = sg_children.count();
+
+    if (e_children_cnt < sg_children_cnt)
+    {
+        sg_children.advance(sg_children_cnt - e_children_cnt + 1);
+        for (; !e_children.is_finished(); e_children.next()); // jump to the end
+        for (; !sg_children.is_finished(); sg_children.next()) e_children.insert(sg_children.get());
+    }
+    else if (e_children_cnt > sg_children_cnt)
+    {
+        e_children.advance(e_children_cnt - sg_children_cnt);
+        for (; !e_children.is_finished(); e_children.next()) e_children.erase();
     }
 }
 
@@ -293,7 +311,7 @@ void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
     if (!e.is_empty()) expr = e.get_expression();
 }
 
-optional<var> c_script_engine::process_expression(const c_expression& e) const
+optional<var> c_script_engine::process_expression(const expression& e) const
 {
     std::string name = e.get_name();
 
@@ -307,13 +325,12 @@ optional<var> c_script_engine::process_expression(const c_expression& e) const
             return {};
 
         varlist vl;
-        auto args = e.get_children();
-        auto it = args.begin(), end = args.end();
-        for (; it != end; ++it)
-        {
-            if ((*it)->is_empty()) continue;
 
-            optional<var> v = process_expression(**it);
+        for (auto args = e.get_children(); !args.is_finished(); args.next())
+        {
+            if ((*args.get())->is_empty()) continue;
+
+            optional<var> v = process_expression(**args.get());
             if (v.is_valid()) vl.push_back(v);
             else return {};
         }

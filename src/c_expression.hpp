@@ -1,6 +1,7 @@
 #ifndef C_EXPRESSION_HPP_INCLUDED
 #define C_EXPRESSION_HPP_INCLUDED
 
+#include <list>
 #include "gg/expression.hpp"
 
 namespace gg
@@ -9,35 +10,26 @@ namespace gg
     {
     public:
         c_expression(std::string expr, bool auto_complete = false);
-        c_expression(const expression& e);
-        c_expression(const c_expression& e);
-        c_expression(c_expression&& e);
+        //c_expression(const expression& e);
+        //c_expression(c_expression&& e);
         ~c_expression();
 
-        c_expression& operator= (const c_expression& e);
-        c_expression& operator= (c_expression&& e);
+        //c_expression& operator= (const expression& e);
+        //c_expression& operator= (c_expression&& e);
 
+        void set_name(std::string name);
         std::string get_name() const;
         std::string get_expression() const;
-        c_expression* get_parent();
-        const c_expression* get_parent() const;
-        std::list<expression_ptr>& get_children();
-        const std::list<expression_ptr>& get_children() const;
         bool is_leaf() const;
         bool is_empty() const;
 
-        void set_name(std::string name);
-        void add_child(expression& e);
-        void remove_child(std::list<expression_ptr>::iterator& it);
+        expression* get_parent();
+        const expression* get_parent() const;
+        enumerator<expression*> get_children();
+        const_enumerator<expression*> get_children() const;
 
         void for_each(std::function<void(expression&)>);
         void for_each(std::function<void(const expression&)>) const;
-
-        /*inline friend std::ostream& operator<< (std::ostream& o, const c_expression& e)
-        {
-            e.print(0,o);
-            return o;
-        }*/
 
     protected:
         c_expression(c_expression* parent, std::string expr, bool auto_complete);
@@ -47,7 +39,7 @@ namespace gg
     private:
         c_expression* m_parent;
         std::string m_name;
-        std::list<expression_ptr> m_children;
+        std::list<expression*> m_children;
     };
 
     class c_expression_error : public expression_error
