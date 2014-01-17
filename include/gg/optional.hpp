@@ -68,6 +68,12 @@ namespace gg
         operator T&() { return get(); }
         operator const T&() const { return get(); }
 
+        T& operator* () { return get(); }
+        const T& operator* () const { return get(); }
+
+        T* operator-> () { return &get(); }
+        const T* operator-> () const { return &get(); }
+
         bool is_valid() const { return m_valid; }
         void invalidate() { m_val.clear(); m_valid = false; }
 
