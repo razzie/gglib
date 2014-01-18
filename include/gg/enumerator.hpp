@@ -24,6 +24,7 @@ namespace gg
             virtual void insert(const T&) = 0;
             virtual void insert(T&&) = 0;
             virtual size_t count() const = 0;
+            virtual optional<T> get() = 0;
             virtual optional<T> get() const = 0;
             virtual enumerator_impl_base* clone() const = 0;
         };
@@ -52,6 +53,7 @@ namespace gg
             void insert(const T&) { throw std::runtime_error("insert error"); }
             void insert(T&&) { throw std::runtime_error("insert error"); }
             size_t count() const { return std::distance(m_begin, m_end); }
+            optional<T> get() { if (!is_finished()) return *m_current; else return {}; }
             optional<T> get() const { if (!is_finished()) return *m_current; else return {}; }
         };
 
@@ -86,6 +88,7 @@ namespace gg
             void insert(const T& t) { m_next = m_cont->insert(m_next, t); }
             void insert(T&& t) { m_next = m_cont->insert(m_next, t); }
             size_t count() const { return m_cont->size(); }
+            optional<T> get() { if (!is_finished() && m_current != m_next) return *m_current; else return {}; }
             optional<T> get() const { if (!is_finished() && m_current != m_next) return *m_current; else return {}; }
         };
 
@@ -110,6 +113,7 @@ namespace gg
             void insert(const T&) { throw std::runtime_error("insert error"); }
             void insert(T&&) { throw std::runtime_error("insert error"); }
             size_t count() const { return m_cont->size(); }
+            optional<T> get() { if (!is_finished()) return *m_current; else return {}; }
             optional<T> get() const { if (!is_finished()) return *m_current; else return {}; }
         };
 
@@ -142,6 +146,7 @@ namespace gg
         bool is_finished() const { if (m_enum != nullptr) return m_enum->is_finished(); else throw std::runtime_error("empty enumerator"); }
         void reset() { if (m_enum != nullptr) m_enum->reset(); else throw std::runtime_error("empty enumerator"); }
         size_t count() const { if (m_enum != nullptr) return m_enum->count(); else return 0; }
+        optional<T> get() { if (m_enum != nullptr) return m_enum->get(); else return {}; }
         optional<T> get() const { if (m_enum != nullptr) return m_enum->get(); else return {}; }
     };
 
