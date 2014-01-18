@@ -19,10 +19,10 @@ namespace gg
 
         template<class... Args>
         optional(Args... args)
-         : m_valid(true)
-        {
-            m_val.construct<T>(std::forward<Args>(args)...);
-        }
+         : m_valid(true) { m_val.construct<T>(std::forward<Args>(args)...); }
+
+        optional(T& t)
+         : m_valid(true) { m_val.reference(t); }
 
         optional(const optional& o)
          : m_val(o.m_val), m_valid(o.m_valid) {}
