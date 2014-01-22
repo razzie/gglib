@@ -106,11 +106,8 @@ optional<var> deserialize_string(buffer* buf)
 
     if (buf->available() < len) return {};
 
-    std::string str;
-    for (int i = 0; i < len; ++i)
-        str += static_cast<char>(buf->pop().get());
-
-    return std::move(str);
+    auto data = buf->pop(len);
+    return std::move( std::string(data.begin(), data.end()) );
 }
 
 

@@ -352,9 +352,9 @@ remote_event_manager* c_event_manager::get_this_as_remote_event_manager()
 
 void c_event_manager::add_event_type(event_type t)
 {
-    if (m_evt_types.count(t) > 0) return;
-
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    if (m_evt_types.count(t) > 0) return;
 
     auto ret = m_evt_types.insert( std::make_pair(t, std::list<event_listener*> {}) );
 

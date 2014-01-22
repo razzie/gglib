@@ -9,6 +9,7 @@ namespace gg
     class serializer;
     class script_engine;
     class network_manager;
+    class id_generator;
     class console;
 
     class application : public reference_counted
@@ -27,6 +28,7 @@ namespace gg
         virtual serializer*      get_serializer() = 0;
         virtual script_engine*   get_script_engine() = 0;
         virtual network_manager* get_network_manager() = 0;
+        virtual id_generator*    get_id_generator() = 0;
         virtual console*         create_console() = 0;
         virtual console*         create_console(std::string name, std::string welcome_text = {}) = 0;
 

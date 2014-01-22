@@ -50,7 +50,7 @@ namespace gg
         {
             serializer_func s = [](const var& v, buffer* buf)->bool
             {
-                if (buf == nullptr)
+                if (buf == nullptr || v.get_type() != typeid(T))
                     return false;
 
                 buf->push(reinterpret_cast<const uint8_t*>(v.get_ptr<T>()), sizeof(T));
@@ -63,7 +63,7 @@ namespace gg
                     return {};
 
                 T t;
-                std::memcpy(&t, buf->pop(sizeof(T)).data(), sizeof(T));
+                buf->pop(reinterpret_cast<uint8_t*>(&t), sizeof(T));
                 return std::move(t);
             };
 

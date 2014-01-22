@@ -16,6 +16,9 @@ namespace gg
 
     class event_type
     {
+        std::string m_name;
+        size_t m_hash;
+
     public:
         event_type(std::string);
         event_type(const char*);
@@ -36,10 +39,6 @@ namespace gg
             ~comparator() = default;
             bool operator() (const event_type&, const event_type&) const;
         };
-
-    private:
-        std::string m_name;
-        size_t m_hash;
     };
 
     class event

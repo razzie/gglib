@@ -9,6 +9,7 @@
 #include "gg/optional.hpp"
 #include "gg/smart_iterator.hpp"
 #include "gg/enumerator.hpp"
+#include "gg/id.hpp"
 #include "gg/buffer.hpp"
 #include "gg/typeinfo.hpp"
 #include "gg/util.hpp"

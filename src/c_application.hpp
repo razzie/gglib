@@ -11,6 +11,7 @@ namespace gg
     class c_serializer;
     class c_script_engine;
     class c_network_manager;
+    class c_id_generator;
 
     class c_application : public application
     {
@@ -22,6 +23,7 @@ namespace gg
         c_serializer* m_serializer;
         c_script_engine* m_scripteng;
         c_network_manager* m_netmgr;
+        c_id_generator* m_idgen;
         tthread::condition_variable m_cond;
         mutable tthread::mutex m_cond_mutex;
         int m_exit_code;
@@ -40,6 +42,7 @@ namespace gg
         serializer*      get_serializer();
         script_engine*   get_script_engine();
         network_manager* get_network_manager();
+        id_generator*    get_id_generator();
         console*         create_console();
         console*         create_console(std::string name, std::string welcome_text = {});
 
