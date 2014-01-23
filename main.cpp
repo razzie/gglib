@@ -67,7 +67,6 @@ int main()
 
 
     gg::event_manager* evtmgr = app->get_event_manager();
-    evtmgr->add_event_type("test_event_type");
     evtmgr->add_listener("test_event_type", [](const gg::event& e)->bool
     {
         std::cout << e["arg1"].to_stream() << std::endl;

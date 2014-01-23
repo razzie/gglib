@@ -7,7 +7,6 @@
 #include "gg/atomic.hpp"
 #include "gg/refcounted.hpp"
 #include "gg/optional.hpp"
-#include "gg/smart_iterator.hpp"
 #include "gg/enumerator.hpp"
 #include "gg/id.hpp"
 #include "gg/buffer.hpp"
