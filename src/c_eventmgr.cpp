@@ -10,16 +10,17 @@ using namespace gg;
 class remote_event_dispatcher : public event_dispatcher, public packet_handler
 {
     mutable tthread::mutex m_mutex;
-    event_manager* m_evtmgr;
+    c_event_manager* m_evtmgr;
     connection* m_conn;
 
 public:
-    remote_event_dispatcher(event_manager* evtmgr, std::string addr, uint16_t port)
+    remote_event_dispatcher(c_event_manager* evtmgr, std::string addr, uint16_t port)
      : m_evtmgr(evtmgr)
      , m_conn(new c_connection(addr, port, true))
     {
+        m_conn->set_packet_handler(this);
     }
-    remote_event_dispatcher(event_manager* evtmgr, connection* conn)
+    remote_event_dispatcher(c_event_manager* evtmgr, connection* conn)
      : m_evtmgr(evtmgr)
     {
         if (conn == nullptr)
@@ -41,6 +42,8 @@ public:
 
     void push_event(event_type t, std::initializer_list<event::attribute> il)
     {
+        tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
         serializer* srl = m_evtmgr->get_app()->get_serializer();
 
         c_event e(this, t, il);
@@ -54,10 +57,18 @@ public:
     // inherited from packet_handler
     void handle_packet(connection* conn)
     {
+        tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
         if (conn != m_conn)
             throw std::runtime_error("remote_event_dispatcher: handling unknown connection");
 
+        serializer* srl = m_evtmgr->get_app()->get_serializer();
+        optional<var> data = srl->deserialize(conn->get_input_buffer());
 
+        if (!data.is_valid() || data.get().get_type() != typeid(c_event)) return;
+
+        c_event& evt = data.get().get<c_event>();
+        m_evtmgr->trigger_event(&evt);
     }
 };
 

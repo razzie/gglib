@@ -13,86 +13,23 @@ std::ostream& operator<< (std::ostream& o, const test& t)
 }
 
 
-class network_handler : public gg::packet_handler, public gg::connection_handler
-{
-    gg::application* m_app;
-
-public:
-    network_handler(gg::application* app)
-     : m_app(app)
-    {
-    }
-
-    ~network_handler()
-    {
-    }
-
-    void handle_packet(gg::connection* c)
-    {
-        gg::buffer* buf = c->get_input_buffer();
-        gg::varlist vl = m_app->get_serializer()->deserialize_all(buf);
-        std::cout << "packet: " << vl << std::endl;
-    }
-
-    void handle_connection_open(gg::connection* c)
-    {
-        std::cout << "connection opened: " << c->get_address() << ":" << c->get_port() << std::endl;
-        c->set_packet_handler(this);
-    }
-
-    void handle_connection_close(gg::connection* c)
-    {
-        std::cout << "connection closed: " << c->get_address() << ":" << c->get_port() << std::endl;
-    }
-};
-
-
 int main()
 {
-    std::vector<int> intv = { 1, 2, 3, 4, 5 };
-    for (gg::enumerator<int> en(intv); !en.is_finished(); en.next())
-    {
-        int tmp = en.get();
-        if (tmp == 3)
-        {
-            en.erase();
-            en.insert(33);
-        }
-        std::cout << en.get() << ", ";
-    }
-    std::cout << std::endl;
-
-
     gg::application* app = gg::application::create_instance("test app", 0, 1);
 
 
     gg::event_manager* evtmgr = app->get_event_manager();
     evtmgr->add_listener("test_event_type", [](const gg::event& e)->bool
     {
-        std::cout << e["arg1"].to_stream() << std::endl;
+        std::cout << "originator: " << e.get_originator()->get_address() << " : " << e.get_originator()->get_port()
+                  << "\n" << e.get_attributes() << std::endl;
         return true;
     });
-    evtmgr->trigger_event("test_event_type", {{"arg1", 123}});
+    evtmgr->open_port(9999);
+    gg::event_dispatcher* evtd = evtmgr->connect("127.0.0.1", 9999);
+    //evtd->push_event("test_event_type", {{"arg1", 123}, {"arg2", std::string("abc")}, {"arg3", test {4,5,6}}});
+    //evtd->drop();
 
-
-    network_handler h(app);
-    gg::listener* l = app->get_network_manager()->create_tcp_listener(9999);
-    l->set_connection_handler(&h);
-    l->open();
-
-
-    gg::serializer* srl = app->get_serializer();
-    gg::buffer* buf = gg::buffer::create();
-    srl->serialize(123, buf);
-    srl->serialize(std::string("abc"), buf);
-    srl->add_trivial_rule<test>();
-    srl->serialize(test {4,5,6}, buf);
-
-    gg::connection* c = app->get_network_manager()->create_tcp_connection("127.0.0.1", 9999);
-    c->set_connection_handler(&h);
-    c->open();
-    c->send(buf);
-    buf->drop();
 
 
     gg::console* con = app->create_console();
