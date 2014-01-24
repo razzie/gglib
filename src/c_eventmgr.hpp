@@ -5,8 +5,8 @@
 #include "gg/eventmgr.hpp"
 #include "gg/optional.hpp"
 #include "gg/serializer.hpp"
+#include "gg/netmgr.hpp"
 #include "c_taskmgr.hpp"
-#include "c_netmgr.hpp"
 
 namespace gg
 {
@@ -32,13 +32,13 @@ namespace gg
         bool serialize(buffer* buf, const serializer*) const;
     };
 
-    class c_event_manager : public event_manager, public connection_handler, public packet_handler
+    class c_event_manager : public event_manager, public connection_handler
     {
         mutable tthread::mutex m_mutex;
         mutable application* m_app;
         std::map<event_type, std::list<event_listener*>, event_type::comparator> m_listeners;
-        std::list<c_listener*> m_ports;
-        std::list<event_dispatcher*> m_conns;
+        std::list<listener*> m_ports;
+        std::map<connection*, event_dispatcher*> m_conns;
         c_thread m_thread;
 
     public:
@@ -65,7 +65,6 @@ namespace gg
         // inherited from connection_handler and packet_handler
         void handle_connection_open(connection*);
         void handle_connection_close(connection*);
-        void handle_packet(connection*);
     };
 };
 

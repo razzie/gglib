@@ -16,7 +16,7 @@ namespace gg
             deserializer_func_ex m_dfunc;
         };
 
-        mutable tthread::mutex m_mutex;
+        mutable tthread::recursive_mutex m_mutex;
         mutable application* m_app;
         std::map<size_t, rule> m_rules;
 

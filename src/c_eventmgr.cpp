@@ -2,6 +2,7 @@
 #include <functional>
 #include <stdexcept>
 #include "c_eventmgr.hpp"
+#include "c_netmgr.hpp"
 #include "gg/application.hpp"
 
 using namespace gg;
@@ -19,6 +20,7 @@ public:
      , m_conn(new c_connection(addr, port, true))
     {
         m_conn->set_packet_handler(this);
+        m_conn->open();
     }
     remote_event_dispatcher(c_event_manager* evtmgr, connection* conn)
      : m_evtmgr(evtmgr)
@@ -27,11 +29,12 @@ public:
             throw std::runtime_error("remote_event_dispatcher: connection as nullpointer");
 
         m_conn = conn;
-        m_conn->connection::grab();
+        m_conn->grab();
+        m_conn->set_packet_handler(this);
     }
     ~remote_event_dispatcher()
     {
-        m_conn->connection::drop();
+        m_conn->drop();
     }
 
     bool connect() { return m_conn->open(); }
@@ -52,6 +55,8 @@ public:
 
         if (!srl->serialize(v, m_conn->get_output_buffer()))
             throw std::runtime_error("event serialization error");
+
+        std::cout << "deserialized event: " << srl->deserialize(m_conn->get_output_buffer()) << std::endl;
     }
 
     // inherited from packet_handler
@@ -68,6 +73,7 @@ public:
         if (!data.is_valid() || data.get().get_type() != typeid(c_event)) return;
 
         c_event& evt = data.get().get<c_event>();
+        evt.set_originator(this);
         m_evtmgr->trigger_event(&evt);
     }
 };
@@ -424,7 +430,7 @@ bool c_event_manager::open_port(uint16_t port)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (c_listener* l : m_ports)
+    for (listener* l : m_ports)
     {
         if (l->get_port() == port)
         {
@@ -432,11 +438,11 @@ bool c_event_manager::open_port(uint16_t port)
         }
     }
 
-    c_listener* l = new c_listener(port, true);
+    listener* l = new c_listener(port, true);
 
     if (!l->open())
     {
-        l->listener::drop();
+        l->drop();
         return false;
     }
 
@@ -449,13 +455,15 @@ void c_event_manager::close_port(uint16_t port)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    auto l_it = m_ports.begin(), l_end = m_ports.end();
-    for (; l_it != l_end; ++l_it)
+    auto it = m_ports.begin(), end = m_ports.end();
+    for (; it != end; ++it)
     {
-        if ((*l_it)->get_port() == port)
+        if ((*it)->get_port() == port)
         {
-            (*l_it)->close();
-            (*l_it)->listener::drop();
+            (*it)->close();
+            (*it)->drop();
+            m_ports.erase(it);
+            return;
         }
     }
 }
@@ -464,10 +472,10 @@ void c_event_manager::close_ports()
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (c_listener* l : m_ports)
+    for (listener* l : m_ports)
     {
         l->close();
-        l->listener::drop();
+        l->drop();
     }
 
     m_ports.clear();
@@ -480,7 +488,8 @@ event_dispatcher* c_event_manager::connect(std::string addr, uint16_t port)
 
 enumerator<event_dispatcher*> c_event_manager::get_connections()
 {
-    return m_conns; // TODO: make it mutex protected!
+    //return m_conns; // TODO: make it mutex protected!
+    return {};
 }
 
 c_event_manager::operator event_dispatcher*()
@@ -578,27 +587,27 @@ void c_event_manager::handle_connection_open(connection* conn)
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     remote_event_dispatcher* disp = new remote_event_dispatcher(this, conn);
-    m_conns.push_back(disp);
+    //m_conns.insert(std::make_pair(conn, disp));
+    m_conns[conn] = disp;
 }
 
 void c_event_manager::handle_connection_close(connection* conn)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (auto it = m_conns.begin(); it != m_conns.end(); ++it)
+    auto it = m_conns.find(conn);
+    if (it != m_conns.end())
     {
-        if ((*it)->get_port() == conn->get_port() &&
-            (*it)->get_address() == conn->get_address())
-        {
-            (*it)->drop();
-            it = m_conns.erase(it);
-            continue;
-        }
+        it->second->drop();
+        m_conns.erase(it);
+        return;
     }
 }
 
-void c_event_manager::handle_packet(connection* conn)
+/*void c_event_manager::handle_packet(connection* conn)
 {
+    std::cout << "c_event_manager: handle packet" << std::endl;
+
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     optional<var> data = m_app->get_serializer()->deserialize(conn->get_input_buffer());
@@ -606,14 +615,11 @@ void c_event_manager::handle_packet(connection* conn)
 
     c_event& evt = data.get().get<c_event>();
 
-    for (event_dispatcher* disp : m_conns)
+    auto it = m_conns.find(conn);
+    if (it != m_conns.end())
     {
-        if (disp->get_port() == conn->get_port() &&
-            disp->get_address() == conn->get_address())
-        {
-            evt.set_originator(disp);
-            this->trigger_event(&evt); // should be able to push_event instead!
-            return;
-        }
+        evt.set_originator(it->second);
+        this->trigger_event(&evt);
+        return;
     }
-}
+}*/

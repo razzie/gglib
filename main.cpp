@@ -27,9 +27,8 @@ int main()
     });
     evtmgr->open_port(9999);
     gg::event_dispatcher* evtd = evtmgr->connect("127.0.0.1", 9999);
-    //evtd->push_event("test_event_type", {{"arg1", 123}, {"arg2", std::string("abc")}, {"arg3", test {4,5,6}}});
+    evtd->push_event("test_event_type", {{"arg1", 123}, {"arg2", std::string("abc")}/*, {"arg3", test {4,5,6}}*/});
     //evtd->drop();
-
 
 
     gg::console* con = app->create_console();

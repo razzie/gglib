@@ -155,7 +155,7 @@ void c_serializer::add_rule_ex(typeinfo ti, serializer_func_ex sfunc, deserializ
     if (m_rules.count(ti.get_hash()) > 0)
         throw std::runtime_error("rule already added");
 
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     auto r = m_rules.insert( std::make_pair(ti.get_hash(), rule {ti, sfunc, dfunc}) );
 
@@ -172,7 +172,7 @@ void c_serializer::add_rule(typeinfo ti, serializer_func sfunc, deserializer_fun
 
 void c_serializer::remove_rule(typeinfo ti)
 {
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     auto pos = m_rules.find(ti.get_hash());
     if (pos != m_rules.end())
@@ -188,7 +188,7 @@ bool c_serializer::serialize(const var& v, buffer* buf) const
     size_t hash = typeinfo(v.get_type()).get_hash();
 
     grab_guard bufgrab(buf);
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     c_buffer tmpbuf;
 
@@ -211,7 +211,7 @@ optional<var> c_serializer::deserialize(buffer* buf) const
     if (buf == nullptr || buf->available() < sizeof(size_t)) return {};
 
     grab_guard bufgrab(buf);
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     safe_buffer sbuf(buf);
 
