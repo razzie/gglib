@@ -243,8 +243,6 @@ c_event::c_event(event_dispatcher* orig, buffer* buf, const serializer* s) // de
         optional<var> attr = deserialize_string(buf);
         optional<var> val = s->deserialize(buf);
 
-        std::cout << "attr: " << attr << ", val: " << val << std::endl;
-
         if (!attr.is_valid() || !val.is_valid()
             || attr->get_type() != typeid(std::string))
             throw std::runtime_error("unable to deserialize event");
