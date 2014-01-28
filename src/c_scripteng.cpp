@@ -29,10 +29,10 @@ console::controller::exec_result
         c_expression e(expr);
         r = m_scripteng->parse_and_exec(expr, out);
 
-        if (r.is_valid() && !r.get().is_empty()
+        if (r.is_valid() && !r->is_empty()
              && out.is_empty() && !e.is_leaf())
         {
-            out << r.get().to_stream();
+            out << r/*->to_stream()*/;
         }
     }
     catch (expression_error& e)

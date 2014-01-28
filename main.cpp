@@ -18,21 +18,21 @@ int main()
     gg::application* app = gg::application::create_instance("test app", 0, 1);
 
 
+    gg::serializer* srl = app->get_serializer();
+    srl->add_trivial_rule<test>();
+
+
     gg::event_manager* evtmgr = app->get_event_manager();
+    evtmgr->open_port(9999);
     evtmgr->add_listener("test_event_type", [](const gg::event& e)->bool
     {
-        std::cout << "originator: " << e.get_originator()->get_address() << " : " << e.get_originator()->get_port()
-                  << "\n" << e.get_attributes() << std::endl;
+        std::cout << "originator: " << e.get_originator()->get_address() << ":" << e.get_originator()->get_port() << "\n" << e << std::endl;
         return true;
     });
-    evtmgr->open_port(9999);
+
     gg::event_dispatcher* evtd = evtmgr->connect("127.0.0.1", 9999);
-    evtd->push_event("test_event_type", {{"arg1", 123}, {"arg2", std::string("abc")}/*, {"arg3", test {4,5,6}}*/});
-    //evtd->drop();
-
-
-    gg::console* con = app->create_console();
-    con->open();
+    evtd->push_event("test_event_type", {{"arg1", 123}, {"arg2", test {4,5,6}}, {"arg3", std::string("abc")}});
+    evtd->drop();
 
 
     app->get_script_engine()->add_function("exit_program",
@@ -58,6 +58,8 @@ int main()
             });
 
 
+    gg::console* con = app->create_console();
+    con->open();
     con->on_close(std::bind(&gg::console::open, con));
 
     return app->start();

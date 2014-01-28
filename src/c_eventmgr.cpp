@@ -55,8 +55,6 @@ public:
 
         if (!srl->serialize(v, m_conn->get_output_buffer()))
             throw std::runtime_error("event serialization error");
-
-        std::cout << "deserialized event: " << srl->deserialize(m_conn->get_output_buffer()) << std::endl;
     }
 
     // inherited from packet_handler
@@ -70,9 +68,9 @@ public:
         serializer* srl = m_evtmgr->get_app()->get_serializer();
         optional<var> data = srl->deserialize(conn->get_input_buffer());
 
-        if (!data.is_valid() || data.get().get_type() != typeid(c_event)) return;
+        if (!data.is_valid() || data->get_type() != typeid(c_event)) return;
 
-        c_event& evt = data.get().get<c_event>();
+        c_event& evt = data->get<c_event>();
         evt.set_originator(this);
         m_evtmgr->trigger_event(&evt);
     }
@@ -153,8 +151,8 @@ optional<var> deserialize_event_type(buffer* buf)
     if (buf->pop(reinterpret_cast<uint8_t*>(&hash_code), sizeof(size_t)) != sizeof(size_t)) return {};
 
     optional<var> opt_name = deserialize_string(buf);
-    if (!opt_name.is_valid() || opt_name.get().get_type() != typeid(std::string)) return {};
-    std::string name = opt_name.get().get<std::string>();
+    if (!opt_name.is_valid() || opt_name->get_type() != typeid(std::string)) return {};
+    std::string name = opt_name->get<std::string>();
 
     if (name.empty()) return event_type(hash_code);
     else return event_type(name);
@@ -175,7 +173,9 @@ optional<var> deserialize_event(buffer* buf, const serializer* s)
 
     try
     {
-        return var(c_event(nullptr, buf, s));
+        var v;
+        v.construct<c_event>(nullptr, buf, s);
+        return std::move(v);
     }
     catch (std::exception& e)
     {
@@ -227,10 +227,10 @@ c_event::c_event(event_dispatcher* orig, buffer* buf, const serializer* s) // de
     m_type = event_type(hash_code);*/
 
     optional<var> opt_event_type = deserialize_event_type(buf);
-    if (!opt_event_type.is_valid() || opt_event_type.get().get_type() != typeid(event_type))
+    if (!opt_event_type.is_valid() || opt_event_type->get_type() != typeid(event_type))
         throw std::runtime_error("unable to deserialize event");
 
-    m_type = opt_event_type.get().get<event_type>();
+    m_type = opt_event_type->get<event_type>();
 
     optional<uint8_t> attrcnt = buf->pop();
     if (!attrcnt.is_valid())
@@ -243,11 +243,13 @@ c_event::c_event(event_dispatcher* orig, buffer* buf, const serializer* s) // de
         optional<var> attr = deserialize_string(buf);
         optional<var> val = s->deserialize(buf);
 
+        std::cout << "attr: " << attr << ", val: " << val << std::endl;
+
         if (!attr.is_valid() || !val.is_valid()
-            || attr.get().get_type() != typeid(std::string))
+            || attr->get_type() != typeid(std::string))
             throw std::runtime_error("unable to deserialize event");
 
-        add(std::move(attr.get().get<std::string>()), std::move(val.get()));
+        add(std::move(attr->get<std::string>()), std::move(*val));
     }
 }
 
@@ -323,7 +325,7 @@ std::ostream& gg::operator<< (std::ostream& o, const event::attribute_list& al)
     o << "[" << it->first << ":" << it->second.to_stream();
     std::for_each(++it, al.end(), [&](const event::attribute& a)
     {
-        o << "," << it->first << ":" << it->second.to_stream();
+        o << "," << a.first << ":" << a.second.to_stream();
     });
     o << "]";
 
@@ -332,6 +334,12 @@ std::ostream& gg::operator<< (std::ostream& o, const event::attribute_list& al)
 
 std::ostream& gg::operator<< (std::ostream& o, const event& e)
 {
+    const event_type& t = e.get_type();
+    const std::string& tname = t.get_name();
+
+    if (!tname.empty()) o << tname;
+    else o << t.get_hash();
+
     return o << e.get_attributes();
 }
 
@@ -603,23 +611,3 @@ void c_event_manager::handle_connection_close(connection* conn)
         return;
     }
 }
-
-/*void c_event_manager::handle_packet(connection* conn)
-{
-    std::cout << "c_event_manager: handle packet" << std::endl;
-
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-    optional<var> data = m_app->get_serializer()->deserialize(conn->get_input_buffer());
-    if (!data.is_valid() || data.get().get_type() != typeid(c_event)) return;
-
-    c_event& evt = data.get().get<c_event>();
-
-    auto it = m_conns.find(conn);
-    if (it != m_conns.end())
-    {
-        evt.set_originator(it->second);
-        this->trigger_event(&evt);
-        return;
-    }
-}*/

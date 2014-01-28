@@ -17,7 +17,7 @@ namespace gg
         uint16_t m_port;
         std::list<connection*> m_conns;
         connection_handler* m_handler;
-        bool m_open;
+        volatile bool m_open;
         bool m_tcp;
         c_thread m_thread;
 
@@ -51,11 +51,12 @@ namespace gg
         packet_handler* m_packet_handler;
         connection_handler* m_conn_handler;
         bool m_client;
-        bool m_open;
+        volatile bool m_open;
         bool m_tcp;
         c_thread m_thread;
 
         void error_close();
+        bool flush_output_buffer();
 
     public:
         c_connection(std::string address, uint16_t port, bool is_tcp);

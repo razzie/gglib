@@ -321,6 +321,8 @@ c_connection::~c_connection()
     close();
     if (m_packet_handler != nullptr) m_packet_handler->drop();
     if (m_conn_handler != nullptr) m_conn_handler->drop();
+    // we need to wait a bit to let the networking thread finish
+    tthread::this_thread::sleep_for(tthread::chrono::milliseconds(100));
 }
 
 listener* c_connection::get_listener()
@@ -486,6 +488,7 @@ void c_connection::close()
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     if (!m_open) return;
 
+    flush_output_buffer();
     error_close();
     return;
 }
@@ -502,24 +505,19 @@ void c_connection::error_close()
     m_open = false;
 }
 
-bool c_connection::run(uint32_t)
+bool c_connection::flush_output_buffer()
 {
-    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-    if (!m_open) return true;
-
-    char buf[2048];
-    int rc;
-
-    if (m_output_buf->available())
+    if (m_open && m_output_buf->available())
     {
         // sending data queued in output buffer
         size_t len = m_output_buf->available();
+        char buf[2048];
         len = m_output_buf->pop(reinterpret_cast<uint8_t*>(buf), (len > sizeof(buf)) ? sizeof(buf) : len);
         size_t bytes_sent = 0;
 
         for (; bytes_sent < len;)
         {
-            rc = ::send(m_socket, &buf[bytes_sent] , len, 0);
+            int rc = ::send(m_socket, &buf[bytes_sent] , len, 0);
             len -= rc;
             bytes_sent += rc;
 
@@ -527,18 +525,29 @@ bool c_connection::run(uint32_t)
             {
                 std::cout << "send error: " << WSAGetLastError() << std::endl;
                 error_close();
-                return true;
+                return false;
             }
         }
     }
+
+    return true;
+}
+
+bool c_connection::run(uint32_t)
+{
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    if (!m_open) return true;
+
+    // sending data queued in output buffer
+    if (!flush_output_buffer()) return true;
 
     // waiting for incoming data
     FD_SET in;
     FD_ZERO(&in);
     FD_SET(m_socket, &in);
-    TIMEVAL timeout = {0, 100000};
+    TIMEVAL timeout = {0, 10000};
 
-    rc = select(0, &in, NULL, NULL, &timeout);
+    int rc = select(0, &in, NULL, NULL, &timeout);
     if (rc == SOCKET_ERROR)
     {
         std::cout << "select error: " << WSAGetLastError() << std::endl;
@@ -551,6 +560,7 @@ bool c_connection::run(uint32_t)
         return false; // skipping recv
     }
 
+    char buf[2048];
     rc = recv(m_socket, buf, sizeof(buf), 0);
     if (rc == SOCKET_ERROR)
     {

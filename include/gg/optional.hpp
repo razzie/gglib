@@ -21,8 +21,8 @@ namespace gg
         optional(Args... args)
          : m_valid(true) { m_val.construct<T>(std::forward<Args>(args)...); }
 
-        optional(T& t)
-         : m_valid(true) { m_val.reference(t); }
+        /*optional(T& t)
+         : m_valid(true) { m_val.reference(t); }*/
 
         optional(const optional& o)
          : m_val(o.m_val), m_valid(o.m_valid) {}
@@ -53,6 +53,13 @@ namespace gg
             return *this;
         }
 
+        optional& reference(T& t)
+        {
+            m_val.reference(t);
+            m_valid = true;
+            return *this;
+        }
+
         T& get()
         {
             if (!m_valid) throw std::runtime_error("getting value of invalid optional<>");
@@ -79,8 +86,8 @@ namespace gg
 
         friend std::ostream& operator<< (std::ostream& o, const optional& opt)
         {
-            if (opt.is_valid()) return o << opt.m_val.to_stream();
-            else return o << "(invalid)";
+            if (opt.is_valid()) return (o << opt->to_stream());
+            else return (o << "(invalid)");
         }
     };
 
