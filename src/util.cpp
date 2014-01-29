@@ -29,6 +29,22 @@ void scope_callback::reset()
 }
 
 
+bool util::is_big_endian()
+{
+    union
+    {
+        uint32_t i;
+        char c[4];
+    } chk = { 0x01020304 };
+
+    return (chk.c[0] == 1);
+}
+
+bool util::is_little_endian()
+{
+    return (!util::is_big_endian());
+}
+
 template std::basic_string<char> trim<char>(std::basic_string<char>, std::locale);
 template std::basic_string<wchar_t> trim<wchar_t>(std::basic_string<wchar_t>, std::locale);
 

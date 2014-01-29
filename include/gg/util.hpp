@@ -2,6 +2,7 @@
 #define GG_UTIL_HPP_INCLUDED
 
 #include <assert.h>
+#include <cstdint>
 #include <locale>
 #include <string>
 #include <vector>
@@ -26,6 +27,38 @@ namespace util
         scope_callback& operator= (std::function<void()> func);
         void reset();
     };
+
+
+    bool is_big_endian();
+    bool is_little_endian();
+
+    template<class T, size_t N = sizeof(T)>
+    T& swap_byte_order(T& t)
+    {
+        uint8_t buf[N];
+        size_t i;
+        for (i = 0; i < N; ++i) buf[i] = reinterpret_cast<uint8_t*>(&t)[i];
+        for (i = N; i > 0; --i) reinterpret_cast<uint8_t*>(&t)[i] = buf[i];
+        return t;
+    }
+
+    template<class T, size_t N = sizeof(T)>
+    T& to_host_byte_order(T& t)
+    {
+        if (!is_big_endian())
+            return swap_byte_order<T, N>(t);
+        else
+            return t;
+    }
+
+    template<class T, size_t N = sizeof(T)>
+    T& to_network_byte_order(T& t)
+    {
+        if (!is_big_endian())
+            return swap_byte_order<T, N>(t);
+        else
+            return t;
+    }
 
 
     template<class T>
