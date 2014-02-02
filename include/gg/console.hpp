@@ -69,7 +69,7 @@ namespace gg
         virtual void open() = 0;
         virtual void close() = 0;
         virtual bool is_opened() const = 0;
-        virtual void on_close(std::function<void(console*)> callback) = 0;
+        virtual void on_close(std::function<void()> callback) = 0;
         virtual output* create_output() = 0;
         virtual void clear() = 0;
     };

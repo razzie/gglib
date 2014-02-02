@@ -60,7 +60,10 @@ int main()
 
     gg::console* con = app->create_console();
     con->open();
-    con->on_close(std::bind(&gg::console::open, con));
+    //con->on_close(std::bind(&gg::console::open, con));
+    con->on_close([]{ gg::console::get_invoker_console()->get_app()->exit(0); });
+    con->drop();
+
 
     return app->start();
 }

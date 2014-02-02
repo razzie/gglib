@@ -127,7 +127,7 @@ void c_console::open()
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     if (m_open) return; // already opened
-	//c_task_manager::async_invoke(std::bind(&c_console::control_thread, this));
+
 	m_thread.add_task(std::bind(&c_console::async_open, this));
 	m_thread.add_persistent_task([&](uint32_t)
     {
@@ -139,6 +139,8 @@ void c_console::open()
 
         return false;
     });
+
+	this->grab();
 }
 
 void c_console::close()
@@ -190,8 +192,10 @@ void c_console::async_close()
     if (m_close_cb)
     {
         recursive_thread_global<console*>::scope invoker(&s_invokers, this);
-        m_close_cb(this);
+        m_close_cb();
     }
+
+    this->drop();
 }
 
 bool c_console::is_opened() const
@@ -199,7 +203,7 @@ bool c_console::is_opened() const
     return m_open;
 }
 
-void c_console::on_close(std::function<void(console*)> callback)
+void c_console::on_close(std::function<void()> callback)
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_close_cb = callback;
@@ -264,10 +268,8 @@ void c_console::clear()
     std::swap(tmp_outp, m_outp);
     m_mutex.unlock();
 
-    for (auto it=tmp_outp.begin(); it!=tmp_outp.end(); it=tmp_outp.erase(it))
-    {
-        (*it)->drop();
-    }
+    for (c_output* o : tmp_outp) o->drop();
+    tmp_outp.clear();
 }
 
 LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
