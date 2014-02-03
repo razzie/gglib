@@ -126,9 +126,6 @@ public:
 };
 
 
-bool serialize_string(const var& v, buffer* buf);
-optional<var> deserialize_string(buffer* buf);
-
 bool serialize_event_type(const var& v, buffer* buf)
 {
     if (buf == nullptr || v.get_type() != typeid(event_type))

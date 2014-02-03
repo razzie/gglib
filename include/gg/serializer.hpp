@@ -70,6 +70,12 @@ namespace gg
             this->add_rule(typeid(T), s, d);
         }
     };
+
+    bool serialize_varlist(const var& v, buffer* buf, const serializer* s);
+    optional<var> deserialize_varlist(buffer* buf, const serializer* s);
+
+    bool serialize_string(const var& v, buffer* buf);
+    optional<var> deserialize_string(buffer* buf);
 };
 
 #endif // GG_SERIALIZER_HPP_INCLUDED

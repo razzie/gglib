@@ -79,7 +79,7 @@ public:
 };
 
 
-bool serialize_varlist(const var& v, buffer* buf, const serializer* s)
+bool gg::serialize_varlist(const var& v, buffer* buf, const serializer* s)
 {
     if (buf == nullptr || s == nullptr || v.get_type() != typeid(varlist)) return false;
 
@@ -96,7 +96,7 @@ bool serialize_varlist(const var& v, buffer* buf, const serializer* s)
     return true;
 }
 
-optional<var> deserialize_varlist(buffer* buf, const serializer* s)
+optional<var> gg::deserialize_varlist(buffer* buf, const serializer* s)
 {
     if (buf == nullptr || s == nullptr || buf->available() < 2) return {};
 
@@ -116,7 +116,7 @@ optional<var> deserialize_varlist(buffer* buf, const serializer* s)
 }
 
 
-bool serialize_string(const var& v, buffer* buf)
+bool gg::serialize_string(const var& v, buffer* buf)
 {
     if (buf == nullptr || v.get_type() != typeid(std::string)) return false;
 
@@ -130,7 +130,7 @@ bool serialize_string(const var& v, buffer* buf)
     return true;
 }
 
-optional<var> deserialize_string(buffer* buf)
+optional<var> gg::deserialize_string(buffer* buf)
 {
     if (buf == nullptr || buf->available() < 2) return {};
 
