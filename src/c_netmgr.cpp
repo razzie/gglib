@@ -256,12 +256,8 @@ bool c_listener::run(uint32_t)
         return true;
     }
 
-    SOCKADDR_STORAGE sockaddr;
-    SOCKET sock;
-    int addrlen = sizeof(SOCKADDR_STORAGE);
-
     // Accept a client socket
-    sock = accept(m_socket, reinterpret_cast<struct sockaddr*>(&sockaddr), &addrlen);
+    SOCKET sock = accept(m_socket, NULL, NULL);
     if (sock == INVALID_SOCKET)
     {
         std::cout << "accept error: " << WSAGetLastError() << std::endl;
@@ -271,7 +267,7 @@ bool c_listener::run(uint32_t)
 
     try
     {
-        connection* conn = new c_connection(this, sock, &sockaddr, m_tcp);
+        connection* conn = new c_connection(this, sock, m_tcp);
         m_conns.push_back(conn);
     }
     catch (std::exception& e) { std::cout << e.what(); }
@@ -295,10 +291,9 @@ c_connection::c_connection(std::string address, uint16_t port, bool is_tcp)
 {
 }
 
-c_connection::c_connection(listener* l, SOCKET sock, SOCKADDR_STORAGE* sockaddr, bool is_tcp)
+c_connection::c_connection(listener* l, SOCKET sock, bool is_tcp)
  : m_listener(l)
  , m_socket(sock)
- , m_sockaddr(*sockaddr)
  , m_input_buf(new c_buffer())
  , m_output_buf(new c_buffer())
  , m_packet_handler(nullptr)
@@ -307,8 +302,11 @@ c_connection::c_connection(listener* l, SOCKET sock, SOCKADDR_STORAGE* sockaddr,
  , m_tcp(is_tcp)
  , m_thread("connection thread")
 {
-    m_address = get_addr_from_sockaddr(sockaddr);
-    m_port = get_port_from_sockaddr(sockaddr);
+    int addrlen = sizeof(SOCKADDR_STORAGE);
+    getpeername(m_socket, reinterpret_cast<struct sockaddr*>(&m_sockaddr), &addrlen);
+
+    m_address = get_addr_from_sockaddr(&m_sockaddr);
+    m_port = get_port_from_sockaddr(&m_sockaddr);
 
     if (m_listener && m_listener->get_connection_handler() != nullptr)
         m_listener->get_connection_handler()->handle_connection_open(this);

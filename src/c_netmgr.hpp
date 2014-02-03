@@ -60,7 +60,7 @@ namespace gg
 
     public:
         c_connection(std::string address, uint16_t port, bool is_tcp);
-        c_connection(listener*, SOCKET, SOCKADDR_STORAGE*, bool is_tcp);
+        c_connection(listener*, SOCKET, bool is_tcp);
         ~c_connection();
         listener* get_listener();
         buffer* get_input_buffer();
