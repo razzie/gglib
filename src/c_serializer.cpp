@@ -79,10 +79,46 @@ public:
 };
 
 
+bool serialize_varlist(const var& v, buffer* buf, const serializer* s)
+{
+    if (buf == nullptr || s == nullptr || v.get_type() != typeid(varlist)) return false;
+
+    const varlist& vl = v.get<varlist>();
+    uint16_t vlsize = vl.size();
+
+    buf->push(reinterpret_cast<const uint8_t*>(&vlsize), sizeof(uint16_t));
+
+    for (const var& subv : vl)
+    {
+        if (!s->serialize(subv, buf)) return false;
+    }
+
+    return true;
+}
+
+optional<var> deserialize_varlist(buffer* buf, const serializer* s)
+{
+    if (buf == nullptr || s == nullptr || buf->available() < 2) return {};
+
+    varlist vl;
+    uint16_t vlsize;
+
+    buf->pop(reinterpret_cast<uint8_t*>(&vlsize), sizeof(uint16_t));
+
+    for (uint16_t i = 0; i < vlsize; ++i)
+    {
+        optional<var> v = s->deserialize(buf);
+        if (!v.is_valid()) return {};
+        vl.push_back(std::move(*v));
+    }
+
+    return std::move(vl);
+}
+
+
 bool serialize_string(const var& v, buffer* buf)
 {
-    if (buf == nullptr || v.is_empty() || v.get_type() != typeid(std::string))
-        return false;
+    if (buf == nullptr || v.get_type() != typeid(std::string)) return false;
 
     grab_guard bufgrab(buf);
     const std::string& str = v.get<std::string>();
@@ -96,8 +132,7 @@ bool serialize_string(const var& v, buffer* buf)
 
 optional<var> deserialize_string(buffer* buf)
 {
-    if (buf == nullptr || buf->available() < 2)
-        return {};
+    if (buf == nullptr || buf->available() < 2) return {};
 
     grab_guard bufgrab(buf);
 
@@ -113,7 +148,7 @@ optional<var> deserialize_string(buffer* buf)
 
 static bool serialize_void(const var& v, buffer* buf)
 {
-    if (buf == nullptr || !v.is_empty()) return false;
+    if (buf == nullptr || v.get_type() != typeid(void)) return false;
     else return true;
 }
 
@@ -137,6 +172,7 @@ c_serializer::c_serializer(application* app)
     add_trivial_rule<uint64_t>();
     add_trivial_rule<float>();
     add_trivial_rule<double>();
+    add_rule_ex(typeid(varlist), serialize_varlist, deserialize_varlist);
     add_rule(typeid(std::string), serialize_string, deserialize_string);
     add_rule(typeid(void), serialize_void, deserialize_void);
 }
