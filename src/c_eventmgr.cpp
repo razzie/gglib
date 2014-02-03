@@ -43,13 +43,13 @@ public:
     std::string get_address() const { return m_conn->get_address(); }
     uint16_t get_port() const { return m_conn->get_port(); }
 
-    void push_event(event_type t, std::initializer_list<event::attribute> il)
+    void push_event(event_type t, event::attribute_list al)
     {
         tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
         serializer* srl = m_evtmgr->get_app()->get_serializer();
 
-        c_event e(this, t, il);
+        c_event e(this, t, std::forward<event::attribute_list>(al));
         var v;
         v.reference(e);
 
@@ -88,7 +88,7 @@ public:
     bool is_connected() const { return true; }
     std::string get_address() const { return "localhost"; }
     uint16_t get_port() const { return 0; }
-    void push_event(event_type t, std::initializer_list<event::attribute> il) { m_evtmgr->push_event(t, il); }
+    void push_event(event_type t, event::attribute_list al) { m_evtmgr->push_event(t, std::forward<event::attribute_list>(al)); }
 };
 
 class event_task : public task
@@ -100,9 +100,9 @@ public:
     event_task(c_event_manager* evtmgr,
                event_dispatcher* orig,
                event_type t,
-               std::initializer_list<event::attribute> il)
+               event::attribute_list al)
      : m_evtmgr(evtmgr)
-     , m_evt((orig == nullptr ? new local_event_dispatcher(evtmgr) : orig), t, il)
+     , m_evt((orig == nullptr ? new local_event_dispatcher(evtmgr) : orig), t, std::forward<event::attribute_list>(al))
     {
     }
 
@@ -184,10 +184,10 @@ optional<var> deserialize_event(buffer* buf, const serializer* s)
 }
 
 
-c_event::c_event(event_dispatcher* orig, event_type t, std::initializer_list<attribute> il)
+c_event::c_event(event_dispatcher* orig, event_type t, event::attribute_list&& al)
  : m_orig(orig)
  , m_type(t)
- , m_attributes(il)
+ , m_attributes(al)
 {
     if (m_orig != nullptr) m_orig->grab();
 }
@@ -535,27 +535,27 @@ void c_event_manager::remove_listener(event_type t, event_listener* l)
     }
 }
 
-void c_event_manager::push_event(event_type t, std::initializer_list<event::attribute> il)
+void c_event_manager::push_event(event_type t, event::attribute_list al)
 {
-    this->push_event(t, il, nullptr);
+    this->push_event(t, std::forward<event::attribute_list>(al), nullptr);
 }
 
-void c_event_manager::push_event(event_type t, std::initializer_list<event::attribute> il, event_dispatcher* orig)
+void c_event_manager::push_event(event_type t, event::attribute_list al, event_dispatcher* orig)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
-    m_thread.add_task( new event_task(this, orig, t, il) );
+    m_thread.add_task( new event_task(this, orig, t, std::forward<event::attribute_list>(al)) );
 }
 
-bool c_event_manager::trigger_event(event_type t, std::initializer_list<event::attribute> il)
+bool c_event_manager::trigger_event(event_type t, event::attribute_list al)
 {
     local_event_dispatcher orig(this);
-    c_event evt(&orig, t, il);
+    c_event evt(&orig, t, std::forward<event::attribute_list>(al));
     return this->trigger_event(&evt);
 }
 
-bool c_event_manager::trigger_event(event_type t, std::initializer_list<event::attribute> il, event_dispatcher* orig)
+bool c_event_manager::trigger_event(event_type t, event::attribute_list al, event_dispatcher* orig)
 {
-    c_event evt(orig, t, il);
+    c_event evt(orig, t, std::forward<event::attribute_list>(al));
     return this->trigger_event(&evt);
 }
 

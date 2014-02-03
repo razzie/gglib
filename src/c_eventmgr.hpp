@@ -17,7 +17,7 @@ namespace gg
         attribute_list m_attributes;
 
     public:
-        c_event(event_dispatcher*, event_type, std::initializer_list<attribute> = {});
+        c_event(event_dispatcher*, event_type, event::attribute_list&& = {});
         c_event(event_dispatcher*, buffer*, const serializer*); // deserialize
         c_event(const c_event&);
         c_event(c_event&&);
@@ -56,10 +56,10 @@ namespace gg
         event_listener* add_listener(event_type, event_callback);
         void add_listener(event_type, event_listener*);
         void remove_listener(event_type, event_listener*);
-        void push_event(event_type, std::initializer_list<event::attribute>);
-        void push_event(event_type, std::initializer_list<event::attribute>, event_dispatcher*);
-        bool trigger_event(event_type, std::initializer_list<event::attribute>);
-        bool trigger_event(event_type, std::initializer_list<event::attribute>, event_dispatcher*);
+        void push_event(event_type, event::attribute_list);
+        void push_event(event_type, event::attribute_list, event_dispatcher*);
+        bool trigger_event(event_type, event::attribute_list);
+        bool trigger_event(event_type, event::attribute_list, event_dispatcher*);
         bool trigger_event(const event*);
 
         // inherited from connection_handler and packet_handler

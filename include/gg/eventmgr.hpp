@@ -6,7 +6,6 @@
 #include <string>
 #include <map>
 #include <list>
-#include <initializer_list>
 #include <functional>
 #include "gg/refcounted.hpp"
 #include "gg/var.hpp"
@@ -91,7 +90,7 @@ namespace gg
         virtual bool is_connected() const = 0;
         virtual std::string get_address() const = 0;
         virtual uint16_t get_port() const = 0;
-        virtual void push_event(event_type, std::initializer_list<event::attribute>) = 0;
+        virtual void push_event(event_type, event::attribute_list) = 0;
     };
 
     class event_manager
@@ -109,8 +108,8 @@ namespace gg
         virtual event_listener* add_listener(event_type, event_callback) = 0;
         virtual void add_listener(event_type, event_listener*) = 0;
         virtual void remove_listener(event_type, event_listener*) = 0;
-        virtual void push_event(event_type, std::initializer_list<event::attribute>) = 0;
-        virtual bool trigger_event(event_type, std::initializer_list<event::attribute>) = 0;
+        virtual void push_event(event_type, event::attribute_list) = 0;
+        virtual bool trigger_event(event_type, event::attribute_list) = 0;
 
     protected:
         virtual ~event_manager() {}
