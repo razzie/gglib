@@ -29,6 +29,12 @@ namespace gg
             ~comparator() = default;
             bool operator() (const id&, const id&) const;
         };
+
+        enum : uint32_t
+        {
+            any = 0xffffffff,
+            invalid = 0x00000000
+        };
     };
 
     class id_generator

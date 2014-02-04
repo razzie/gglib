@@ -303,7 +303,8 @@ c_connection::c_connection(listener* l, SOCKET sock, bool is_tcp)
  , m_thread("connection thread")
 {
     int addrlen = sizeof(SOCKADDR_STORAGE);
-    getpeername(m_socket, reinterpret_cast<struct sockaddr*>(&m_sockaddr), &addrlen);
+    if (getpeername(m_socket, reinterpret_cast<struct sockaddr*>(&m_sockaddr), &addrlen) == SOCKET_ERROR)
+        throw std::runtime_error("unable to initialize connection by socket");
 
     m_address = get_addr_from_sockaddr(&m_sockaddr);
     m_port = get_port_from_sockaddr(&m_sockaddr);

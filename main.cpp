@@ -42,18 +42,18 @@ int main()
             [](std::string str) { return str; });
 
     app->get_script_engine()->add_function("is_integer",
-            [](std::string i){ return (gg::util::is_integer(i) ? "true" : "false"); },
+            [](std::string i) { return (gg::util::is_integer(i) ? "true" : "false"); },
             true);
 
     app->get_script_engine()->add_function("is_float",
-            [](std::string i){ return (gg::util::is_float(i) ? "true" : "false"); },
+            [](std::string i) { return (gg::util::is_float(i) ? "true" : "false"); },
             true);
 
     app->get_script_engine()->add_function("sum",
             [](gg::varlist vl)
             {
                 int sum = 0;
-                for (auto v : vl) sum += v.cast<int>();
+                for (auto& v : vl) sum += v.cast<int>();
                 return sum;
             });
 

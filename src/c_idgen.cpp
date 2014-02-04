@@ -34,12 +34,16 @@ id& id::operator= (const id& _id)
 
 bool id::operator== (const id& _id) const
 {
-    return (m_id == _id.m_id);
+    //return (m_id == _id.m_id);
+    if (m_id == id::any || _id.m_id == id::any) return true;
+    else if (m_id == id::invalid || _id.m_id == id::invalid) return false;
+    else return (m_id == _id.m_id);
 }
 
 bool id::operator!= (const id& _id) const
 {
-    return (m_id != _id.m_id);
+    //return (m_id != _id.m_id);
+    return !(*this == _id);
 }
 
 id::operator uint32_t() const
@@ -49,7 +53,7 @@ id::operator uint32_t() const
 
 std::string id::get_hex() const
 {
-    static const char hex_table[] = "0123456789ABCDEF";
+    const char hex_table[] = "0123456789ABCDEF";
 
     auto tmp_id = m_id;
     std::string hex;
