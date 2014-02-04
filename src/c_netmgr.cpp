@@ -268,12 +268,18 @@ bool c_listener::run(uint32_t)
     try
     {
         connection* conn = new c_connection(this, sock, m_tcp);
-        m_conns.push_back(conn);
+        m_conns.insert(conn);
     }
     catch (std::exception& e) { std::cout << e.what(); }
     catch (...) {}
 
     return false;
+}
+
+void c_listener::detach_connection(connection* conn)
+{
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    m_conns.erase(conn);
 }
 
 
@@ -291,7 +297,7 @@ c_connection::c_connection(std::string address, uint16_t port, bool is_tcp)
 {
 }
 
-c_connection::c_connection(listener* l, SOCKET sock, bool is_tcp)
+c_connection::c_connection(c_listener* l, SOCKET sock, bool is_tcp)
  : m_listener(l)
  , m_socket(sock)
  , m_input_buf(new c_buffer())
@@ -405,7 +411,7 @@ bool c_connection::is_opened() const
 bool c_connection::open()
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-    if (m_open || (!m_open && m_client)) return false;
+    if (m_open || (!m_open && m_listener != nullptr)) return false; // can't reopen if already opened or is a client
 
     char port_str[6];
     std::sprintf(port_str, "%d", m_port);
@@ -494,11 +500,14 @@ void c_connection::close()
 
 void c_connection::error_close()
 {
-    if (m_listener && m_listener->get_connection_handler() != nullptr)
+    if (m_listener != nullptr && m_listener->get_connection_handler() != nullptr)
         m_listener->get_connection_handler()->handle_connection_close(this);
 
     if (m_conn_handler != nullptr)
         m_conn_handler->handle_connection_close(this);
+
+    if (m_listener != nullptr)
+        m_listener->detach_connection(this);
 
     closesocket(m_socket);
     m_open = false;
@@ -569,12 +578,13 @@ bool c_connection::run(uint32_t)
     }
     else if (rc == 0)
     {
-        std::cout << "connection closed from remote end" << std::endl;
+        // connection closed from remote end
         error_close();
         return true;
     }
     else
     {
+        // incoming data
         m_input_buf->push(reinterpret_cast<uint8_t*>(buf), rc);
         if (m_packet_handler != nullptr) m_packet_handler->handle_packet(this);
         return false;

@@ -1,7 +1,7 @@
 #ifndef C_NETMGR_HPP_INCLUDED
 #define C_NETMGR_HPP_INCLUDED
 
-#include <list>
+#include <set>
 #include <winsock2.h>
 #include "tinythread.h"
 #include "gg/netmgr.hpp"
@@ -15,7 +15,7 @@ namespace gg
         SOCKET m_socket;
         SOCKADDR_STORAGE m_sockaddr;
         uint16_t m_port;
-        std::list<connection*> m_conns;
+        std::set<connection*> m_conns;
         connection_handler* m_handler;
         volatile bool m_open;
         bool m_tcp;
@@ -36,12 +36,13 @@ namespace gg
         bool open();
         void close();
         bool run(uint32_t); // inherited from gg::task
+        void detach_connection(connection*);
     };
 
     class c_connection : public connection, public task
     {
         mutable tthread::recursive_mutex m_mutex;
-        listener* m_listener;
+        c_listener* m_listener;
         SOCKET m_socket;
         SOCKADDR_STORAGE m_sockaddr;
         std::string m_address;
@@ -50,7 +51,6 @@ namespace gg
         buffer* m_output_buf;
         packet_handler* m_packet_handler;
         connection_handler* m_conn_handler;
-        bool m_client;
         volatile bool m_open;
         bool m_tcp;
         c_thread m_thread;
@@ -60,7 +60,7 @@ namespace gg
 
     public:
         c_connection(std::string address, uint16_t port, bool is_tcp);
-        c_connection(listener*, SOCKET, bool is_tcp);
+        c_connection(c_listener*, SOCKET, bool is_tcp);
         ~c_connection();
         listener* get_listener();
         buffer* get_input_buffer();
