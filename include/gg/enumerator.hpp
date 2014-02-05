@@ -29,6 +29,9 @@ namespace gg
             virtual enumerator_impl_base* clone() const = 0;
         };
 
+        enumerator_impl_base* m_enum;
+
+
         template<class iterator> using compatible_iterator =
             typename std::enable_if<std::is_same<T, typename iterator::value_type>::value>::type;
 
@@ -117,19 +120,34 @@ namespace gg
             optional<T> get() const { if (!is_finished()) return *m_current; else return {}; }
         };
 
-        enumerator_impl_base* m_enum;
+        template<class container, class iterator = typename container::iterator>
+        class container_holder_enumerator_impl : public container_enumerator_impl<container, iterator>
+        {
+            container m_cont_holder;
+
+        public:
+            container_holder_enumerator_impl(container&& c)
+             : m_cont_holder(c), container_enumerator_impl<container, iterator>(m_cont_holder) {}
+        };
+
+        template<class U> using disable_reference =
+            typename std::enable_if<!std::is_reference<U>::value>::type;
 
     public:
         template<class iterator>
         const_enumerator(iterator begin, iterator end) : m_enum(new enumerator_impl<iterator>(begin, end)) {}
 
-        template<class container>
+        template<class container, class = disable_reference<container>>
         const_enumerator(container& cont, non_const_container<container>* = 0)
          : m_enum(new container_enumerator_impl<container>(cont)) {}
 
-        template<class container>
+        template<class container, class = disable_reference<container>>
         const_enumerator(container& cont, const_container<container>* = 0)
          : m_enum(new const_container_enumerator_impl<container>(cont)) {}
+
+        template<class container, class = disable_reference<container>>
+        const_enumerator(container&& cont)
+         : m_enum(new container_holder_enumerator_impl<container>(cont)) {}
 
         const_enumerator() : m_enum(nullptr) {}
         const_enumerator(const const_enumerator& e) { m_enum = ((e.m_enum == nullptr) ? nullptr : e.m_enum->clone()); }
@@ -157,8 +175,11 @@ namespace gg
         template<class iterator>
         enumerator(iterator begin, iterator end) : const_enumerator<T>(begin, end) {}
 
-        template<class container>
+        template<class container, class = const_enumerator<T>::disable_reference<container>>
         enumerator(container& cont) : const_enumerator<T>(cont) {}
+
+        template<class container, class = const_enumerator<T>::disable_reference<container>>
+        enumerator(container&& cont) : const_enumerator<T>(cont) {}
 
         enumerator() {}
         enumerator(const enumerator& e) { this->m_enum = ((e.m_enum == nullptr) ? nullptr : e.m_enum->clone()); }
