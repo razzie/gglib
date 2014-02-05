@@ -21,17 +21,6 @@ namespace gg
         uint32_t get_ref_count() const;
     };
 
-    class grab_guard
-    {
-        const reference_counted* m_obj;
-
-    public:
-        grab_guard(const reference_counted*);
-        grab_guard(const grab_guard&) = delete;
-        grab_guard(grab_guard&&) = delete;
-        ~grab_guard();
-    };
-
     template<class T>
     using reference_counted_type =
         typename std::enable_if<std::is_base_of<reference_counted, T>::value>::type;
@@ -65,6 +54,51 @@ namespace gg
         o->drop();
         return (refc == 1) ? nullptr : o;
     }
+
+    template<class T, class = reference_counted_type<T>>
+    class grab_ptr
+    {
+        T* m_obj;
+
+    public:
+        grab_ptr() : m_obj(nullptr) {}
+        grab_ptr(T* t) : m_obj(t) {}
+        grab_ptr(const grab_ptr& p) : m_obj(p.m_obj) { if (m_obj != nullptr) m_obj->grab(); }
+        grab_ptr(grab_ptr&& p) : m_obj(p.m_obj) { p.m_obj = nullptr; }
+
+        grab_ptr& operator= (T* t)
+        {
+            if (m_obj != nullptr) m_obj->drop();
+            m_obj = t;
+            return *this;
+        }
+        grab_ptr& operator= (const grab_ptr& p)
+        {
+            if (m_obj != nullptr) m_obj->drop();
+            m_obj = p.m_obj;
+            if (m_obj != nullptr) m_obj->grab();
+            return *this;
+        }
+        grab_ptr& operator= (grab_ptr&& p)
+        {
+            //std::swap(m_obj, p.m_pbj);
+            T* tmp = m_obj;
+            m_obj = p.m_obj;
+            p.m_obj = tmp;
+            return *this;
+        }
+
+        operator T* () { return m_obj; }
+        operator const T* () const { return m_obj; }
+
+        T& operator* () { return m_obj; }
+        const T& operator* () const { return m_obj; }
+
+        T* operator-> () { return m_obj; }
+        const T* operator-> () const { return m_obj; }
+    };
+
+    typedef grab_ptr<const reference_counted> grab_guard;
 
     template<class T, class = reference_counted_type<T>>
     class auto_drop
