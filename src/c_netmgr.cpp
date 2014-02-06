@@ -5,6 +5,7 @@
 #include <stdexcept>
 #include "c_netmgr.hpp"
 #include "c_buffer.hpp"
+#include "enumutil.hpp"
 
 using namespace gg;
 
@@ -140,6 +141,19 @@ connection_handler* c_listener::get_connection_handler() const
     return m_handler;
 }
 
+enumerator<connection*> c_listener::get_connections()
+{
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+
+    std::list<grab_ptr<connection>> tmplist;
+    for (connection* conn : m_conns) tmplist.push_back(conn);
+
+    conversion_container<decltype(tmplist), connection*> convlist(
+        std::move(tmplist), [](grab_ptr<connection>& it)->connection*& { return it; });
+
+    return std::move(convlist);
+}
+
 void c_listener::send_to_all(buffer* buf)
 {
     grab_guard bufgrab(buf);
@@ -163,6 +177,8 @@ bool c_listener::open()
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     if (m_open) return false;
 
+    clear_last_error();
+
     char port_str[6];
     std::sprintf(port_str, "%d", m_port);
     struct addrinfo hints, *result = NULL, *ptr = NULL;
@@ -178,7 +194,7 @@ bool c_listener::open()
     // Resolve the local address and port to be used by the server
     if (getaddrinfo(NULL, port_str, &hints, &result) != 0)
     {
-        std::cout << "getaddrinfo error: " << WSAGetLastError() << std::endl;
+        m_err << "getaddrinfo error: " << WSAGetLastError() << std::endl;
         return false;
     }
 
@@ -191,7 +207,7 @@ bool c_listener::open()
         m_socket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
         if (m_socket == INVALID_SOCKET)
         {
-            std::cout << "socket error: " << WSAGetLastError() << std::endl;
+            m_err << "socket error: " << WSAGetLastError() << std::endl;
             continue;
         }
 
@@ -199,7 +215,7 @@ bool c_listener::open()
         if (bind(m_socket, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR)
         {
             closesocket(m_socket);
-            std::cout << "bind error: " << WSAGetLastError() << std::endl;
+            m_err << "bind error: " << WSAGetLastError() << std::endl;
             continue;
         }
     }
@@ -222,8 +238,21 @@ void c_listener::close()
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     if (!m_open) return;
 
+    clear_last_error();
     error_close();
     return;
+}
+
+std::string c_listener::get_last_error() const
+{
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    return m_err.str();
+}
+
+void c_listener::clear_last_error()
+{
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    m_err.str(std::string());
 }
 
 void c_listener::error_close()
@@ -235,7 +264,7 @@ void c_listener::error_close()
             c->close(); // handle_connection_close will be called
             c->drop();
         }
-        catch (std::exception& e) { std::cout << e.what(); }
+        catch (std::exception& e) { m_err << e.what() << std::endl; }
         catch (...) {}
     }
 
@@ -251,7 +280,7 @@ bool c_listener::run(uint32_t)
 
     if (listen(m_socket, SOMAXCONN) == SOCKET_ERROR)
     {
-        std::cout << "listen error: " << WSAGetLastError() << std::endl;
+        m_err << "listen error: " << WSAGetLastError() << std::endl;
         error_close();
         return true;
     }
@@ -260,7 +289,7 @@ bool c_listener::run(uint32_t)
     SOCKET sock = accept(m_socket, NULL, NULL);
     if (sock == INVALID_SOCKET)
     {
-        std::cout << "accept error: " << WSAGetLastError() << std::endl;
+        m_err << "accept error: " << WSAGetLastError() << std::endl;
         error_close();
         return true;
     }
@@ -270,7 +299,7 @@ bool c_listener::run(uint32_t)
         connection* conn = new c_connection(this, sock, m_tcp);
         m_conns.insert(conn);
     }
-    catch (std::exception& e) { std::cout << e.what(); }
+    catch (std::exception& e) { m_err << e.what() << std::endl; }
     catch (...) {}
 
     return false;
@@ -413,6 +442,8 @@ bool c_connection::open()
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     if (m_open || (!m_open && m_listener != nullptr)) return false; // can't reopen if already opened or is a client
 
+    clear_last_error();
+
     char port_str[6];
     std::sprintf(port_str, "%d", m_port);
     struct addrinfo hints, *result = NULL, *ptr = NULL;
@@ -428,7 +459,7 @@ bool c_connection::open()
     // Resolve the server address and port
     if (getaddrinfo(m_address.c_str(), port_str, &hints, &result) != 0)
     {
-        std::cout << "getaddrinfo error: " << WSAGetLastError() << std::endl;
+        m_err << "getaddrinfo error: " << WSAGetLastError() << std::endl;
         return false;
     }
 
@@ -442,7 +473,7 @@ bool c_connection::open()
         m_socket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
         if (m_socket == INVALID_SOCKET)
         {
-            std::cout << "socket error: " << WSAGetLastError() << std::endl;
+            m_err << "socket error: " << WSAGetLastError() << std::endl;
             continue;
         }
 
@@ -451,7 +482,7 @@ bool c_connection::open()
             // Connect to server.
             if (connect(m_socket, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR)
             {
-                std::cout << "connect error: " << WSAGetLastError() << std::endl;
+                m_err << "connect error: " << WSAGetLastError() << std::endl;
                 closesocket(m_socket);
                 m_socket = INVALID_SOCKET;
                 continue;
@@ -461,7 +492,7 @@ bool c_connection::open()
         {
             if (bind(m_socket, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR)
             {
-                std::cout << "bind error: " << WSAGetLastError() << std::endl;
+                m_err << "bind error: " << WSAGetLastError() << std::endl;
                 closesocket(m_socket);
                 m_socket = INVALID_SOCKET;
                 continue;
@@ -493,9 +524,22 @@ void c_connection::close()
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     if (!m_open) return;
 
+    clear_last_error();
     flush_output_buffer();
     error_close();
     return;
+}
+
+std::string c_connection::get_last_error() const
+{
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    return m_err.str();
+}
+
+void c_connection::clear_last_error()
+{
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    m_err.str(std::string());
 }
 
 void c_connection::error_close()
@@ -531,7 +575,7 @@ bool c_connection::flush_output_buffer()
 
             if (rc == SOCKET_ERROR)
             {
-                std::cout << "send error: " << WSAGetLastError() << std::endl;
+                m_err << "send error: " << WSAGetLastError() << std::endl;
                 error_close();
                 return false;
             }
@@ -558,7 +602,7 @@ bool c_connection::run(uint32_t)
     int rc = select(0, &in, NULL, NULL, &timeout);
     if (rc == SOCKET_ERROR)
     {
-        std::cout << "select error: " << WSAGetLastError() << std::endl;
+        m_err << "select error: " << WSAGetLastError() << std::endl;
         error_close();
         return true;
     }
@@ -572,7 +616,7 @@ bool c_connection::run(uint32_t)
     rc = recv(m_socket, buf, sizeof(buf), 0);
     if (rc == SOCKET_ERROR)
     {
-        std::cout << "recv error: " << WSAGetLastError() << std::endl;
+        m_err << "recv error: " << WSAGetLastError() << std::endl;
         error_close();
         return true;
     }

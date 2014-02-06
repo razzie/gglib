@@ -5,6 +5,7 @@
 #include <functional>
 #include "gg/refcounted.hpp"
 #include "gg/buffer.hpp"
+#include "gg/enumerator.hpp"
 
 namespace gg
 {
@@ -29,11 +30,13 @@ namespace gg
         virtual void set_connection_handler(connection_handler*) = 0;
         virtual void set_connection_handler(std::function<void(connection*, bool is_opened)>) = 0;
         virtual connection_handler* get_connection_handler() const = 0;
+        virtual enumerator<connection*> get_connections() = 0;
         virtual void send_to_all(buffer*) = 0;
         virtual void send_to_all(uint8_t*, size_t) = 0;
         virtual bool is_opened() const = 0;
         virtual bool open() = 0;
         virtual void close() = 0;
+        virtual std::string get_last_error() const = 0;
     };
 
     class packet_handler : public reference_counted
@@ -66,6 +69,7 @@ namespace gg
         virtual bool is_opened() const = 0;
         virtual bool open() = 0;
         virtual void close() = 0;
+        virtual std::string get_last_error() const = 0;
     };
 
     class network_manager
