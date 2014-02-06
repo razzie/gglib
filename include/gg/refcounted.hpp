@@ -88,8 +88,8 @@ namespace gg
             return *this;
         }
 
-        operator T* () { return m_obj; }
-        operator const T* () const { return m_obj; }
+        operator T*& () { return m_obj; }
+        operator const T*& () const { return m_obj; }
 
         T& operator* () { return m_obj; }
         const T& operator* () const { return m_obj; }
