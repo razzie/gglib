@@ -4,6 +4,7 @@
 #include "c_eventmgr.hpp"
 #include "c_netmgr.hpp"
 #include "gg/application.hpp"
+#include "enumutil.hpp"
 
 using namespace gg;
 
@@ -491,8 +492,15 @@ event_dispatcher* c_event_manager::connect(std::string addr, uint16_t port)
 
 enumerator<event_dispatcher*> c_event_manager::get_connections()
 {
-    //return m_conns; // TODO: make it mutex protected!
-    return {};
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+
+    std::list<grab_ptr<event_dispatcher>> tmplist;
+    for (auto& it : m_conns) tmplist.push_back(it.second);
+
+    conversion_container<decltype(tmplist), event_dispatcher*> convlist(
+        std::move(tmplist), [](grab_ptr<event_dispatcher>& it)->event_dispatcher*& { return it; });
+
+    return std::move(convlist);
 }
 
 c_event_manager::operator event_dispatcher*()
