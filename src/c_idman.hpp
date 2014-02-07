@@ -1,15 +1,15 @@
-#ifndef C_IDGEN_HPP_INCLUDED
-#define C_IDGEN_HPP_INCLUDED
+#ifndef C_IDMAN_HPP_INCLUDED
+#define C_IDMAN_HPP_INCLUDED
 
 #include <climits>
 #include <random>
 #include <set>
 #include "tinythread.h"
-#include "gg/id.hpp"
+#include "gg/idman.hpp"
 
 namespace gg
 {
-    class c_id_generator : public id_generator
+    class c_id_manager : public id_manager
     {
         mutable tthread::mutex m_mutex;
         mutable application* m_app;
@@ -19,8 +19,8 @@ namespace gg
         mutable std::uniform_int_distribution<uint32_t> m_dis;
 
     public:
-        c_id_generator(application*);
-        ~c_id_generator();
+        c_id_manager(application*);
+        ~c_id_manager();
         application* get_app() const;
         id get_random_id() const;
         id get_unique_id();
@@ -30,4 +30,4 @@ namespace gg
     };
 };
 
-#endif // C_IDGEN_HPP_INCLUDED
+#endif // C_IDMAN_HPP_INCLUDED

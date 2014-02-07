@@ -1,5 +1,5 @@
-#ifndef GG_ID_HPP_INCLUDED
-#define GG_ID_HPP_INCLUDED
+#ifndef GG_IDMAN_HPP_INCLUDED
+#define GG_IDMAN_HPP_INCLUDED
 
 #include <cstdint>
 #include <string>
@@ -37,10 +37,10 @@ namespace gg
         };
     };
 
-    class id_generator
+    class id_manager
     {
     public:
-        virtual ~id_generator() {}
+        virtual ~id_manager() {}
         virtual application* get_app() const = 0;
         virtual id get_random_id() const = 0;
         virtual id get_unique_id() = 0;
@@ -50,4 +50,4 @@ namespace gg
     };
 };
 
-#endif // GG_ID_HPP_INCLUDED
+#endif // GG_IDMAN_HPP_INCLUDED

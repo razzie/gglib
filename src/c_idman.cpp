@@ -1,5 +1,5 @@
 #include <stdexcept>
-#include "c_idgen.hpp"
+#include "c_idman.hpp"
 #include "gg/var.hpp"
 #include "gg/optional.hpp"
 #include "gg/serializer.hpp"
@@ -91,7 +91,7 @@ optional<var> deserialize_id(buffer* buf)
 }
 
 
-c_id_generator::c_id_generator(application* app)
+c_id_manager::c_id_manager(application* app)
  : m_app(app)
  //, m_gen(m_rd())
  , m_dis(0, UINT_MAX)
@@ -99,21 +99,21 @@ c_id_generator::c_id_generator(application* app)
     m_app->get_serializer()->add_rule<id>(serialize_id, deserialize_id);
 }
 
-c_id_generator::~c_id_generator()
+c_id_manager::~c_id_manager()
 {
 }
 
-application* c_id_generator::get_app() const
+application* c_id_manager::get_app() const
 {
     return m_app;
 }
 
-id c_id_generator::get_random_id() const
+id c_id_manager::get_random_id() const
 {
     return m_dis(m_gen);
 }
 
-id c_id_generator::get_unique_id()
+id c_id_manager::get_unique_id()
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
@@ -128,20 +128,20 @@ id c_id_generator::get_unique_id()
     return _id;
 }
 
-bool c_id_generator::reserve_id(id _id)
+bool c_id_manager::reserve_id(id _id)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
     auto ret = m_ids.insert(_id);
     return ret.second;
 }
 
-void c_id_generator::release_id(id _id)
+void c_id_manager::release_id(id _id)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
     m_ids.erase(_id);
 }
 
-bool c_id_generator::is_unique(id _id) const
+bool c_id_manager::is_unique(id _id) const
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
     return (m_ids.count(_id) > 0);

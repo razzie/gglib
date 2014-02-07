@@ -6,7 +6,7 @@
 #include "c_serializer.hpp"
 #include "c_scripteng.hpp"
 #include "c_netmgr.hpp"
-#include "c_idgen.hpp"
+#include "c_idman.hpp"
 
 using namespace gg;
 
@@ -30,7 +30,7 @@ c_application::c_application(std::string name, uint32_t ver_major, uint32_t ver_
     m_taskmgr = new c_task_manager(this);
     m_scripteng = new c_script_engine(this);
     m_netmgr = new c_network_manager(this);
-    m_idgen = new c_id_generator(this);
+    m_idman = new c_id_manager(this);
 }
 
 c_application::~c_application()
@@ -38,7 +38,7 @@ c_application::~c_application()
     m_exit_code = 0;
     m_cond.notify_all();
 
-    delete m_idgen;
+    delete m_idman;
     delete m_netmgr;
     delete m_scripteng;
     delete m_taskmgr;
@@ -91,9 +91,9 @@ network_manager* c_application::get_network_manager()
     return m_netmgr;
 }
 
-id_generator* c_application::get_id_generator()
+id_manager* c_application::get_id_manager()
 {
-    return m_idgen;
+    return m_idman;
 }
 
 console* c_application::create_console()
