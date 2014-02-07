@@ -101,9 +101,9 @@ namespace gg
         virtual bool open_port(uint16_t port) = 0;
         virtual void close_port(uint16_t port) = 0;
         virtual void close_ports() = 0;
+        virtual event_dispatcher* create_event_dispatcher_alias() = 0;
         virtual event_dispatcher* connect(std::string addr, uint16_t port) = 0;
         virtual enumerator<event_dispatcher*> get_connections() = 0;
-        virtual operator event_dispatcher*() = 0; // use this as an event_dispatcher
 
         virtual event_listener* add_listener(event_type, event_callback) = 0;
         virtual void add_listener(event_type, event_listener*) = 0;

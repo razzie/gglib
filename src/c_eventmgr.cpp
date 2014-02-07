@@ -485,6 +485,11 @@ void c_event_manager::close_ports()
     m_ports.clear();
 }
 
+event_dispatcher* c_event_manager::create_event_dispatcher_alias()
+{
+    return new local_event_dispatcher(this);
+}
+
 event_dispatcher* c_event_manager::connect(std::string addr, uint16_t port)
 {
     return new remote_event_dispatcher(this, addr, port);
@@ -501,11 +506,6 @@ enumerator<event_dispatcher*> c_event_manager::get_connections()
         std::move(tmplist), [](grab_ptr<event_dispatcher>& it)->event_dispatcher*& { return it; });
 
     return std::move(convlist);
-}
-
-c_event_manager::operator event_dispatcher*()
-{
-    return new local_event_dispatcher(this);
 }
 
 event_listener* c_event_manager::add_listener(event_type t, event_callback cb)

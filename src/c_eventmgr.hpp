@@ -49,9 +49,9 @@ namespace gg
         bool open_port(uint16_t port);
         void close_port(uint16_t port);
         void close_ports();
+        event_dispatcher* create_event_dispatcher_alias();
         event_dispatcher* connect(std::string addr, uint16_t port);
         enumerator<event_dispatcher*> get_connections();
-        operator event_dispatcher*(); // use this as an event_dispatcher
 
         event_listener* add_listener(event_type, event_callback);
         void add_listener(event_type, event_listener*);
