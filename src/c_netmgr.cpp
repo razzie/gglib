@@ -276,33 +276,71 @@ void c_listener::error_close()
 bool c_listener::run(uint32_t)
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-    if (!m_open) return true;
+    if (!m_open) return true; // returning true to finish task
 
-    if (listen(m_socket, SOMAXCONN) == SOCKET_ERROR)
+    SOCKADDR_STORAGE addr;
+    int addrlen = sizeof(SOCKADDR_STORAGE);
+
+    if (m_tcp) // we are TCP
     {
-        m_err << "listen error: " << WSAGetLastError() << std::endl;
-        error_close();
-        return true;
+        if (listen(m_socket, SOMAXCONN) == SOCKET_ERROR)
+        {
+            m_err << "listen error: " << WSAGetLastError() << std::endl;
+            error_close();
+            return true;
+        }
+
+        // accept a client socket
+        SOCKET sock = accept(m_socket, reinterpret_cast<struct sockaddr*>(&addr), &addrlen);
+        if (sock == INVALID_SOCKET)
+        {
+            m_err << "accept error: " << WSAGetLastError() << std::endl;
+            error_close();
+            return true;
+        }
+
+        try
+        {
+            connection* conn = new c_connection(this, sock, &addr, m_tcp);
+            m_conns.insert(conn);
+        }
+        catch (std::exception& e) { m_err << e.what() << std::endl; }
+        catch (...) {}
+    }
+    else // we are UDP
+    {
+        char buf[2048];
+        int rc = recvfrom(m_socket, buf, sizeof(buf), 0, reinterpret_cast<struct sockaddr*>(&addr), &addrlen);
+        if (rc == SOCKET_ERROR)
+        {
+            m_err << "recvfrom error: " << WSAGetLastError() << std::endl;
+            error_close();
+            return true;
+        }
+        else if (rc > 0)
+        {
+            // received a datagram
+            try
+            {
+                // faking a new connection
+                connection* conn = new c_connection(this, m_socket, &addr, m_tcp);
+                // triggering the packet handler callback to process the datagram
+                packet_handler* ph = conn->get_packet_handler();
+                if (ph != nullptr)
+                {
+                    conn->get_input_buffer()->push(reinterpret_cast<uint8_t*>(buf), rc);
+                    ph->handle_packet(conn);
+                }
+                // faking connection drop
+                conn->close();
+                conn->drop();
+            }
+            catch (std::exception& e) { m_err << e.what() << std::endl; }
+            catch (...) {}
+        }
     }
 
-    // Accept a client socket
-    SOCKET sock = accept(m_socket, NULL, NULL);
-    if (sock == INVALID_SOCKET)
-    {
-        m_err << "accept error: " << WSAGetLastError() << std::endl;
-        error_close();
-        return true;
-    }
-
-    try
-    {
-        connection* conn = new c_connection(this, sock, m_tcp);
-        m_conns.insert(conn);
-    }
-    catch (std::exception& e) { m_err << e.what() << std::endl; }
-    catch (...) {}
-
-    return false;
+    return false; // returning false to keep the task persistent
 }
 
 void c_listener::detach_connection(connection* conn)
@@ -326,9 +364,10 @@ c_connection::c_connection(std::string address, uint16_t port, bool is_tcp)
 {
 }
 
-c_connection::c_connection(c_listener* l, SOCKET sock, bool is_tcp)
+c_connection::c_connection(c_listener* l, SOCKET sock, SOCKADDR_STORAGE* addr, bool is_tcp)
  : m_listener(l)
  , m_socket(sock)
+ , m_sockaddr(*addr)
  , m_input_buf(new c_buffer())
  , m_output_buf(new c_buffer())
  , m_packet_handler(nullptr)
@@ -337,9 +376,9 @@ c_connection::c_connection(c_listener* l, SOCKET sock, bool is_tcp)
  , m_tcp(is_tcp)
  , m_thread("connection thread")
 {
-    int addrlen = sizeof(SOCKADDR_STORAGE);
+    /*int addrlen = sizeof(SOCKADDR_STORAGE);
     if (getpeername(m_socket, reinterpret_cast<struct sockaddr*>(&m_sockaddr), &addrlen) == SOCKET_ERROR)
-        throw std::runtime_error("unable to initialize connection by socket");
+        throw std::runtime_error("unable to initialize connection by socket");*/
 
     m_address = get_addr_from_sockaddr(&m_sockaddr);
     m_port = get_port_from_sockaddr(&m_sockaddr);
@@ -440,7 +479,8 @@ bool c_connection::is_opened() const
 bool c_connection::open()
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-    if (m_open || (!m_open && m_listener != nullptr)) return false; // can't reopen if already opened or is a client
+    // can't reopen if already opened or is a client
+    if (m_open || (!m_open && m_listener != nullptr)) return false;
 
     clear_last_error();
 
@@ -562,6 +602,7 @@ bool c_connection::flush_output_buffer()
     if (m_open && m_output_buf->available())
     {
         // sending data queued in output buffer
+        int rc;
         size_t len = m_output_buf->available();
         char buf[2048];
         len = m_output_buf->pop(reinterpret_cast<uint8_t*>(buf), (len > sizeof(buf)) ? sizeof(buf) : len);
@@ -569,9 +610,12 @@ bool c_connection::flush_output_buffer()
 
         for (; bytes_sent < len;)
         {
-            int rc = ::send(m_socket, &buf[bytes_sent] , len, 0);
-            len -= rc;
-            bytes_sent += rc;
+            if (m_tcp)
+                rc = ::send(m_socket, &buf[bytes_sent], len, 0);
+            else
+                rc = ::sendto(m_socket, &buf[bytes_sent], len, 0,
+                              reinterpret_cast<struct sockaddr*>(&m_sockaddr),
+                              sizeof(SOCKADDR_STORAGE));
 
             if (rc == SOCKET_ERROR)
             {
@@ -579,6 +623,9 @@ bool c_connection::flush_output_buffer()
                 error_close();
                 return false;
             }
+
+            len -= rc;
+            bytes_sent += rc;
         }
     }
 
@@ -588,51 +635,55 @@ bool c_connection::flush_output_buffer()
 bool c_connection::run(uint32_t)
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-    if (!m_open) return true;
+    if (!m_open) return true; // returning true to finish task
 
     // sending data queued in output buffer
     if (!flush_output_buffer()) return true;
 
-    // waiting for incoming data
-    FD_SET in;
-    FD_ZERO(&in);
-    FD_SET(m_socket, &in);
-    TIMEVAL timeout = {0, 10000};
+    if (m_tcp) // in UDP case the listener will receive the traffic
+    {
+        // waiting for incoming data
+        FD_SET in;
+        FD_ZERO(&in);
+        FD_SET(m_socket, &in);
+        TIMEVAL timeout = {0, 10000};
 
-    int rc = select(0, &in, NULL, NULL, &timeout);
-    if (rc == SOCKET_ERROR)
-    {
-        m_err << "select error: " << WSAGetLastError() << std::endl;
-        error_close();
-        return true;
+        int rc = select(0, &in, NULL, NULL, &timeout);
+        if (rc == SOCKET_ERROR)
+        {
+            m_err << "select error: " << WSAGetLastError() << std::endl;
+            error_close();
+            return true;
+        }
+
+        if (FD_ISSET(m_socket, &in) == 0)
+        {
+            return false; // skipping recv
+        }
+
+        char buf[2048];
+        rc = recv(m_socket, buf, sizeof(buf), 0);
+        if (rc == SOCKET_ERROR)
+        {
+            m_err << "recv error: " << WSAGetLastError() << std::endl;
+            error_close();
+            return true;
+        }
+        else if (rc == 0)
+        {
+            // connection closed from remote end
+            error_close();
+            return true;
+        }
+        else
+        {
+            // incoming data
+            m_input_buf->push(reinterpret_cast<uint8_t*>(buf), rc);
+            if (m_packet_handler != nullptr) m_packet_handler->handle_packet(this);
+        }
     }
 
-    if (FD_ISSET(m_socket, &in) == 0)
-    {
-        return false; // skipping recv
-    }
-
-    char buf[2048];
-    rc = recv(m_socket, buf, sizeof(buf), 0);
-    if (rc == SOCKET_ERROR)
-    {
-        m_err << "recv error: " << WSAGetLastError() << std::endl;
-        error_close();
-        return true;
-    }
-    else if (rc == 0)
-    {
-        // connection closed from remote end
-        error_close();
-        return true;
-    }
-    else
-    {
-        // incoming data
-        m_input_buf->push(reinterpret_cast<uint8_t*>(buf), rc);
-        if (m_packet_handler != nullptr) m_packet_handler->handle_packet(this);
-        return false;
-    }
+    return false;  // returning false to keep the task persistent
 }
 
 
@@ -648,6 +699,14 @@ c_network_manager::~c_network_manager()
 application* c_network_manager::get_app() const
 {
     return m_app;
+}
+
+std::string c_network_manager::get_hostname() const
+{
+    char buf[1024];
+    int rc = gethostname(buf, sizeof(buf)-1);
+    if (rc != SOCKET_ERROR) return std::string(buf);
+    else return {};
 }
 
 listener* c_network_manager::create_tcp_listener(uint16_t port) const

@@ -69,7 +69,7 @@ namespace gg
 
     public:
         c_connection(std::string address, uint16_t port, bool is_tcp);
-        c_connection(c_listener*, SOCKET, bool is_tcp);
+        c_connection(c_listener*, SOCKET, SOCKADDR_STORAGE*, bool is_tcp);
         c_connection(const c_connection&) = delete;
         c_connection(c_connection&&) = delete;
         ~c_connection();
@@ -100,6 +100,7 @@ namespace gg
         c_network_manager(application*);
         ~c_network_manager();
         application* get_app() const;
+        std::string get_hostname() const;
         listener* create_tcp_listener(uint16_t port) const;
         listener* create_udp_listener(uint16_t port) const;
         connection* create_tcp_connection(std::string address, uint16_t port) const;
