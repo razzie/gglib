@@ -55,14 +55,14 @@ namespace gg
         return (refc == 1) ? nullptr : o;
     }
 
-    template<class T, class = reference_counted_type<T>>
+    template<class T, bool auto_grab = false, class = reference_counted_type<T>>
     class grab_ptr
     {
         T* m_obj;
 
     public:
         grab_ptr() : m_obj(nullptr) {}
-        grab_ptr(T* t) : m_obj(t) {}
+        grab_ptr(T* t) : m_obj(t) { if (auto_grab) m_obj->grab(); }
         grab_ptr(const grab_ptr& p) : m_obj(p.m_obj) { if (m_obj != nullptr) m_obj->grab(); }
         grab_ptr(grab_ptr&& p) : m_obj(p.m_obj) { p.m_obj = nullptr; }
 
@@ -70,6 +70,7 @@ namespace gg
         {
             if (m_obj != nullptr) m_obj->drop();
             m_obj = t;
+            if (auto_grab) m_obj->grab();
             return *this;
         }
         grab_ptr& operator= (const grab_ptr& p)
@@ -98,20 +99,7 @@ namespace gg
         const T* operator-> () const { return m_obj; }
     };
 
-    typedef grab_ptr<const reference_counted> grab_guard;
-
-    template<class T, class = reference_counted_type<T>>
-    class auto_drop
-    {
-        T* m_obj;
-
-    public:
-        auto_drop(T* o) : m_obj(o) {}
-        auto_drop(const auto_drop&) = delete;
-        auto_drop(auto_drop&&) = delete;
-        ~auto_drop() { m_obj->drop(); }
-        operator T*() { return m_obj; }
-    };
+    typedef grab_ptr<const reference_counted, true> grab_guard;
 };
 
 #endif // GG_REFCOUNTED_HPP_INCLUDED
