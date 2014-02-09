@@ -24,8 +24,10 @@ namespace gg
 
     class listener : public reference_counted
     {
-    public:
+    protected:
         virtual ~listener() {}
+
+    public:
         virtual uint16_t get_port() const = 0;
         virtual void set_connection_handler(connection_handler*) = 0;
         virtual void set_connection_handler(std::function<void(connection*, bool is_opened)>) = 0;
