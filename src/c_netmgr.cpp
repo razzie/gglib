@@ -593,7 +593,8 @@ void c_connection::error_close()
     if (m_listener != nullptr)
         m_listener->detach_connection(this);
 
-    closesocket(m_socket);
+    if (m_tcp) closesocket(m_socket);
+
     m_open = false;
 }
 
