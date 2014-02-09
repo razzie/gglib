@@ -15,7 +15,7 @@ std::ostream& operator<< (std::ostream& o, const test& t)
 
 int main()
 {
-    gg::application* app = gg::application::create_instance("test app", 0, 1);
+    gg::application* app = gg::application::create("test app");
 
 
     gg::serializer* srl = app->get_serializer();

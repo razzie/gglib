@@ -11,15 +11,13 @@
 using namespace gg;
 
 
-application* application::create_instance(std::string name, uint32_t ver_major, uint32_t ver_minor)
+application* application::create(std::string name)
 {
-    return new c_application(name, ver_major, ver_minor);
+    return new c_application(name);
 }
 
-c_application::c_application(std::string name, uint32_t ver_major, uint32_t ver_minor)
+c_application::c_application(std::string name)
  : m_name(name)
- , m_ver_major(ver_major)
- , m_ver_minor(ver_minor)
 {
     setlocale(LC_ALL, "");
 
@@ -51,14 +49,48 @@ std::string c_application::get_name() const
     return m_name;
 }
 
-uint32_t c_application::get_major_version() const
+int c_application::start()
 {
-    return m_ver_major;
+    tthread::lock_guard<tthread::mutex> guard(m_cond_mutex);
+    m_cond.wait(m_cond_mutex);
+
+    return m_exit_code;
 }
 
-uint32_t c_application::get_minor_version() const
+void c_application::exit(int exit_code)
 {
-    return m_ver_minor;
+    m_exit_code = exit_code;
+    m_cond.notify_all();
+}
+
+bool c_application::open_port(uint16_t port, authentication_handler*)
+{
+
+}
+
+bool c_application::open_port(uint16_t port, std::function<bool(remote_application*, const var&)>)
+{
+
+}
+
+void c_application::close_port(uint16_t port)
+{
+
+}
+
+void c_application::close_ports()
+{
+
+}
+
+remote_application* c_application::connect(std::string address, uint16_t port, var auth_data)
+{
+
+}
+
+enumerator<remote_application*> c_application::get_remote_applications()
+{
+
 }
 
 event_manager* c_application::get_event_manager()
@@ -106,18 +138,4 @@ console* c_application::create_console()
 console* c_application::create_console(std::string name, std::string welcome_text)
 {
     return new c_console(this, name, nullptr, welcome_text);
-}
-
-int c_application::start()
-{
-    tthread::lock_guard<tthread::mutex> guard(m_cond_mutex);
-    m_cond.wait(m_cond_mutex);
-
-    return m_exit_code;
-}
-
-void c_application::exit(int exit_code)
-{
-    m_exit_code = exit_code;
-    m_cond.notify_all();
 }

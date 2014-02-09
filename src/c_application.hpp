@@ -16,8 +16,6 @@ namespace gg
     class c_application : public application
     {
         std::string m_name;
-        uint32_t m_ver_major;
-        uint32_t m_ver_minor;
         c_event_manager* m_eventmgr;
         c_task_manager* m_taskmgr;
         c_serializer* m_serializer;
@@ -29,12 +27,18 @@ namespace gg
         int m_exit_code;
 
     public:
-        c_application(std::string name, uint32_t ver_major, uint32_t ver_minor);
+        c_application(std::string name);
         ~c_application();
 
         std::string get_name() const;
-        uint32_t get_major_version() const;
-        uint32_t get_minor_version() const;
+        int start();
+        void exit(int exit_code = 0);
+        bool open_port(uint16_t port, authentication_handler*);
+        bool open_port(uint16_t port, std::function<bool(remote_application*, const var&)>);
+        void close_port(uint16_t port);
+        void close_ports();
+        remote_application* connect(std::string address, uint16_t port, var auth_data);
+        enumerator<remote_application*> get_remote_applications();
 
         event_manager*   get_event_manager();
         task_manager*    get_task_manager();
@@ -45,9 +49,6 @@ namespace gg
         id_manager*      get_id_manager();
         console*         create_console();
         console*         create_console(std::string name, std::string welcome_text = {});
-
-        int  start();
-        void exit(int exit_code = 0);
     };
 };
 

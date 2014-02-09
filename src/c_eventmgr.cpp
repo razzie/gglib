@@ -499,11 +499,11 @@ enumerator<event_dispatcher*> c_event_manager::get_connections()
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    std::list<grab_ptr<event_dispatcher>> tmplist;
+    std::list<grab_ptr<event_dispatcher, true>> tmplist;
     for (auto& it : m_conns) tmplist.push_back(it.second);
 
     conversion_container<decltype(tmplist), event_dispatcher*> convlist(
-        std::move(tmplist), [](grab_ptr<event_dispatcher>& it)->event_dispatcher*& { return it; });
+        std::move(tmplist), [](grab_ptr<event_dispatcher, true>& it)->event_dispatcher*& { return it; });
 
     return std::move(convlist);
 }
