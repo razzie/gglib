@@ -60,7 +60,7 @@ namespace gg
         virtual void remove_function(std::string fn) = 0;
         virtual optional<var> exec(std::string fn, varlist vl, std::ostream& output = std::cout) const = 0;
         virtual optional<var> parse_and_exec(std::string expr, std::ostream& output = std::cout) const = 0;
-        virtual console::controller* get_console_controller() const = 0;
+        virtual console::controller* create_console_controller() const = 0;
 
         template<class R, class... Args>
         void add_function(std::string fn, std::function<R(Args...)> func, bool hidden = false)

@@ -41,7 +41,7 @@ namespace gg
         void remove_function(std::string fn);
         optional<var> exec(std::string fn, varlist vl, std::ostream& output = std::cout) const;
         optional<var> parse_and_exec(std::string expr, std::ostream& output = std::cout) const;
-        console::controller* get_console_controller() const;
+        console::controller* create_console_controller() const;
 
     private:
         bool is_valid_fn_name(std::string fn) const;

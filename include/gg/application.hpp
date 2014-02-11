@@ -12,15 +12,6 @@
 
 namespace gg
 {
-    //class event_manager;
-    class task_manager;
-    class logger;
-    class serializer;
-    class script_engine;
-    class network_manager;
-    class id_manager;
-    class console;
-
     class remote_application : public reference_counted
     {
     protected:
@@ -33,7 +24,7 @@ namespace gg
         virtual std::string get_name() const = 0;
         virtual std::string get_address() const = 0;
         virtual uint16_t get_port() const = 0;
-        virtual var get_auth_data() const = 0;
+        virtual const var& get_auth_data() const = 0;
         virtual void push_event(event_type, event::attribute_list) = 0;
         virtual optional<var> exec(std::string fn, varlist vl, std::ostream& output) const = 0;
         virtual optional<var> parse_and_exec(std::string expr, std::ostream& output) const = 0;
@@ -47,6 +38,15 @@ namespace gg
     public:
         virtual bool authenticate(remote_application* app, const var& auth_data) = 0;
     };
+
+    //class event_manager;
+    class task_manager;
+    class logger;
+    class serializer;
+    class script_engine;
+    class network_manager;
+    class id_manager;
+    class console;
 
     class application : public reference_counted
     {

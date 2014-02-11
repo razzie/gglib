@@ -129,7 +129,7 @@ optional<var> c_script_engine::parse_and_exec(std::string expr, std::ostream& ou
     return process_expression(c_expression(expr));
 }
 
-console::controller* c_script_engine::get_console_controller() const
+console::controller* c_script_engine::create_console_controller() const
 {
     return new c_script_engine::console_controller(this);
 }

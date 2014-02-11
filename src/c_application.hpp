@@ -1,11 +1,52 @@
 #ifndef C_APPLICATION_HPP_INCLUDED
 #define C_APPLICATION_HPP_INCLUDED
 
+#include <map>
+#include <set>
 #include "gg/application.hpp"
+#include "gg/netmgr.hpp"
+#include "gg/typeinfo.hpp"
 #include "tinythread.h"
 
 namespace gg
 {
+    class c_application;
+
+    class c_remote_application : public remote_application, public packet_handler
+    {
+        mutable c_application* m_app;
+        mutable tthread::recursive_mutex m_mutex;
+        tthread::condition_variable m_cond;
+        mutable tthread::mutex m_cond_mutex;
+        connection* m_conn;
+        volatile bool m_auth_ok;
+        std::string m_name;
+        var m_auth_data;
+        std::map<typeinfo, var> m_last_data;
+
+    protected:
+        bool send_data(const var& data);
+        bool handle_data(var& data);
+        var wait_for_data(typeinfo);
+
+    public:
+        c_remote_application(c_application*, std::string address, uint16_t port, var auth_data);
+        c_remote_application(c_application*, connection*, var auth_data);
+        ~c_remote_application();
+        bool connect();
+        void disconnect();
+        bool is_connected() const;
+        std::string get_name() const;
+        std::string get_address() const;
+        uint16_t get_port() const;
+        const var& get_auth_data() const;
+        void push_event(event_type, event::attribute_list);
+        optional<var> exec(std::string fn, varlist vl, std::ostream& output) const;
+        optional<var> parse_and_exec(std::string expr, std::ostream& output) const;
+
+        void handle_packet(connection*); // inherited from packet_handler
+    };
+
     class c_event_manager;
     class c_task_manager;
     class c_serializer;
@@ -13,8 +54,9 @@ namespace gg
     class c_network_manager;
     class c_id_manager;
 
-    class c_application : public application
+    class c_application : public application, public connection_handler
     {
+        mutable tthread::mutex m_mutex;
         std::string m_name;
         c_event_manager* m_eventmgr;
         c_task_manager* m_taskmgr;
@@ -25,6 +67,15 @@ namespace gg
         tthread::condition_variable m_cond;
         mutable tthread::mutex m_cond_mutex;
         int m_exit_code;
+        std::map<listener*, authentication_handler*> m_ports;
+        std::set<remote_application*> m_clients;
+
+    protected:
+        friend class c_remote_application;
+
+        void add_client(remote_application*);
+        void remove_client(remote_application*);
+        authentication_handler* get_auth_handler(listener*);
 
     public:
         c_application(std::string name);
@@ -49,6 +100,10 @@ namespace gg
         id_manager*      get_id_manager();
         console*         create_console();
         console*         create_console(std::string name, std::string welcome_text = {});
+
+        // inherited from connection_handler
+        void handle_connection_open(connection*);
+        void handle_connection_close(connection*);
     };
 };
 
