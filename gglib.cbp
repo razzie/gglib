@@ -119,7 +119,6 @@
 		<Unit filename="src/c_taskmgr.hpp" />
 		<Unit filename="src/c_timer.cpp" />
 		<Unit filename="src/c_timer.hpp" />
-		<Unit filename="src/enumutil.hpp" />
 		<Unit filename="src/function.cpp" />
 		<Unit filename="src/optional.cpp" />
 		<Unit filename="src/refcounted.cpp" />

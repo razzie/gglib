@@ -9,7 +9,6 @@
 #include "c_scripteng.hpp"
 #include "c_netmgr.hpp"
 #include "c_idman.hpp"
-#include "enumutil.hpp"
 
 using namespace gg;
 

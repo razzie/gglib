@@ -5,7 +5,6 @@
 #include <stdexcept>
 #include "c_netmgr.hpp"
 #include "c_buffer.hpp"
-#include "enumutil.hpp"
 
 using namespace gg;
 

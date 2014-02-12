@@ -4,7 +4,6 @@
 #include "c_eventmgr.hpp"
 #include "c_netmgr.hpp"
 #include "gg/application.hpp"
-#include "enumutil.hpp"
 
 using namespace gg;
 
