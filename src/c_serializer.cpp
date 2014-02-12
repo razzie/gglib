@@ -159,6 +159,113 @@ static optional<var> deserialize_void(buffer* buf)
 }
 
 
+#define pack754_32(f) (pack754((f), 32, 8))
+#define pack754_64(f) (pack754((f), 64, 11))
+#define unpack754_32(i) (unpack754((i), 32, 8))
+#define unpack754_64(i) (unpack754((i), 64, 11))
+
+static uint64_t pack754(long double f, unsigned bits, unsigned expbits)
+{
+    long double fnorm;
+    int shift;
+    long long sign, exp, significand;
+    unsigned significandbits = bits - expbits - 1; // -1 for sign bit
+
+    if (f == 0.0) return 0; // get this special case out of the way
+
+    // check sign and begin normalization
+    if (f < 0) { sign = 1; fnorm = -f; }
+    else { sign = 0; fnorm = f; }
+
+    // get the normalized form of f and track the exponent
+    shift = 0;
+    while(fnorm >= 2.0) { fnorm /= 2.0; shift++; }
+    while(fnorm < 1.0) { fnorm *= 2.0; shift--; }
+    fnorm = fnorm - 1.0;
+
+    // calculate the binary form (non-float) of the significand data
+    significand = fnorm * ((1LL<<significandbits) + 0.5f);
+
+    // get the biased exponent
+    exp = shift + ((1<<(expbits-1)) - 1); // shift + bias
+
+    // return the final answer
+    return (sign<<(bits-1)) | (exp<<(bits-expbits-1)) | significand;
+}
+
+static long double unpack754(uint64_t i, unsigned bits, unsigned expbits)
+{
+    long double result;
+    long long shift;
+    unsigned bias;
+    unsigned significandbits = bits - expbits - 1; // -1 for sign bit
+
+    if (i == 0) return 0.0;
+
+    // pull the significand
+    result = (i&((1LL<<significandbits)-1)); // mask
+    result /= (1LL<<significandbits); // convert back to float
+    result += 1.0f; // add the one back on
+
+    // deal with the exponent
+    bias = (1<<(expbits-1)) - 1;
+    shift = ((i>>significandbits)&((1LL<<expbits)-1)) - bias;
+    while(shift > 0) { result *= 2.0; shift--; }
+    while(shift < 0) { result /= 2.0; shift++; }
+
+    // sign it
+    result *= (i>>(bits-1))&1? -1.0: 1.0;
+
+    return result;
+}
+
+bool gg::serialize_float(const var& v, buffer* buf)
+{
+    if (buf == nullptr || v.get_type() != typeid(float))
+        return false;
+
+    uint64_t data = pack754_32(v.get<float>());
+    buf->push(reinterpret_cast<uint8_t*>(&data), sizeof(uint64_t));
+
+    return true;
+}
+
+optional<var> gg::deserialize_float(buffer* buf)
+{
+    if (buf == nullptr || buf->available() < sizeof(uint64_t))
+        return {};
+
+    uint64_t data;
+    buf->pop(reinterpret_cast<uint8_t*>(&data), sizeof(uint64_t));
+
+    float f = unpack754_32(data);
+    return f;
+}
+
+bool gg::serialize_double(const var& v, buffer* buf)
+{
+    if (buf == nullptr || v.get_type() != typeid(double))
+        return false;
+
+    uint64_t data = pack754_64(v.get<double>());
+    buf->push(reinterpret_cast<uint8_t*>(&data), sizeof(uint64_t));
+
+    return true;
+}
+
+optional<var> gg::deserialize_double(buffer* buf)
+{
+    if (buf == nullptr || buf->available() < sizeof(uint64_t))
+        return {};
+
+    uint64_t data;
+    buf->pop(reinterpret_cast<uint8_t*>(&data), sizeof(uint64_t));
+
+    double d = unpack754_64(data);
+    return d;
+}
+
+
 c_serializer::c_serializer(application* app)
  : m_app(app)
 {
@@ -170,11 +277,13 @@ c_serializer::c_serializer(application* app)
     add_trivial_rule<uint32_t>();
     add_trivial_rule<int64_t>();
     add_trivial_rule<uint64_t>();
-    add_trivial_rule<float>();
-    add_trivial_rule<double>();
+    //add_trivial_rule<float>();
+    //add_trivial_rule<double>();
     add_rule_ex(typeid(varlist), serialize_varlist, deserialize_varlist);
     add_rule(typeid(std::string), serialize_string, deserialize_string);
     add_rule(typeid(void), serialize_void, deserialize_void);
+    add_rule(typeid(float), serialize_float, deserialize_float);
+    add_rule(typeid(double), serialize_double, deserialize_double);
 }
 
 c_serializer::~c_serializer()

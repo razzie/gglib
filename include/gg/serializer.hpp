@@ -34,6 +34,17 @@ namespace gg
         virtual varlist deserialize_all(buffer*) const = 0;
 
         template<class T>
+        optional<T> deserialize(buffer* buf)
+        {
+            optional<var> data = this->deserialize(buf);
+
+            if (!data.is_valid() || data->get_type() != typeid(T))
+                return {};
+            return
+                std::move(data->get<T>());
+        }
+
+        template<class T>
         void add_rule_ex(serializer_func_ex s, deserializer_func_ex d)
         {
             this->add_rule_ex(typeid(T), s, d);
@@ -76,6 +87,12 @@ namespace gg
 
     bool serialize_string(const var& v, buffer* buf);
     optional<var> deserialize_string(buffer* buf);
+
+    bool serialize_float(const var& v, buffer* buf);
+    optional<var> deserialize_float(buffer* buf);
+
+    bool serialize_double(const var& v, buffer* buf);
+    optional<var> deserialize_double(buffer* buf);
 };
 
 #endif // GG_SERIALIZER_HPP_INCLUDED

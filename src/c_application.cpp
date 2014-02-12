@@ -42,7 +42,7 @@ public:
     var& get_auth_data() { return m_auth_data; }
     const var& get_auth_data() const { return m_auth_data; }
 
-    static bool serialize(const var& v, buffer* buf, serializer* s)
+    static bool serialize(const var& v, buffer* buf, const serializer* s)
     {
         if (v.get_type() != typeid(authentication) || buf == nullptr || s == nullptr)
             return false;
@@ -57,7 +57,7 @@ public:
         return s->serialize(auth.get_auth_data(), buf);
     }
 
-    static optional<var> deserialize(buffer* buf, serializer* s)
+    static optional<var> deserialize(buffer* buf, const serializer* s)
     {
         if (buf == nullptr || buf->available() < 6 || s == nullptr) return {};
 
@@ -282,6 +282,8 @@ c_application::c_application(std::string name)
     m_scripteng = new c_script_engine(this);
     m_netmgr = new c_network_manager(this);
     m_idman = new c_id_manager(this);
+
+    m_serializer->add_rule_ex(typeid(authentication), &authentication::serialize, &authentication::deserialize);
 }
 
 c_application::~c_application()
