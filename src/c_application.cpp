@@ -92,17 +92,29 @@ c_remote_application::c_remote_application(c_application* app, std::string addre
  , m_auth_data(auth_data)
 {
     m_conn->set_packet_handler(this);
-    connect();
+    //connect();
 }
 
-c_remote_application::c_remote_application(c_application* app, connection* conn, var auth_data)
+c_remote_application::c_remote_application(c_application* app, connection* conn)
  : m_app(app)
  , m_conn(conn)
- , m_auth_ok(true)
- , m_auth_data(auth_data)
+ , m_auth_ok(false)
 {
     m_conn->grab();
     m_conn->set_packet_handler(this);
+    m_conn->set_connection_handler(this);
+
+    std::cout << "Waiting for authentication..." << std::endl;
+
+    if (!wait_for_authentication(2000))
+    {
+        this->remote_application::drop();
+        return;
+    }
+
+    std::cout << "Authentication done!" << std::endl;
+
+    m_app->add_client(this);
 }
 
 c_remote_application::~c_remote_application()
@@ -111,9 +123,14 @@ c_remote_application::~c_remote_application()
     m_conn->drop();
 }
 
+application* c_remote_application::get_app() const
+{
+    return m_app;
+}
+
 bool c_remote_application::send_data(const var& data)
 {
-    if (!is_connected()) return false;
+    if (!m_conn->is_opened()) return false;
     return m_app->get_serializer()->serialize(data, m_conn->get_output_buffer());
 }
 
@@ -121,20 +138,50 @@ bool c_remote_application::handle_data(var& data)
 {
     if (data.get_type() == typeid(authentication))
     {
+        std::cout << "Incoming auth request.." << std::endl;
+
         if (m_auth_ok) return true; // we are already authenticated
 
         authentication auth = data.get<authentication>();
 
         // magic code mismatch probably means different gglib protocol versions
-        if (auth.get_magic_code() != gglib_magic_code) return true;
+        if (auth.get_magic_code() != gglib_magic_code)
+        {
+            disconnect();
+            return true;
+        }
 
-        // trying to authenticate
-        authentication_handler *h = m_app->get_auth_handler(m_conn->get_listener());
-        if (h != nullptr && !h->authenticate(this, auth.get_auth_data())) return true; // failed
+        std::cout << "Auth: magic code matches" << std::endl;
 
-        m_name = std::move(auth.get_name());
-        m_auth_data = std::move(auth.get_auth_data());
-        m_auth_ok = true;
+        // if we are on server side
+        if (m_conn->get_listener() != nullptr)
+        {
+            // trying to authenticate
+            authentication_handler *h = m_app->get_auth_handler(m_conn->get_listener());
+            if (h != nullptr && !h->authenticate(this, auth.get_auth_data())) // failed
+            {
+                disconnect();
+                return true;
+            }
+
+            m_name = std::move(auth.get_name());
+            m_auth_data = std::move(auth.get_auth_data());
+            m_auth_ok = true;
+
+            std::cout << "Auth: server side auth successful" << std::endl;
+
+            // the remote end authenticated itself successfully, now it's our turn
+            send_data(authentication(gglib_magic_code, m_app->get_name(), {}));
+        }
+        else // client side
+        {
+            m_name = std::move(auth.get_name());
+            m_auth_data = std::move(auth.get_auth_data());
+            m_auth_ok = true;
+
+            std::cout << "Auth: client side auth successful" << std::endl;
+        }
+
         return true;
     }
     else if (data.get_type() == typeid(c_event))
@@ -146,22 +193,45 @@ bool c_remote_application::handle_data(var& data)
     return false;
 }
 
-var c_remote_application::wait_for_data(typeinfo ti)
+optional<var> c_remote_application::wait_for_data(typeinfo ti, uint32_t timeout)
 {
+    uint32_t elapsed = 0;
+
     for(;;)
     {
-        m_cond.wait(m_cond_mutex);
+        {
+            tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+            var& v = m_last_data[ti];
+            if (!v.is_empty()) return std::move(v);
+        }
 
-        tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-        var& v = m_last_data[ti];
+        if (elapsed > timeout) return {};
 
-        if (!v.is_empty()) return std::move(v);
+        //m_cond.wait(m_cond_mutex);
+        tthread::this_thread::sleep_for(tthread::chrono::milliseconds(100));
+        elapsed += 100;
+    }
+}
+
+bool c_remote_application::wait_for_authentication(uint32_t timeout)
+{
+    uint32_t elapsed = 0;
+
+    for(;;)
+    {
+        if (m_auth_ok) return true;
+        if (elapsed > timeout) return false;
+
+        tthread::this_thread::sleep_for(tthread::chrono::milliseconds(100));
+        elapsed += 100;
     }
 }
 
 void c_remote_application::handle_packet(connection* conn)
 {
     if (conn != m_conn) return; // shouldn't happen
+
+    std::cout << "Incoming packet.." << std::endl;
 
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
@@ -171,17 +241,39 @@ void c_remote_application::handle_packet(connection* conn)
     if (!handle_data(*data))
     {
         m_last_data[data->get_type()] = std::move(*data);
-        m_cond.notify_all();
+        //m_cond.notify_all();
+    }
+}
+
+void c_remote_application::handle_connection_open(connection*)
+{
+    return;
+}
+
+void c_remote_application::handle_connection_close(connection* conn)
+{
+    if (conn != m_conn) return; // shouldn't happen
+
+    // if this is the server side connection
+    if (m_conn->get_listener() != nullptr)
+    {
+        m_app->remove_client(this);
+        this->remote_application::drop();
     }
 }
 
 bool c_remote_application::connect()
 {
-    if (is_connected()) return false; // already connected
+    if (m_conn->is_opened()) return false; // already connected
+    if (!m_conn->is_opened() && m_conn->get_listener() != nullptr) return false; // can't connect to client from server side
 
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
-    if (m_conn->open()) return false; // failed to open connection
+    std::cout << "Connecting remote application.." << std::endl;
+
+    if (!m_conn->open()) return false; // failed to open connection
+
+    tthread::this_thread::sleep_for(tthread::chrono::milliseconds(500));
 
     if (!send_data(authentication(gglib_magic_code, m_app->get_name(), m_auth_data)))
     {
@@ -189,31 +281,28 @@ bool c_remote_application::connect()
         return false;
     }
 
-    /*var data = wait_for_data(typeid(authentication)); // waiting for the other end's authentication
-    authentication auth = data.get<authentication>();
+    std::cout << "Connection opened and authentication request sent" << std::endl;
 
-    // magic code mismatch probably means different gglib protocol versions
-    if (auth.get_magic_code() != gglib_magic_code) return;
+    if (!wait_for_authentication(2000)) // remote end didn't respond to our auth request
+    {
+        m_conn->close();
+        return false;
+    }
 
-    // trying to authenticate
-    authentication_handler *h = m_app->get_auth_handler(m_conn->get_listener());
-    if (h != nullptr && !h->authenticate(this, auth.get_auth_data())) return; // failed
+    std::cout << "Successfully connected to remote application!" << std::endl;
 
-    m_name = std::move(auth.get_name());
-    m_auth_data = std::move(auth.get_auth_data());
-    m_auth_ok = true;
-    return true;*/
+    return true;
 }
 
 void c_remote_application::disconnect()
 {
-    if (!is_connected()) return;
-
+    if (!m_conn->is_opened()) return;
+    m_conn->close();
 }
 
 bool c_remote_application::is_connected() const
 {
-    return (m_conn->is_opened());
+    return (m_conn->is_opened() && m_auth_ok);
 }
 
 std::string c_remote_application::get_name() const
@@ -328,6 +417,7 @@ bool c_application::open_port(uint16_t port, authentication_handler* auth_handle
         return false;
     }
 
+    l->set_connection_handler(this);
     m_ports[l] = auth_handler;
     return true;
 }
@@ -403,14 +493,13 @@ enumerator<remote_application*> c_application::get_remote_applications()
 
 void c_application::handle_connection_open(connection* conn)
 {
-    tthread::lock_guard<tthread::mutex> guard(m_cond_mutex);
-
+    new c_remote_application(this, conn);
+    return;
 }
 
 void c_application::handle_connection_close(connection* conn)
 {
-    tthread::lock_guard<tthread::mutex> guard(m_cond_mutex);
-
+    return;
 }
 
 event_manager* c_application::get_event_manager()

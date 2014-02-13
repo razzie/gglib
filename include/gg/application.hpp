@@ -12,12 +12,15 @@
 
 namespace gg
 {
+    class application;
+
     class remote_application : public reference_counted
     {
     protected:
         ~remote_application() {}
 
     public:
+        virtual application* get_app() const = 0;
         virtual bool connect() = 0;
         virtual void disconnect() = 0;
         virtual bool is_connected() const = 0;

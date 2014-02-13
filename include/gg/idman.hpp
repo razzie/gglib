@@ -39,8 +39,10 @@ namespace gg
 
     class id_manager
     {
-    public:
+    protected:
         virtual ~id_manager() {}
+
+    public:
         virtual application* get_app() const = 0;
         virtual id get_random_id() const = 0;
         virtual id get_unique_id() = 0;

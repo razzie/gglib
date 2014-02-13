@@ -18,7 +18,7 @@ int main()
     gg::application* app = gg::application::create("test app");
 
 
-    gg::serializer* srl = app->get_serializer();
+    /*gg::serializer* srl = app->get_serializer();
     srl->add_trivial_rule<test>();
 
 
@@ -32,7 +32,15 @@ int main()
 
     gg::event_dispatcher* evtd = evtmgr->connect("127.0.0.1", 9999);
     evtd->push_event("test_event_type", {{"arg1", 123}, {"arg2", test {4,5,6}}, {"arg3", std::string("abc")}});
-    evtd->drop();
+    evtd->drop();*/
+
+
+    app->open_port(9999, nullptr);
+
+    gg::remote_application* rem_app = app->connect("127.0.0.1", 9999, {});
+    if (rem_app->connect())
+        std::cout << "Successfully connected!" << std::endl;
+    rem_app->drop();
 
 
     app->get_script_engine()->add_function("exit_program",

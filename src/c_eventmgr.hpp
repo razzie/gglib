@@ -58,6 +58,7 @@ namespace gg
         void remove_listener(event_type, event_listener*);
         void push_event(event_type, event::attribute_list);
         void push_event(event_type, event::attribute_list, event_dispatcher*);
+        void push_event(c_event);
         bool trigger_event(event_type, event::attribute_list);
         bool trigger_event(event_type, event::attribute_list, event_dispatcher*);
         bool trigger_event(const event*);

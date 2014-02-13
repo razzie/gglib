@@ -12,12 +12,12 @@ namespace gg
 {
     class c_application;
 
-    class c_remote_application : public remote_application, public packet_handler
+    class c_remote_application : public remote_application, public packet_handler, public connection_handler
     {
         mutable c_application* m_app;
         mutable tthread::recursive_mutex m_mutex;
-        tthread::condition_variable m_cond;
-        mutable tthread::mutex m_cond_mutex;
+        //tthread::condition_variable m_cond;
+        //mutable tthread::mutex m_cond_mutex;
         connection* m_conn;
         volatile bool m_auth_ok;
         std::string m_name;
@@ -27,12 +27,14 @@ namespace gg
     protected:
         bool send_data(const var& data);
         bool handle_data(var& data);
-        var wait_for_data(typeinfo);
+        optional<var> wait_for_data(typeinfo, uint32_t timeout);
+        bool wait_for_authentication(uint32_t timeout);
 
     public:
         c_remote_application(c_application*, std::string address, uint16_t port, var auth_data);
-        c_remote_application(c_application*, connection*, var auth_data);
+        c_remote_application(c_application*, connection*);
         ~c_remote_application();
+        application* get_app() const;
         bool connect();
         void disconnect();
         bool is_connected() const;
@@ -44,7 +46,11 @@ namespace gg
         optional<var> exec(std::string fn, varlist vl, std::ostream& output) const;
         optional<var> parse_and_exec(std::string expr, std::ostream& output) const;
 
-        void handle_packet(connection*); // inherited from packet_handler
+        // inherited from packet_handler
+        void handle_packet(connection*);
+        // inherited from connection_handler
+        void handle_connection_open(connection*);
+        void handle_connection_close(connection*);
     };
 
     class c_event_manager;

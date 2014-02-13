@@ -106,6 +106,12 @@ public:
     {
     }
 
+    event_task(c_event_manager* evtmgr, c_event evt)
+     : m_evtmgr(evtmgr)
+     , m_evt(evt)
+    {
+    }
+
     ~event_task() {}
 
     bool run(uint32_t)
@@ -548,6 +554,12 @@ void c_event_manager::push_event(event_type t, event::attribute_list al, event_d
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
     m_thread.add_task( new event_task(this, orig, t, std::forward<event::attribute_list>(al)) );
+}
+
+void c_event_manager::push_event(c_event evt)
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    m_thread.add_task( new event_task(this, evt) );
 }
 
 bool c_event_manager::trigger_event(event_type t, event::attribute_list al)
