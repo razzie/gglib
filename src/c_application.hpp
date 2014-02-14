@@ -26,6 +26,7 @@ namespace gg
     protected:
         bool send_var(const var& data);
         optional<var> send_request(const var& data, uint32_t timeout);
+        bool handle_request(var& data);
         bool wait_for_authentication(uint32_t timeout);
 
     public:

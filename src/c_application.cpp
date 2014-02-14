@@ -73,22 +73,23 @@ public:
     }
 };
 
-class request_and_response
+template<bool is_request>
+class request_or_response
 {
     id m_id;
     var m_data;
 
 public:
-    request_and_response(id _id, var _data)
+    request_or_response(id _id, var _data)
      : m_id(_id), m_data(_data) {}
 
-    request_and_response(const request_and_response& req)
+    request_or_response(const request_or_response& req)
      : m_id(req.m_id), m_data(req.m_data) {}
 
-    request_and_response(request_and_response&& req)
+    request_or_response(request_or_response&& req)
      : m_id(req.m_id), m_data(std::move(req.m_data)) {}
 
-    ~request_and_response() {}
+    ~request_or_response() {}
 
     id get_id() const { return m_id; }
     var& get_data() { return m_data; }
@@ -96,10 +97,10 @@ public:
 
     static bool serialize(const var& v, buffer* buf, const serializer* s)
     {
-        if (v.get_type() != typeid(request_and_response) || buf == nullptr || s == nullptr)
+        if (v.get_type() != typeid(request_or_response) || buf == nullptr || s == nullptr)
             return false;
 
-        const request_and_response& req = v.get<request_and_response>();
+        const request_or_response& req = v.get<request_or_response>();
 
         uint32_t _id = req.get_id();
         buf->push(reinterpret_cast<uint8_t*>(&_id), sizeof(uint32_t));
@@ -117,9 +118,12 @@ public:
         optional<var> data = s->deserialize(buf);
         if (!data.is_valid()) return {};
 
-        return std::move(request_and_response(_id, *data));
+        return std::move(request_or_response(_id, *data));
     }
 };
+
+typedef request_or_response<true> request;
+typedef request_or_response<false> response;
 
 class func_authentication_handler : public authentication_handler
 {
@@ -192,7 +196,7 @@ optional<var> c_remote_application::send_request(const var& data, uint32_t timeo
     id _id = m_app->get_id_manager()->get_random_id();
 
     // sending request
-    if (!send_var(request_and_response(_id, data))) return {};
+    if (!send_var(request(_id, data))) return {};
 
     // letting handle_packet know that we wait for a response of this id
     m_mutex.lock();
@@ -217,6 +221,11 @@ optional<var> c_remote_application::send_request(const var& data, uint32_t timeo
         tthread::this_thread::sleep_for(tthread::chrono::milliseconds(100));
         elapsed += 100;
     }
+}
+
+bool c_remote_application::handle_request(var& data)
+{
+    return true;
 }
 
 bool c_remote_application::wait_for_authentication(uint32_t timeout)
@@ -307,9 +316,22 @@ void c_remote_application::handle_packet(connection* conn)
 
         return;
     }
-    else if (data->get_type() == typeid(request_and_response))
+    else if (data->get_type() == typeid(request))
     {
-        request_and_response& resp = data->get<request_and_response>();
+        request& req = data->get<request>();
+
+        // if the request is handles..
+        if (handle_request(req.get_data()))
+        {
+            // ..then we send a response
+            send_var( response(req.get_id(), std::move(req.get_data())) );
+        }
+
+        return;
+    }
+    else if (data->get_type() == typeid(response))
+    {
+        response& resp = data->get<response>();
 
         auto it = m_response.find(resp.get_id());
         if (it != m_response.end())
@@ -453,7 +475,8 @@ c_application::c_application(std::string name)
     m_idman = new c_id_manager(this);
 
     m_serializer->add_rule_ex(typeid(authentication), &authentication::serialize, &authentication::deserialize);
-    m_serializer->add_rule_ex(typeid(request_and_response), &request_and_response::serialize, &request_and_response::deserialize);
+    m_serializer->add_rule_ex(typeid(request), &request::serialize, &request::deserialize);
+    m_serializer->add_rule_ex(typeid(response), &response::serialize, &response::deserialize);
 }
 
 c_application::~c_application()
