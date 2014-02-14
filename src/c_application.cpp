@@ -69,7 +69,55 @@ public:
         optional<var> data = s->deserialize(buf);
         if (!data.is_valid()) return {};
 
-        return authentication(magic, std::move(*str), std::move(*data));
+        return std::move(authentication(magic, std::move(*str), std::move(*data)));
+    }
+};
+
+class request_and_response
+{
+    id m_id;
+    var m_data;
+
+public:
+    request_and_response(id _id, var _data)
+     : m_id(_id), m_data(_data) {}
+
+    request_and_response(const request_and_response& req)
+     : m_id(req.m_id), m_data(req.m_data) {}
+
+    request_and_response(request_and_response&& req)
+     : m_id(req.m_id), m_data(std::move(req.m_data)) {}
+
+    ~request_and_response() {}
+
+    id get_id() const { return m_id; }
+    var& get_data() { return m_data; }
+    const var& get_data() const { return m_data; }
+
+    static bool serialize(const var& v, buffer* buf, const serializer* s)
+    {
+        if (v.get_type() != typeid(request_and_response) || buf == nullptr || s == nullptr)
+            return false;
+
+        const request_and_response& req = v.get<request_and_response>();
+
+        uint32_t _id = req.get_id();
+        buf->push(reinterpret_cast<uint8_t*>(&_id), sizeof(uint32_t));
+
+        return s->serialize(req.get_data(), buf);
+    }
+
+    static optional<var> deserialize(buffer* buf, const serializer* s)
+    {
+        if (buf == nullptr || buf->available() < 4 || s == nullptr) return {};
+
+        uint32_t _id;
+        buf->pop(reinterpret_cast<uint8_t*>(&_id), sizeof(uint32_t));
+
+        optional<var> data = s->deserialize(buf);
+        if (!data.is_valid()) return {};
+
+        return std::move(request_and_response(_id, *data));
     }
 };
 
@@ -92,7 +140,6 @@ c_remote_application::c_remote_application(c_application* app, std::string addre
  , m_auth_data(auth_data)
 {
     m_conn->set_packet_handler(this);
-    //connect();
 }
 
 c_remote_application::c_remote_application(c_application* app, connection* conn)
@@ -104,17 +151,20 @@ c_remote_application::c_remote_application(c_application* app, connection* conn)
     m_conn->set_packet_handler(this);
     m_conn->set_connection_handler(this);
 
-    std::cout << "Waiting for authentication..." << std::endl;
-
-    if (!wait_for_authentication(2000))
+    task_manager::async_invoke([&]
     {
-        this->remote_application::drop();
-        return;
-    }
+        std::cout << "Waiting for authentication..." << std::endl;
 
-    std::cout << "Authentication done!" << std::endl;
-
-    m_app->add_client(this);
+        if (wait_for_authentication(2000))
+        {
+            m_app->add_client(this);
+            std::cout << "Authentication done!" << std::endl;
+        }
+        else
+        {
+            this->remote_application::drop();
+        }
+    });
 }
 
 c_remote_application::~c_remote_application()
@@ -128,86 +178,40 @@ application* c_remote_application::get_app() const
     return m_app;
 }
 
-bool c_remote_application::send_data(const var& data)
+bool c_remote_application::send_var(const var& data)
 {
     if (!m_conn->is_opened()) return false;
     return m_app->get_serializer()->serialize(data, m_conn->get_output_buffer());
 }
 
-bool c_remote_application::handle_data(var& data)
-{
-    if (data.get_type() == typeid(authentication))
-    {
-        std::cout << "Incoming auth request.." << std::endl;
-
-        if (m_auth_ok) return true; // we are already authenticated
-
-        authentication auth = data.get<authentication>();
-
-        // magic code mismatch probably means different gglib protocol versions
-        if (auth.get_magic_code() != gglib_magic_code)
-        {
-            disconnect();
-            return true;
-        }
-
-        std::cout << "Auth: magic code matches" << std::endl;
-
-        // if we are on server side
-        if (m_conn->get_listener() != nullptr)
-        {
-            // trying to authenticate
-            authentication_handler *h = m_app->get_auth_handler(m_conn->get_listener());
-            if (h != nullptr && !h->authenticate(this, auth.get_auth_data())) // failed
-            {
-                disconnect();
-                return true;
-            }
-
-            m_name = std::move(auth.get_name());
-            m_auth_data = std::move(auth.get_auth_data());
-            m_auth_ok = true;
-
-            std::cout << "Auth: server side auth successful" << std::endl;
-
-            // the remote end authenticated itself successfully, now it's our turn
-            send_data(authentication(gglib_magic_code, m_app->get_name(), {}));
-        }
-        else // client side
-        {
-            m_name = std::move(auth.get_name());
-            m_auth_data = std::move(auth.get_auth_data());
-            m_auth_ok = true;
-
-            std::cout << "Auth: client side auth successful" << std::endl;
-        }
-
-        return true;
-    }
-    else if (data.get_type() == typeid(c_event))
-    {
-        c_event evt = data.get<c_event>();
-        return true;
-    }
-
-    return false;
-}
-
-optional<var> c_remote_application::wait_for_data(typeinfo ti, uint32_t timeout)
+optional<var> c_remote_application::send_request(const var& data, uint32_t timeout)
 {
     uint32_t elapsed = 0;
+    id _id = m_app->get_id_manager()->get_random_id();
 
-    for(;;)
+    // sending request
+    if (!send_var(request_and_response(_id, data))) return {};
+
+    // letting handle_packet know that we wait for a response of this id
+    m_mutex.lock();
+    auto it = m_response.insert(std::make_pair(_id, var {})).first;
+    m_mutex.unlock();
+
+    for (;;)
     {
         {
             tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-            var& v = m_last_data[ti];
-            if (!v.is_empty()) return std::move(v);
+            if (!it->second.is_empty()) return std::move(it->second);
         }
 
-        if (elapsed > timeout) return {};
+        if (elapsed > timeout)
+        {
+            m_mutex.lock();
+            m_response.erase(it);
+            m_mutex.unlock();
+            return {};
+        }
 
-        //m_cond.wait(m_cond_mutex);
         tthread::this_thread::sleep_for(tthread::chrono::milliseconds(100));
         elapsed += 100;
     }
@@ -238,10 +242,80 @@ void c_remote_application::handle_packet(connection* conn)
     optional<var> data = m_app->get_serializer()->deserialize(conn->get_input_buffer());
     if (!data.is_valid()) return;
 
-    if (!handle_data(*data))
+    if (data->get_type() == typeid(authentication))
     {
-        m_last_data[data->get_type()] = std::move(*data);
-        //m_cond.notify_all();
+        std::cout << "Incoming auth request.." << std::endl;
+
+        if (m_auth_ok) return; // we are already authenticated
+
+        authentication& auth = data->get<authentication>();
+
+        // magic code mismatch probably means different gglib protocol versions
+        if (auth.get_magic_code() != gglib_magic_code)
+        {
+            m_conn->close();
+            return;
+        }
+
+        std::cout << "Auth: magic code matches" << std::endl;
+
+        // if we are on server side
+        if (m_conn->get_listener() != nullptr)
+        {
+            // trying to authenticate
+            authentication_handler *h = m_app->get_auth_handler(m_conn->get_listener());
+            if (h != nullptr && !h->authenticate(this, auth.get_auth_data())) // failed
+            {
+                m_conn->close();
+                return;
+            }
+
+            m_name = std::move(auth.get_name());
+            m_auth_data = std::move(auth.get_auth_data());
+            m_auth_ok = true;
+
+            std::cout << "Auth: server side auth successful" << std::endl;
+
+            // the remote end authenticated itself successfully, now it's our turn
+            send_var(authentication(gglib_magic_code, m_app->get_name(), {}));
+        }
+        else // client side
+        {
+            m_name = std::move(auth.get_name());
+            m_auth_data = std::move(auth.get_auth_data());
+            m_auth_ok = true;
+
+            std::cout << "Auth: client side auth successful" << std::endl;
+        }
+
+        return;
+    }
+    else if (!m_auth_ok)
+    {
+        std::cout << "Received data from unauthorized remote end!" << std::endl;
+
+        m_conn->close();
+        return;
+    }
+    else if (data->get_type() == typeid(c_event))
+    {
+        c_event evt = data->get<c_event>();
+
+        // TODO: event handling here
+
+        return;
+    }
+    else if (data->get_type() == typeid(request_and_response))
+    {
+        request_and_response& resp = data->get<request_and_response>();
+
+        auto it = m_response.find(resp.get_id());
+        if (it != m_response.end())
+        {
+            it->second = std::move(resp.get_data());
+        }
+
+        return;
     }
 }
 
@@ -273,9 +347,9 @@ bool c_remote_application::connect()
 
     if (!m_conn->open()) return false; // failed to open connection
 
-    tthread::this_thread::sleep_for(tthread::chrono::milliseconds(500));
+    //tthread::this_thread::sleep_for(tthread::chrono::milliseconds(500));
 
-    if (!send_data(authentication(gglib_magic_code, m_app->get_name(), m_auth_data)))
+    if (!send_var(authentication(gglib_magic_code, m_app->get_name(), m_auth_data)))
     {
         m_conn->close();
         return false;
@@ -372,6 +446,7 @@ c_application::c_application(std::string name)
     m_idman = new c_id_manager(this);
 
     m_serializer->add_rule_ex(typeid(authentication), &authentication::serialize, &authentication::deserialize);
+    m_serializer->add_rule_ex(typeid(request_and_response), &request_and_response::serialize, &request_and_response::deserialize);
 }
 
 c_application::~c_application()

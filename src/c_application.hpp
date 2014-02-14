@@ -5,7 +5,7 @@
 #include <set>
 #include "gg/application.hpp"
 #include "gg/netmgr.hpp"
-#include "gg/typeinfo.hpp"
+#include "gg/idman.hpp"
 #include "tinythread.h"
 
 namespace gg
@@ -16,18 +16,15 @@ namespace gg
     {
         mutable c_application* m_app;
         mutable tthread::recursive_mutex m_mutex;
-        //tthread::condition_variable m_cond;
-        //mutable tthread::mutex m_cond_mutex;
         connection* m_conn;
         volatile bool m_auth_ok;
         std::string m_name;
         var m_auth_data;
-        std::map<typeinfo, var> m_last_data;
+        std::map<id, var> m_response;
 
     protected:
-        bool send_data(const var& data);
-        bool handle_data(var& data);
-        optional<var> wait_for_data(typeinfo, uint32_t timeout);
+        bool send_var(const var& data);
+        optional<var> send_request(const var& data, uint32_t timeout);
         bool wait_for_authentication(uint32_t timeout);
 
     public:
