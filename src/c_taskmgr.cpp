@@ -192,11 +192,11 @@ void c_thread::mainloop()
             }
             catch (std::exception& e)
             {
-                std::cerr << "exception caught while running task '" << it->m_task->get_name() << "': " << e.what() << std::endl;
+                std::cout << "exception caught while running task '" << it->m_task->get_name() << "': " << e.what() << std::endl;
             }
             catch (...)
             {
-                std::cerr << "unknown exception caught while running task '" << it->m_task->get_name() << "'" << std::endl;
+                std::cout << "unknown exception caught while running task '" << it->m_task->get_name() << "'" << std::endl;
             }
 
             if (result) // run() returned 'true', so let's remove it

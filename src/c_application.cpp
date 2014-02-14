@@ -138,6 +138,7 @@ c_remote_application::c_remote_application(c_application* app, std::string addre
  , m_conn(new c_connection(address, port, true))
  , m_auth_ok(false)
  , m_auth_data(auth_data)
+ , m_err(&std::cout)
 {
     m_conn->set_packet_handler(this);
 }
@@ -146,6 +147,7 @@ c_remote_application::c_remote_application(c_application* app, connection* conn)
  : m_app(app)
  , m_conn(conn)
  , m_auth_ok(false)
+ , m_err(&std::cout)
 {
     m_conn->grab();
     m_conn->set_packet_handler(this);
@@ -153,12 +155,12 @@ c_remote_application::c_remote_application(c_application* app, connection* conn)
 
     task_manager::async_invoke([&]
     {
-        std::cout << "Waiting for authentication..." << std::endl;
+        *m_err << "Waiting for authentication..." << std::endl;
 
         if (wait_for_authentication(2000))
         {
             m_app->add_client(this);
-            std::cout << "Authentication done!" << std::endl;
+            *m_err << "Authentication done!" << std::endl;
         }
         else
         {
@@ -235,7 +237,7 @@ void c_remote_application::handle_packet(connection* conn)
 {
     if (conn != m_conn) return; // shouldn't happen
 
-    std::cout << "Incoming packet.." << std::endl;
+    *m_err << "Incoming packet.." << std::endl;
 
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
@@ -244,7 +246,7 @@ void c_remote_application::handle_packet(connection* conn)
 
     if (data->get_type() == typeid(authentication))
     {
-        std::cout << "Incoming auth request.." << std::endl;
+        *m_err << "Incoming auth request.." << std::endl;
 
         if (m_auth_ok) return; // we are already authenticated
 
@@ -257,7 +259,7 @@ void c_remote_application::handle_packet(connection* conn)
             return;
         }
 
-        std::cout << "Auth: magic code matches" << std::endl;
+        *m_err << "Auth: magic code matches" << std::endl;
 
         // if we are on server side
         if (m_conn->get_listener() != nullptr)
@@ -274,7 +276,7 @@ void c_remote_application::handle_packet(connection* conn)
             m_auth_data = std::move(auth.get_auth_data());
             m_auth_ok = true;
 
-            std::cout << "Auth: server side auth successful" << std::endl;
+            *m_err << "Auth: server side auth successful" << std::endl;
 
             // the remote end authenticated itself successfully, now it's our turn
             send_var(authentication(gglib_magic_code, m_app->get_name(), {}));
@@ -285,14 +287,14 @@ void c_remote_application::handle_packet(connection* conn)
             m_auth_data = std::move(auth.get_auth_data());
             m_auth_ok = true;
 
-            std::cout << "Auth: client side auth successful" << std::endl;
+            *m_err << "Auth: client side auth successful" << std::endl;
         }
 
         return;
     }
     else if (!m_auth_ok)
     {
-        std::cout << "Received data from unauthorized remote end!" << std::endl;
+        *m_err << "Received data from unauthorized remote end!" << std::endl;
 
         m_conn->close();
         return;
@@ -343,11 +345,9 @@ bool c_remote_application::connect()
 
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
-    std::cout << "Connecting remote application.." << std::endl;
+    *m_err << "Connecting remote application.." << std::endl;
 
     if (!m_conn->open()) return false; // failed to open connection
-
-    //tthread::this_thread::sleep_for(tthread::chrono::milliseconds(500));
 
     if (!send_var(authentication(gglib_magic_code, m_app->get_name(), m_auth_data)))
     {
@@ -355,7 +355,7 @@ bool c_remote_application::connect()
         return false;
     }
 
-    std::cout << "Connection opened and authentication request sent" << std::endl;
+    *m_err << "Connection opened and authentication request sent" << std::endl;
 
     if (!wait_for_authentication(2000)) // remote end didn't respond to our auth request
     {
@@ -363,7 +363,7 @@ bool c_remote_application::connect()
         return false;
     }
 
-    std::cout << "Successfully connected to remote application!" << std::endl;
+    *m_err << "Successfully connected to remote application!" << std::endl;
 
     return true;
 }
@@ -423,6 +423,13 @@ optional<var> c_remote_application::parse_and_exec(std::string expr, std::ostrea
 {
     if (!is_connected()) throw std::runtime_error("not connected to remote application");
     return {};
+}
+
+void c_remote_application::set_error_stream(std::ostream& err)
+{
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    m_err = &err;
+    m_conn->set_error_stream(err);
 }
 
 

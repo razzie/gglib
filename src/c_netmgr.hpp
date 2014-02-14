@@ -21,9 +21,8 @@ namespace gg
         volatile bool m_open;
         bool m_tcp;
         c_thread m_thread;
-        std::stringstream m_err;
+        std::ostream* m_err;
 
-        void clear_last_error();
         void error_close();
 
     public:
@@ -41,7 +40,7 @@ namespace gg
         bool is_opened() const;
         bool open();
         void close();
-        std::string get_last_error() const;
+        void set_error_stream(std::ostream&);
         bool run(uint32_t); // inherited from gg::task
         void detach_connection(connection*);
     };
@@ -61,9 +60,8 @@ namespace gg
         volatile bool m_open;
         bool m_tcp;
         c_thread m_thread;
-        std::stringstream m_err;
+        std::ostream* m_err;
 
-        void clear_last_error();
         void error_close();
         bool flush_output_buffer();
 
@@ -88,7 +86,7 @@ namespace gg
         bool is_opened() const;
         bool open();
         void close();
-        std::string get_last_error() const;
+        void set_error_stream(std::ostream&);
         bool run(uint32_t); // inherited from gg::task
     };
 

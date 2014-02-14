@@ -31,6 +31,7 @@ namespace gg
         virtual void push_event(event_type, event::attribute_list) = 0;
         virtual optional<var> exec(std::string fn, varlist vl, std::ostream& output) const = 0;
         virtual optional<var> parse_and_exec(std::string expr, std::ostream& output) const = 0;
+        virtual void set_error_stream(std::ostream&) = 0;
     };
 
     class authentication_handler : public reference_counted

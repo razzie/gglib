@@ -21,6 +21,7 @@ namespace gg
         std::string m_name;
         var m_auth_data;
         std::map<id, var> m_response;
+        std::ostream* m_err;
 
     protected:
         bool send_var(const var& data);
@@ -42,6 +43,7 @@ namespace gg
         void push_event(event_type, event::attribute_list);
         optional<var> exec(std::string fn, varlist vl, std::ostream& output) const;
         optional<var> parse_and_exec(std::string expr, std::ostream& output) const;
+        void set_error_stream(std::ostream&);
 
         // inherited from packet_handler
         void handle_packet(connection*);

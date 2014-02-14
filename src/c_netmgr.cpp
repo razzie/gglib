@@ -105,6 +105,7 @@ c_listener::c_listener(uint16_t port, bool is_tcp)
  , m_open(false)
  , m_tcp(is_tcp)
  , m_thread("listener thread")
+ , m_err(&std::cout)
 {
 }
 
@@ -176,8 +177,6 @@ bool c_listener::open()
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     if (m_open) return false;
 
-    clear_last_error();
-
     char port_str[6];
     std::sprintf(port_str, "%d", m_port);
     struct addrinfo hints, *result = NULL, *ptr = NULL;
@@ -193,7 +192,7 @@ bool c_listener::open()
     // Resolve the local address and port to be used by the server
     if (getaddrinfo(NULL, port_str, &hints, &result) != 0)
     {
-        m_err << "getaddrinfo error: " << WSAGetLastError() << std::endl;
+        *m_err << "getaddrinfo error: " << WSAGetLastError() << std::endl;
         return false;
     }
 
@@ -206,7 +205,7 @@ bool c_listener::open()
         m_socket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
         if (m_socket == INVALID_SOCKET)
         {
-            m_err << "socket error: " << WSAGetLastError() << std::endl;
+            *m_err << "socket error: " << WSAGetLastError() << std::endl;
             continue;
         }
 
@@ -214,7 +213,7 @@ bool c_listener::open()
         if (bind(m_socket, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR)
         {
             closesocket(m_socket);
-            m_err << "bind error: " << WSAGetLastError() << std::endl;
+            *m_err << "bind error: " << WSAGetLastError() << std::endl;
             continue;
         }
     }
@@ -237,21 +236,14 @@ void c_listener::close()
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     if (!m_open) return;
 
-    clear_last_error();
     error_close();
     return;
 }
 
-std::string c_listener::get_last_error() const
+void c_listener::set_error_stream(std::ostream& err)
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-    return m_err.str();
-}
-
-void c_listener::clear_last_error()
-{
-    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-    m_err.str(std::string());
+    m_err = &err;
 }
 
 void c_listener::error_close()
@@ -263,7 +255,7 @@ void c_listener::error_close()
             c->close(); // handle_connection_close will be called
             c->drop();
         }
-        catch (std::exception& e) { m_err << e.what() << std::endl; }
+        catch (std::exception& e) { *m_err << e.what() << std::endl; }
         catch (...) {}
     }
 
@@ -284,7 +276,7 @@ bool c_listener::run(uint32_t)
     {
         if (listen(m_socket, SOMAXCONN) == SOCKET_ERROR)
         {
-            m_err << "listen error: " << WSAGetLastError() << std::endl;
+            *m_err << "listen error: " << WSAGetLastError() << std::endl;
             error_close();
             return true;
         }
@@ -293,7 +285,7 @@ bool c_listener::run(uint32_t)
         SOCKET sock = accept(m_socket, reinterpret_cast<struct sockaddr*>(&addr), &addrlen);
         if (sock == INVALID_SOCKET)
         {
-            m_err << "accept error: " << WSAGetLastError() << std::endl;
+            *m_err << "accept error: " << WSAGetLastError() << std::endl;
             error_close();
             return true;
         }
@@ -303,7 +295,7 @@ bool c_listener::run(uint32_t)
             connection* conn = new c_connection(this, sock, &addr, m_tcp);
             m_conns.insert(conn);
         }
-        catch (std::exception& e) { m_err << e.what() << std::endl; }
+        catch (std::exception& e) { *m_err << e.what() << std::endl; }
         catch (...) {}
     }
     else // we are UDP
@@ -312,7 +304,7 @@ bool c_listener::run(uint32_t)
         int rc = recvfrom(m_socket, buf, sizeof(buf), 0, reinterpret_cast<struct sockaddr*>(&addr), &addrlen);
         if (rc == SOCKET_ERROR)
         {
-            m_err << "recvfrom error: " << WSAGetLastError() << std::endl;
+            *m_err << "recvfrom error: " << WSAGetLastError() << std::endl;
             error_close();
             return true;
         }
@@ -334,7 +326,7 @@ bool c_listener::run(uint32_t)
                 conn->close();
                 conn->drop();
             }
-            catch (std::exception& e) { m_err << e.what() << std::endl; }
+            catch (std::exception& e) { *m_err << e.what() << std::endl; }
             catch (...) {}
         }
     }
@@ -360,6 +352,7 @@ c_connection::c_connection(std::string address, uint16_t port, bool is_tcp)
  , m_open(false)
  , m_tcp(is_tcp)
  , m_thread("connection thread")
+ , m_err(&std::cout)
 {
 }
 
@@ -374,6 +367,7 @@ c_connection::c_connection(c_listener* l, SOCKET sock, SOCKADDR_STORAGE* addr, b
  , m_open(true)
  , m_tcp(is_tcp)
  , m_thread("connection thread")
+ , m_err(&std::cout)
 {
     /*int addrlen = sizeof(SOCKADDR_STORAGE);
     if (getpeername(m_socket, reinterpret_cast<struct sockaddr*>(&m_sockaddr), &addrlen) == SOCKET_ERROR)
@@ -481,8 +475,6 @@ bool c_connection::open()
     // can't reopen if already opened or is a client
     if (m_open || (!m_open && m_listener != nullptr)) return false;
 
-    clear_last_error();
-
     char port_str[6];
     std::sprintf(port_str, "%d", m_port);
     struct addrinfo hints, *result = NULL, *ptr = NULL;
@@ -498,7 +490,7 @@ bool c_connection::open()
     // Resolve the server address and port
     if (getaddrinfo(m_address.c_str(), port_str, &hints, &result) != 0)
     {
-        m_err << "getaddrinfo error: " << WSAGetLastError() << std::endl;
+        *m_err << "getaddrinfo error: " << WSAGetLastError() << std::endl;
         return false;
     }
 
@@ -512,7 +504,7 @@ bool c_connection::open()
         m_socket = socket(ptr->ai_family, ptr->ai_socktype, ptr->ai_protocol);
         if (m_socket == INVALID_SOCKET)
         {
-            m_err << "socket error: " << WSAGetLastError() << std::endl;
+            *m_err << "socket error: " << WSAGetLastError() << std::endl;
             continue;
         }
 
@@ -521,7 +513,7 @@ bool c_connection::open()
             // Connect to server.
             if (connect(m_socket, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR)
             {
-                m_err << "connect error: " << WSAGetLastError() << std::endl;
+                *m_err << "connect error: " << WSAGetLastError() << std::endl;
                 closesocket(m_socket);
                 m_socket = INVALID_SOCKET;
                 continue;
@@ -531,7 +523,7 @@ bool c_connection::open()
         {
             if (bind(m_socket, ptr->ai_addr, (int)ptr->ai_addrlen) == SOCKET_ERROR)
             {
-                m_err << "bind error: " << WSAGetLastError() << std::endl;
+                *m_err << "bind error: " << WSAGetLastError() << std::endl;
                 closesocket(m_socket);
                 m_socket = INVALID_SOCKET;
                 continue;
@@ -563,22 +555,15 @@ void c_connection::close()
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
     if (!m_open) return;
 
-    clear_last_error();
     flush_output_buffer();
     error_close();
     return;
 }
 
-std::string c_connection::get_last_error() const
+void c_connection::set_error_stream(std::ostream& err)
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-    return m_err.str();
-}
-
-void c_connection::clear_last_error()
-{
-    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-    m_err.str(std::string());
+    m_err = &err;
 }
 
 void c_connection::error_close()
@@ -619,7 +604,7 @@ bool c_connection::flush_output_buffer()
 
             if (rc == SOCKET_ERROR)
             {
-                m_err << "send error: " << WSAGetLastError() << std::endl;
+                *m_err << "send error: " << WSAGetLastError() << std::endl;
                 error_close();
                 return false;
             }
@@ -651,7 +636,7 @@ bool c_connection::run(uint32_t)
         int rc = select(0, &in, NULL, NULL, &timeout);
         if (rc == SOCKET_ERROR)
         {
-            m_err << "select error: " << WSAGetLastError() << std::endl;
+            *m_err << "select error: " << WSAGetLastError() << std::endl;
             error_close();
             return true;
         }
@@ -665,7 +650,7 @@ bool c_connection::run(uint32_t)
         rc = recv(m_socket, buf, sizeof(buf), 0);
         if (rc == SOCKET_ERROR)
         {
-            m_err << "recv error: " << WSAGetLastError() << std::endl;
+            *m_err << "recv error: " << WSAGetLastError() << std::endl;
             error_close();
             return true;
         }

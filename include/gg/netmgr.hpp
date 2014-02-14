@@ -1,6 +1,7 @@
 #ifndef GG_NETMGR_HPP_INCLUDED
 #define GG_NETMGR_HPP_INCLUDED
 
+#include <iostream>
 #include <string>
 #include <functional>
 #include "gg/refcounted.hpp"
@@ -38,7 +39,7 @@ namespace gg
         virtual bool is_opened() const = 0;
         virtual bool open() = 0;
         virtual void close() = 0;
-        virtual std::string get_last_error() const = 0;
+        virtual void set_error_stream(std::ostream&) = 0;
     };
 
     class packet_handler : public reference_counted
@@ -71,7 +72,7 @@ namespace gg
         virtual bool is_opened() const = 0;
         virtual bool open() = 0;
         virtual void close() = 0;
-        virtual std::string get_last_error() const = 0;
+        virtual void set_error_stream(std::ostream&) = 0;
     };
 
     class network_manager
