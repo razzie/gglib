@@ -20,12 +20,13 @@ namespace gg
         volatile bool m_auth_ok;
         std::string m_name;
         var m_auth_data;
-        std::map<id, var> m_response;
+        std::map<typeinfo, request_handler*> m_req_handlers;
+        std::map<id, var> m_responses;
         std::ostream* m_err;
+        uint8_t m_packet_err;
 
     protected:
         bool send_var(const var& data);
-        optional<var> send_request(const var& data, uint32_t timeout);
         bool handle_request(var& data);
         bool wait_for_authentication(uint32_t timeout);
 
@@ -34,16 +35,20 @@ namespace gg
         c_remote_application(c_application*, connection*);
         ~c_remote_application();
         application* get_app() const;
-        bool connect();
-        void disconnect();
-        bool is_connected() const;
         std::string get_name() const;
         std::string get_address() const;
         uint16_t get_port() const;
         const var& get_auth_data() const;
+        bool connect();
+        void disconnect();
+        bool is_connected() const;
+        void add_request_handler(typeinfo, request_handler*);
+        void add_request_handler(typeinfo, std::function<bool(var&)>);
+        void remove_request_handler(typeinfo);
+        optional<var> send_request(const var& data, uint32_t timeout);
         void push_event(event_type, event::attribute_list);
-        optional<var> exec(std::string fn, varlist vl, std::ostream& output) const;
-        optional<var> parse_and_exec(std::string expr, std::ostream& output) const;
+        optional<var> exec(std::string fn, varlist vl, std::ostream&) const;
+        optional<var> parse_and_exec(std::string expr, std::ostream&) const;
         void set_error_stream(std::ostream&);
 
         // inherited from packet_handler

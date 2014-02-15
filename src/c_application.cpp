@@ -125,6 +125,133 @@ public:
 typedef request_or_response<true> request;
 typedef request_or_response<false> response;
 
+class exec_request
+{
+    std::string m_fn;
+    varlist m_vl;
+
+public:
+    exec_request(std::string fn, varlist vl) : m_fn(fn), m_vl(vl) {};
+    exec_request(const exec_request& req) : m_fn(req.m_fn), m_vl(req.m_vl) {};
+    exec_request(exec_request&& req) : m_fn(std::move(req.m_fn)), m_vl(std::move(req.m_vl)) {};
+    ~exec_request() {}
+
+    const std::string& get_function() const { return m_fn; }
+    const varlist& get_varlist() const { return m_vl; }
+
+    static bool serialize(const var& v, buffer* buf, const serializer* s)
+    {
+        if (v.get_type() != typeid(exec_request) || buf == nullptr || s == nullptr)
+            return false;
+
+        const exec_request& req = v.get<exec_request>();
+        var v_fn;
+        var v_vl;
+        v_fn.const_reference(req.get_function());
+        v_vl.const_reference(req.get_varlist());
+
+        serialize_string(v_fn, buf);
+        return serialize_varlist(v_vl, buf, s);
+    }
+
+    static optional<var> deserialize(buffer* buf, const serializer* s)
+    {
+        if (buf == nullptr || s == nullptr) return {};
+
+        optional<var> v_fn = deserialize_string(buf);
+        if (!v_fn.is_valid()) return {};
+
+        optional<var> v_vl = deserialize_varlist(buf, s);
+        if (!v_vl.is_valid()) return {};
+
+        return std::move( exec_request(std::move(v_fn->get<std::string>()), std::move(v_vl->get<varlist>())) );
+    }
+};
+
+class parse_and_exec_request
+{
+    std::string m_expr;
+
+public:
+    parse_and_exec_request(std::string expr) : m_expr(expr) {}
+    parse_and_exec_request(const parse_and_exec_request& req) : m_expr(req.m_expr) {}
+    parse_and_exec_request(parse_and_exec_request&& req) : m_expr(std::move(req.m_expr)) {}
+    ~parse_and_exec_request() {}
+
+    const std::string& get_expression() const { return m_expr; }
+
+    static bool serialize(const var& v, buffer* buf, const serializer* s)
+    {
+        if (v.get_type() != typeid(parse_and_exec_request) || buf == nullptr || s == nullptr)
+            return false;
+
+        const parse_and_exec_request& req = v.get<parse_and_exec_request>();
+        var v_fn;
+        v_fn.const_reference(req.get_expression());
+
+        serialize_string(v_fn, buf);
+        return true;
+    }
+
+    static optional<var> deserialize(buffer* buf, const serializer* s)
+    {
+        if (buf == nullptr || s == nullptr) return {};
+
+        optional<var> v_fn = deserialize_string(buf);
+        if (!v_fn.is_valid()) return {};
+
+        return std::move( parse_and_exec_request(std::move(v_fn->get<std::string>())) );
+    }
+};
+
+class exec_response
+{
+    var m_retval;
+    std::string m_outp;
+
+public:
+    exec_response(var&& retval, std::string&& outp) : m_retval(retval), m_outp(outp) {}
+    exec_response(var&& retval, const std::stringstream& outp) : m_retval(retval), m_outp(outp.str()) {}
+    exec_response(const exec_response& resp) : m_retval(resp.m_retval), m_outp(resp.m_outp) {}
+    exec_response(exec_response&& resp) : m_retval(std::move(resp.m_retval)), m_outp(std::move(resp.m_outp)) {}
+    ~exec_response() {}
+
+    var& get_return_value() { return m_retval; }
+    const var& get_return_value() const { return m_retval; }
+    std::string& get_output() { return m_outp; }
+    const std::string& get_output() const { return m_outp; }
+
+    static bool serialize(const var& v, buffer* buf, const serializer* s)
+    {
+        if (v.get_type() != typeid(exec_response) || buf == nullptr || s == nullptr)
+            return false;
+
+        const exec_response& resp = v.get<exec_response>();
+
+        if (!s->serialize(resp.get_return_value(), buf)) return false;
+
+        var v_outp;
+        v_outp.const_reference(resp.get_output());
+        serialize_string(v_outp, buf);
+
+        return true;
+    }
+
+    static optional<var> deserialize(buffer* buf, const serializer* s)
+    {
+        if (buf == nullptr || s == nullptr) return {};
+
+        optional<var> v_retval = s->deserialize(buf);
+        if (!v_retval.is_valid()) return {};
+
+        optional<var> v_outp = deserialize_string(buf);
+        if (!v_outp.is_valid()) return {};
+
+        return std::move( exec_response(std::move(*v_retval), std::move(v_outp->get<std::string>())) );
+    }
+};
+
+
 class func_authentication_handler : public authentication_handler
 {
     std::function<bool(remote_application*, const var&)> m_auth_handler;
@@ -134,6 +261,17 @@ public:
     func_authentication_handler(const func_authentication_handler&) = delete;
     ~func_authentication_handler() {}
     bool authenticate(remote_application* app, const var& auth_data) { return m_auth_handler(app, auth_data); }
+};
+
+class func_request_handler : public remote_application::request_handler
+{
+    std::function<bool(var&)> m_req_handler;
+
+public:
+    func_request_handler(decltype(m_req_handler) h) : m_req_handler(h) {}
+    func_request_handler(const func_request_handler&) = delete;
+    ~func_request_handler() {}
+    bool handle_request(var& data) { return m_req_handler(data); }
 };
 
 
@@ -182,64 +320,6 @@ c_remote_application::~c_remote_application()
 application* c_remote_application::get_app() const
 {
     return m_app;
-}
-
-bool c_remote_application::send_var(const var& data)
-{
-    if (!m_conn->is_opened()) return false;
-    return m_app->get_serializer()->serialize(data, m_conn->get_output_buffer());
-}
-
-optional<var> c_remote_application::send_request(const var& data, uint32_t timeout)
-{
-    uint32_t elapsed = 0;
-    id _id = m_app->get_id_manager()->get_random_id();
-
-    // sending request
-    if (!send_var(request(_id, data))) return {};
-
-    // letting handle_packet know that we wait for a response of this id
-    m_mutex.lock();
-    auto it = m_response.insert(std::make_pair(_id, var {})).first;
-    m_mutex.unlock();
-
-    for (;;)
-    {
-        {
-            tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
-            if (!it->second.is_empty()) return std::move(it->second);
-        }
-
-        if (elapsed > timeout)
-        {
-            m_mutex.lock();
-            m_response.erase(it);
-            m_mutex.unlock();
-            return {};
-        }
-
-        tthread::this_thread::sleep_for(tthread::chrono::milliseconds(100));
-        elapsed += 100;
-    }
-}
-
-bool c_remote_application::handle_request(var& data)
-{
-    return true;
-}
-
-bool c_remote_application::wait_for_authentication(uint32_t timeout)
-{
-    uint32_t elapsed = 0;
-
-    for(;;)
-    {
-        if (m_auth_ok) return true;
-        if (elapsed > timeout) return false;
-
-        tthread::this_thread::sleep_for(tthread::chrono::milliseconds(100));
-        elapsed += 100;
-    }
 }
 
 void c_remote_application::handle_packet(connection* conn)
@@ -333,8 +413,8 @@ void c_remote_application::handle_packet(connection* conn)
     {
         response& resp = data->get<response>();
 
-        auto it = m_response.find(resp.get_id());
-        if (it != m_response.end())
+        auto it = m_responses.find(resp.get_id());
+        if (it != m_responses.end())
         {
             it->second = std::move(resp.get_data());
         }
@@ -358,6 +438,86 @@ void c_remote_application::handle_connection_close(connection* conn)
         m_app->remove_client(this);
         this->remote_application::drop();
     }
+}
+
+bool c_remote_application::send_var(const var& data)
+{
+    if (!m_conn->is_opened()) return false;
+    return m_app->get_serializer()->serialize(data, m_conn->get_output_buffer());
+}
+
+bool c_remote_application::handle_request(var& data)
+{
+    if (data.get_type() == typeid(exec_request))
+    {
+        exec_request& req = data.get<exec_request>();
+        std::stringstream ss;
+
+        // doing the actual exec
+        optional<var> rv = m_app->get_script_engine()->exec(req.get_function(), req.get_varlist(), ss);
+        if (!rv.is_valid()) return false;
+
+        // responding in case of success
+        data = std::move( exec_response(std::move(*rv), ss) );
+        return true;
+    }
+    else if (data.get_type() == typeid(parse_and_exec_request))
+    {
+        parse_and_exec_request& req = data.get<parse_and_exec_request>();
+        std::stringstream ss;
+
+        // doing the actual exec
+        optional<var> rv = m_app->get_script_engine()->parse_and_exec(req.get_expression(), ss);
+        if (!rv.is_valid()) return false;
+
+        // responding in case of success
+        data = std::move( exec_response(std::move(*rv), ss) );
+        return true;
+    }
+    else
+    {
+        auto it = m_req_handlers.find(data.get_type());
+        if (it != m_req_handlers.end())
+        {
+            return it->second->handle_request(data);
+        }
+    }
+
+    return false;
+}
+
+bool c_remote_application::wait_for_authentication(uint32_t timeout)
+{
+    uint32_t elapsed = 0;
+
+    for(;;)
+    {
+        if (m_auth_ok) return true;
+        if (elapsed > timeout) return false;
+
+        tthread::this_thread::sleep_for(tthread::chrono::milliseconds(100));
+        elapsed += 100;
+    }
+}
+
+std::string c_remote_application::get_name() const
+{
+    return m_name;
+}
+
+std::string c_remote_application::get_address() const
+{
+    return m_conn->get_address();
+}
+
+uint16_t c_remote_application::get_port() const
+{
+    return m_conn->get_port();
+}
+
+const var& c_remote_application::get_auth_data() const
+{
+    return m_auth_data;
 }
 
 bool c_remote_application::connect()
@@ -401,24 +561,76 @@ bool c_remote_application::is_connected() const
     return (m_conn->is_opened() && m_auth_ok);
 }
 
-std::string c_remote_application::get_name() const
+void c_remote_application::add_request_handler(typeinfo ti, request_handler* h)
 {
-    return m_name;
+    if (h == nullptr) return;
+
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+
+    auto it = m_req_handlers.find(ti);
+    if (it == m_req_handlers.end()) // adding new one
+    {
+        h->grab();
+        m_req_handlers[ti] = h;
+    }
+    else // replacing existing one
+    {
+        h->grab();
+        it->second->drop();
+        it->second = h;
+    }
 }
 
-std::string c_remote_application::get_address() const
+void c_remote_application::add_request_handler(typeinfo ti, std::function<bool(var&)> f)
 {
-    return m_conn->get_address();
+    request_handler* h = new func_request_handler(f);
+    this->add_request_handler(ti, h);
+    h->drop();
 }
 
-uint16_t c_remote_application::get_port() const
+void c_remote_application::remove_request_handler(typeinfo ti)
 {
-    return m_conn->get_port();
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+
+    auto it = m_req_handlers.find(ti);
+    if (it != m_req_handlers.end())
+    {
+        it->second->drop();
+        m_req_handlers.erase(it);
+    }
 }
 
-const var& c_remote_application::get_auth_data() const
+optional<var> c_remote_application::send_request(const var& data, uint32_t timeout)
 {
-    return m_auth_data;
+    uint32_t elapsed = 0;
+    id _id = m_app->get_id_manager()->get_random_id();
+
+    // sending request
+    if (!send_var(request(_id, data))) return {};
+
+    // letting handle_packet know that we wait for a response of this id
+    m_mutex.lock();
+    auto it = m_responses.insert(std::make_pair(_id, var {})).first;
+    m_mutex.unlock();
+
+    for (;;)
+    {
+        {
+            tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+            if (!it->second.is_empty()) return std::move(it->second);
+        }
+
+        if (elapsed > timeout)
+        {
+            m_mutex.lock();
+            m_responses.erase(it);
+            m_mutex.unlock();
+            return {};
+        }
+
+        tthread::this_thread::sleep_for(tthread::chrono::milliseconds(100));
+        elapsed += 100;
+    }
 }
 
 void c_remote_application::push_event(event_type t, event::attribute_list al)
@@ -477,6 +689,9 @@ c_application::c_application(std::string name)
     m_serializer->add_rule_ex(typeid(authentication), &authentication::serialize, &authentication::deserialize);
     m_serializer->add_rule_ex(typeid(request), &request::serialize, &request::deserialize);
     m_serializer->add_rule_ex(typeid(response), &response::serialize, &response::deserialize);
+    m_serializer->add_rule_ex(typeid(exec_request), &exec_request::serialize, &exec_request::deserialize);
+    m_serializer->add_rule_ex(typeid(parse_and_exec_request), &parse_and_exec_request::serialize, &parse_and_exec_request::deserialize);
+    m_serializer->add_rule_ex(typeid(exec_response), &exec_response::serialize, &exec_response::deserialize);
 }
 
 c_application::~c_application()

@@ -7,6 +7,7 @@
 #include <functional>
 #include "gg/var.hpp"
 #include "gg/optional.hpp"
+#include "gg/typeinfo.hpp"
 #include "gg/enumerator.hpp"
 #include "gg/eventmgr.hpp"
 
@@ -20,17 +21,30 @@ namespace gg
         ~remote_application() {}
 
     public:
+        class request_handler : public reference_counted
+        {
+        protected:
+            virtual ~request_handler() {}
+
+        public:
+            virtual bool handle_request(var&) = 0;
+        };
+
         virtual application* get_app() const = 0;
-        virtual bool connect() = 0;
-        virtual void disconnect() = 0;
-        virtual bool is_connected() const = 0;
         virtual std::string get_name() const = 0;
         virtual std::string get_address() const = 0;
         virtual uint16_t get_port() const = 0;
         virtual const var& get_auth_data() const = 0;
+        virtual bool connect() = 0;
+        virtual void disconnect() = 0;
+        virtual bool is_connected() const = 0;
+        virtual void add_request_handler(typeinfo, request_handler*) = 0;
+        virtual void add_request_handler(typeinfo, std::function<bool(var&)>) = 0;
+        virtual void remove_request_handler(typeinfo) = 0;
+        virtual optional<var> send_request(const var&, uint32_t timeout) = 0;
         virtual void push_event(event_type, event::attribute_list) = 0;
-        virtual optional<var> exec(std::string fn, varlist vl, std::ostream& output) const = 0;
-        virtual optional<var> parse_and_exec(std::string expr, std::ostream& output) const = 0;
+        virtual optional<var> exec(std::string fn, varlist vl, std::ostream&) const = 0;
+        virtual optional<var> parse_and_exec(std::string expr, std::ostream&) const = 0;
         virtual void set_error_stream(std::ostream&) = 0;
     };
 
