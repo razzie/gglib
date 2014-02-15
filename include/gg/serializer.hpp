@@ -34,7 +34,15 @@ namespace gg
         virtual varlist deserialize_all(buffer*) const = 0;
 
         template<class T>
-        optional<T> deserialize(buffer* buf)
+        bool serialize(const T& t, buffer* buf) const
+        {
+            var data;
+            data.const_reference(t);
+            return this->serialize(data, buf);
+        }
+
+        template<class T>
+        optional<T> deserialize(buffer* buf) const
         {
             optional<var> data = this->deserialize(buf);
 
