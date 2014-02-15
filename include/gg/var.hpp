@@ -58,6 +58,22 @@ namespace gg
             void extract_to(std::ostream& o) const { ostream_insert(o, m_var); }
         };
 
+        template<class T>
+        class var_const_ref_impl : public var_impl_base
+        {
+            const T& m_var;
+            const std::type_info* m_type;
+
+        public:
+            var_const_ref_impl(const T& t) : m_var(t), m_type(&typeid(T)) {}
+            ~var_const_ref_impl() {}
+            var_impl_base* clone() const { return new var_const_ref_impl<T>(m_var); }
+            void* get_ptr() { throw std::runtime_error("can't access const reference"); }
+            const void* get_ptr() const { return static_cast<const void*>(&m_var); }
+            const std::type_info& get_type() const { return *m_type; }
+            void extract_to(std::ostream& o) const { ostream_insert(o, m_var); }
+        };
+
         var_impl_base* m_var = nullptr;
 
     public:
@@ -82,6 +98,14 @@ namespace gg
         {
             if (m_var != nullptr) delete m_var;
             m_var = new var_ref_impl<T>(t);
+            return *this;
+        }
+
+        template<class T>
+        var& const_reference(const T& t)
+        {
+            if (m_var != nullptr) delete m_var;
+            m_var = new var_const_ref_impl<T>(t);
             return *this;
         }
 
