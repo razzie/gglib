@@ -28,17 +28,52 @@
 					<Add option="-s" />
 				</Linker>
 			</Target>
-			<Target title="Profile">
-				<Option output="bin/gglib_p" prefix_auto="1" extension_auto="1" />
-				<Option object_output="obj/profile/" />
-				<Option type="1" />
+			<Target title="Debug dynamic lib">
+				<Option output="bin/gglib_d" imp_lib="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).a" def_file="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).def" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/debug/" />
+				<Option type="3" />
 				<Option compiler="gcc" />
+				<Option createStaticLib="1" />
 				<Compiler>
-					<Add option="-pg" />
 					<Add option="-g" />
 				</Compiler>
+			</Target>
+			<Target title="Release dynamic lib">
+				<Option output="bin/gglib" imp_lib="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).a" def_file="$(TARGET_OUTPUT_DIR)$(TARGET_OUTPUT_BASENAME).def" prefix_auto="1" extension_auto="1" />
+				<Option object_output="obj/release/" />
+				<Option type="3" />
+				<Option compiler="gcc" />
+				<Option createStaticLib="1" />
+				<Compiler>
+					<Add option="-Os" />
+					<Add option="-O3" />
+				</Compiler>
 				<Linker>
-					<Add option="-pg -lgmon" />
+					<Add option="-s" />
+				</Linker>
+			</Target>
+			<Target title="Debug static lib">
+				<Option output="bin/gglib_s_d" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="obj/debug/" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-g" />
+				</Compiler>
+			</Target>
+			<Target title="Release static lib">
+				<Option output="bin/gglib_s" prefix_auto="1" extension_auto="1" />
+				<Option working_dir="" />
+				<Option object_output="obj/release/" />
+				<Option type="2" />
+				<Option compiler="gcc" />
+				<Compiler>
+					<Add option="-Os" />
+					<Add option="-O3" />
+				</Compiler>
+				<Linker>
+					<Add option="-s" />
 				</Linker>
 			</Target>
 		</Build>
@@ -90,7 +125,10 @@
 		</Unit>
 		<Unit filename="include/gg/var.hpp" />
 		<Unit filename="include/gglib.hpp" />
-		<Unit filename="main.cpp" />
+		<Unit filename="main.cpp">
+			<Option target="Debug" />
+			<Option target="Release" />
+		</Unit>
 		<Unit filename="src/c_application.cpp" />
 		<Unit filename="src/c_application.hpp" />
 		<Unit filename="src/c_buffer.cpp" />
