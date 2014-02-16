@@ -21,9 +21,6 @@ namespace gg
         optional(Args... args)
          : m_valid(true) { m_val.construct<T>(std::forward<Args>(args)...); }
 
-        /*optional(T& t)
-         : m_valid(true) { m_val.reference(t); }*/
-
         optional(const optional& o)
          : m_val(o.m_val), m_valid(o.m_valid) {}
 
@@ -62,13 +59,13 @@ namespace gg
 
         T& get()
         {
-            if (!m_valid) throw std::runtime_error("getting value of invalid optional<>");
+            if (!m_valid) throw std::runtime_error("getting value of invalid optional");
             return m_val.get<T>();
         }
 
         const T& get() const
         {
-            if (!m_valid) throw std::runtime_error("getting value of invalid optional<>");
+            if (!m_valid) throw std::runtime_error("getting value of invalid optional");
             return m_val.get<T>();
         }
 

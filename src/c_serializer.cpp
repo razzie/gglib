@@ -154,7 +154,7 @@ static bool serialize_void(const var& v, buffer* buf)
 
 static optional<var> deserialize_void(buffer* buf)
 {
-    if (buf == nullptr || buf->available() == 0) return {};
+    if (buf == nullptr) return {};
     else return var();
 }
 

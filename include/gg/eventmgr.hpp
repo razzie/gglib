@@ -97,6 +97,8 @@ namespace gg
     {
     public:
         virtual application* get_app() const = 0;
+        virtual void enable_remote_access() = 0;
+        virtual void disable_remote_access() = 0;
 
         virtual bool open_port(uint16_t port) = 0;
         virtual void close_port(uint16_t port) = 0;

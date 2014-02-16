@@ -21,14 +21,14 @@ namespace gg
         std::string m_name;
         var m_auth_data;
         std::map<typeinfo, request_handler*> m_req_handlers;
-        std::map<id, var> m_responses;
+        mutable std::map<id, var> m_responses;
         std::ostream* m_err;
         uint8_t m_packet_err;
 
     protected:
-        bool send_var(const var& data);
-        bool handle_request(var& data);
-        bool wait_for_authentication(uint32_t timeout);
+        bool send_var(const var& data) const;
+        bool handle_request(var& data) const;
+        bool wait_for_authentication(uint32_t timeout) const;
 
     public:
         c_remote_application(c_application*, std::string address, uint16_t port, var auth_data);
@@ -45,8 +45,9 @@ namespace gg
         void add_request_handler(typeinfo, request_handler*);
         void add_request_handler(typeinfo, std::function<bool(var&)>);
         void remove_request_handler(typeinfo);
-        optional<var> send_request(const var& data, uint32_t timeout);
-        void push_event(event_type, event::attribute_list);
+        optional<var> send_request(var data, uint32_t timeout) const;
+        void send_async_request(var data, uint32_t timeout, std::function<void(optional<var>)> callback) const;
+        void push_event(event_type, event::attribute_list) const;
         optional<var> exec(std::string fn, varlist vl, std::ostream&) const;
         optional<var> parse_and_exec(std::string expr, std::ostream&) const;
         void set_error_stream(std::ostream&);

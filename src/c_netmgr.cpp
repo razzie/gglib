@@ -99,7 +99,8 @@ public:
 
 
 c_listener::c_listener(uint16_t port, bool is_tcp)
- : m_socket(INVALID_SOCKET)
+ : task("listener callback")
+ , m_socket(INVALID_SOCKET)
  , m_port(port)
  , m_handler(nullptr)
  , m_open(false)
@@ -342,7 +343,8 @@ void c_listener::detach_connection(connection* conn)
 
 
 c_connection::c_connection(std::string address, uint16_t port, bool is_tcp)
- : m_listener(nullptr)
+ : task("connection callback")
+ , m_listener(nullptr)
  , m_address(address)
  , m_port(port)
  , m_input_buf(new c_buffer())
@@ -357,7 +359,8 @@ c_connection::c_connection(std::string address, uint16_t port, bool is_tcp)
 }
 
 c_connection::c_connection(c_listener* l, SOCKET sock, SOCKADDR_STORAGE* addr, bool is_tcp)
- : m_listener(l)
+ : task("connection callback")
+ , m_listener(l)
  , m_socket(sock)
  , m_sockaddr(*addr)
  , m_input_buf(new c_buffer())

@@ -40,11 +40,15 @@ namespace gg
         std::list<listener*> m_ports;
         std::map<connection*, event_dispatcher*> m_conns;
         c_thread m_thread;
+        bool m_remote_access;
 
     public:
         c_event_manager(application* app);
         ~c_event_manager();
         application* get_app() const;
+        void enable_remote_access();
+        void disable_remote_access();
+        bool is_remote_access_enabled() const;
 
         bool open_port(uint16_t port);
         void close_port(uint16_t port);

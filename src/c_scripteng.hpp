@@ -31,12 +31,15 @@ namespace gg
         mutable tthread::mutex m_mutex;
         mutable application* m_app;
         std::map<std::string, function_container> m_functions;
-        console_controller* m_ctrl;
+        bool m_remote_access;
 
     public:
         c_script_engine(application* app);
         ~c_script_engine();
         application* get_app() const;
+        void enable_remote_access();
+        void disable_remote_access();
+        bool is_remote_access_enabled() const;
         void add_function(std::string fn, dynamic_function func, std::string args, bool hidden = false);
         void remove_function(std::string fn);
         optional<var> exec(std::string fn, varlist vl, std::ostream& output = std::cout) const;

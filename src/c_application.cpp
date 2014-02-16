@@ -64,12 +64,12 @@ public:
         buf->pop(reinterpret_cast<uint8_t*>(&magic), sizeof(uint32_t));
 
         optional<var> str = deserialize_string(buf);
-        if (!str.is_valid() || str->get_type() != typeid(std::string)) return {};
+        if (!str.is_valid()) return {};
 
         optional<var> data = s->deserialize(buf);
         if (!data.is_valid()) return {};
 
-        return std::move(authentication(magic, std::move(*str), std::move(*data)));
+        return std::move(authentication(magic, std::move(str->get<std::string>()), std::move(*data)));
     }
 };
 
@@ -295,19 +295,12 @@ c_remote_application::c_remote_application(c_application* app, connection* conn)
     m_conn->set_packet_handler(this);
     m_conn->set_connection_handler(this);
 
-    task_manager::async_invoke([&]
-    {
-        *m_err << "Waiting for authentication..." << std::endl;
-
-        if (wait_for_authentication(2000))
-        {
+    task_manager::async_invoke(
+    [&]{
+        if (wait_for_authentication(1000))
             m_app->add_client(this);
-            *m_err << "Authentication done!" << std::endl;
-        }
         else
-        {
             this->remote_application::drop();
-        }
     });
 }
 
@@ -326,29 +319,31 @@ void c_remote_application::handle_packet(connection* conn)
 {
     if (conn != m_conn) return; // shouldn't happen
 
-    *m_err << "Incoming packet.." << std::endl;
-
-    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+    //tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     optional<var> data = m_app->get_serializer()->deserialize(conn->get_input_buffer());
     if (!data.is_valid()) return;
 
     if (data->get_type() == typeid(authentication))
     {
-        *m_err << "Incoming auth request.." << std::endl;
-
-        if (m_auth_ok) return; // we are already authenticated
+        if (m_auth_ok) // we are already authenticated
+        {
+            *m_err << "Remote end requested re-authentication (" <<
+                m_conn->get_address() << ":" << m_conn->get_port() << ")" << std::endl;
+            m_conn->close();
+            return;
+        }
 
         authentication& auth = data->get<authentication>();
 
         // magic code mismatch probably means different gglib protocol versions
         if (auth.get_magic_code() != gglib_magic_code)
         {
+            *m_err << "Remote end uses incorrect magic code (" <<
+                m_conn->get_address() << ":" << m_conn->get_port() << ")" << std::endl;
             m_conn->close();
             return;
         }
-
-        *m_err << "Auth: magic code matches" << std::endl;
 
         // if we are on server side
         if (m_conn->get_listener() != nullptr)
@@ -357,6 +352,8 @@ void c_remote_application::handle_packet(connection* conn)
             authentication_handler *h = m_app->get_auth_handler(m_conn->get_listener());
             if (h != nullptr && !h->authenticate(this, auth.get_auth_data())) // failed
             {
+                *m_err << "Failed authentication (" <<
+                    m_conn->get_address() << ":" << m_conn->get_port() << ")" << std::endl;
                 m_conn->close();
                 return;
             }
@@ -364,8 +361,6 @@ void c_remote_application::handle_packet(connection* conn)
             m_name = std::move(auth.get_name());
             m_auth_data = std::move(auth.get_auth_data());
             m_auth_ok = true;
-
-            *m_err << "Auth: server side auth successful" << std::endl;
 
             // the remote end authenticated itself successfully, now it's our turn
             send_var(authentication(gglib_magic_code, m_app->get_name(), {}));
@@ -375,15 +370,14 @@ void c_remote_application::handle_packet(connection* conn)
             m_name = std::move(auth.get_name());
             m_auth_data = std::move(auth.get_auth_data());
             m_auth_ok = true;
-
-            *m_err << "Auth: client side auth successful" << std::endl;
         }
 
         return;
     }
     else if (!m_auth_ok)
     {
-        *m_err << "Received data from unauthorized remote end!" << std::endl;
+        *m_err << "Received data from unauthorized remote end (" <<
+            m_conn->get_address() << ":" << m_conn->get_port() << ")" << std::endl;
 
         m_conn->close();
         return;
@@ -413,6 +407,8 @@ void c_remote_application::handle_packet(connection* conn)
     {
         response& resp = data->get<response>();
 
+        tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+
         auto it = m_responses.find(resp.get_id());
         if (it != m_responses.end())
         {
@@ -440,21 +436,29 @@ void c_remote_application::handle_connection_close(connection* conn)
     }
 }
 
-bool c_remote_application::send_var(const var& data)
+bool c_remote_application::send_var(const var& data) const
 {
     if (!m_conn->is_opened()) return false;
     return m_app->get_serializer()->serialize(data, m_conn->get_output_buffer());
 }
 
-bool c_remote_application::handle_request(var& data)
+bool c_remote_application::handle_request(var& data) const
 {
     if (data.get_type() == typeid(exec_request))
     {
+        c_script_engine* se = static_cast<c_script_engine*>(m_app->get_script_engine());
+        if (!se->is_remote_access_enabled())
+        {
+            /* *m_err << "Remote end tried to execute a function, but remote access is disabled ("
+                m_conn->get_address() << ":" << m_conn->get_port() << ")" << std::endl;*/
+            return false;
+        }
+
         exec_request& req = data.get<exec_request>();
         std::stringstream ss;
 
         // doing the actual exec
-        optional<var> rv = m_app->get_script_engine()->exec(req.get_function(), req.get_varlist(), ss);
+        optional<var> rv = se->exec(req.get_function(), req.get_varlist(), ss);
         if (!rv.is_valid()) return false;
 
         // responding in case of success
@@ -463,11 +467,19 @@ bool c_remote_application::handle_request(var& data)
     }
     else if (data.get_type() == typeid(parse_and_exec_request))
     {
+        c_script_engine* se = static_cast<c_script_engine*>(m_app->get_script_engine());
+        if (!se->is_remote_access_enabled())
+        {
+            /* *m_err << "Remote end tried to execute a function, but remote access is disabled ("
+                m_conn->get_address() << ":" << m_conn->get_port() << ")" << std::endl;*/
+            return false;
+        }
+
         parse_and_exec_request& req = data.get<parse_and_exec_request>();
         std::stringstream ss;
 
         // doing the actual exec
-        optional<var> rv = m_app->get_script_engine()->parse_and_exec(req.get_expression(), ss);
+        optional<var> rv = se->parse_and_exec(req.get_expression(), ss);
         if (!rv.is_valid()) return false;
 
         // responding in case of success
@@ -486,7 +498,7 @@ bool c_remote_application::handle_request(var& data)
     return false;
 }
 
-bool c_remote_application::wait_for_authentication(uint32_t timeout)
+bool c_remote_application::wait_for_authentication(uint32_t timeout) const
 {
     uint32_t elapsed = 0;
 
@@ -495,8 +507,8 @@ bool c_remote_application::wait_for_authentication(uint32_t timeout)
         if (m_auth_ok) return true;
         if (elapsed > timeout) return false;
 
-        tthread::this_thread::sleep_for(tthread::chrono::milliseconds(100));
-        elapsed += 100;
+        tthread::this_thread::sleep_for(tthread::chrono::milliseconds(50));
+        elapsed += 50;
     }
 }
 
@@ -527,8 +539,6 @@ bool c_remote_application::connect()
 
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
-    *m_err << "Connecting remote application.." << std::endl;
-
     if (!m_conn->open()) return false; // failed to open connection
 
     if (!send_var(authentication(gglib_magic_code, m_app->get_name(), m_auth_data)))
@@ -537,15 +547,11 @@ bool c_remote_application::connect()
         return false;
     }
 
-    *m_err << "Connection opened and authentication request sent" << std::endl;
-
-    if (!wait_for_authentication(2000)) // remote end didn't respond to our auth request
+    if (!wait_for_authentication(1000)) // remote end didn't respond to our auth request
     {
         m_conn->close();
         return false;
     }
-
-    *m_err << "Successfully connected to remote application!" << std::endl;
 
     return true;
 }
@@ -600,7 +606,7 @@ void c_remote_application::remove_request_handler(typeinfo ti)
     }
 }
 
-optional<var> c_remote_application::send_request(const var& data, uint32_t timeout)
+optional<var> c_remote_application::send_request(var data, uint32_t timeout) const
 {
     uint32_t elapsed = 0;
     id _id = m_app->get_id_manager()->get_random_id();
@@ -628,12 +634,21 @@ optional<var> c_remote_application::send_request(const var& data, uint32_t timeo
             return {};
         }
 
-        tthread::this_thread::sleep_for(tthread::chrono::milliseconds(100));
-        elapsed += 100;
+        tthread::this_thread::sleep_for(tthread::chrono::milliseconds(50));
+        elapsed += 50;
     }
 }
 
-void c_remote_application::push_event(event_type t, event::attribute_list al)
+void c_remote_application::send_async_request(var data, uint32_t timeout, std::function<void(optional<var>)> callback) const
+{
+    task_manager::async_invoke(
+    [&]{
+        optional<var> rv = this->send_request(data, timeout);
+        callback(std::move(rv));
+    });
+}
+
+void c_remote_application::push_event(event_type t, event::attribute_list al) const
 {
     if (!is_connected()) throw std::runtime_error("not connected to remote application");
 
