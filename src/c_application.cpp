@@ -281,6 +281,7 @@ c_remote_application::c_remote_application(c_application* app, std::string addre
  , m_auth_ok(false)
  , m_auth_data(auth_data)
  , m_err(&std::cout)
+ , m_packet_err(0)
 {
     m_conn->set_packet_handler(this);
 }
@@ -290,6 +291,7 @@ c_remote_application::c_remote_application(c_application* app, connection* conn)
  , m_conn(conn)
  , m_auth_ok(false)
  , m_err(&std::cout)
+ , m_packet_err(0)
 {
     m_conn->grab();
     m_conn->set_packet_handler(this);
@@ -322,7 +324,17 @@ void c_remote_application::handle_packet(connection* conn)
     //tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     optional<var> data = m_app->get_serializer()->deserialize(conn->get_input_buffer());
-    if (!data.is_valid()) return;
+    if (!data.is_valid())
+    {
+        if (++m_packet_err > 3)
+        {
+            *m_err << "Deserialization attempt failed 3 times.. dropping connection" << std::endl;
+            m_conn->close();
+        }
+        return;
+    }
+
+    m_packet_err = 0;
 
     if (data->get_type() == typeid(authentication))
     {
@@ -422,6 +434,13 @@ void c_remote_application::handle_packet(connection* conn)
         {
             it->second = std::move(resp.get_data());
         }
+
+        return;
+    }
+    else
+    {
+        *m_err << "Unknown incoming data.. hack attempt?" << std::endl;
+        m_conn->close();
 
         return;
     }
