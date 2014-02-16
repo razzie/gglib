@@ -45,6 +45,38 @@ public:
 };
 
 
+void gg::async_invoke(std::function<void()> func)
+{
+    struct async_invoke_data
+    {
+        std::function<void()> m_func;
+        tthread::thread* m_thread;
+    };
+
+    tthread::thread* async_invoke_thread = new tthread::thread(
+        [](void* ptr)
+        {
+            async_invoke_data* f = static_cast<async_invoke_data*>(ptr);
+            tthread::thread* t = f->m_thread;
+
+            try
+            {
+                f->m_func();
+            }
+            catch (std::exception& e)
+            {
+                std::cout << "async_invoke caught exception: " << e.what() << std::endl;
+            }
+
+            delete f;
+            delete t;
+        },
+        static_cast<void*>( new async_invoke_data {func} ));
+
+    async_invoke_thread->detach();
+}
+
+
 c_thread::c_thread(std::string name)
  : m_name(name)
  , m_thread(
@@ -247,6 +279,12 @@ c_task_manager::~c_task_manager()
     }
 }
 
+thread* task_manager::get_current_thread()
+{
+    optional<thread*> t = s_threads.get();
+    return (t.is_valid() ? t.get() : nullptr);
+}
+
 application* c_task_manager::get_app() const
 {
     return m_app;
@@ -275,54 +313,22 @@ gg::thread* c_task_manager::get_thread(std::string name)
         return it->second;
 }
 
-thread* task_manager::get_current_thread()
+void c_task_manager::async_invoke(std::function<void()> func) const
 {
-    optional<thread*> t = s_threads.get();
-    return (t.is_valid() ? t.get() : nullptr);
+    async_invoke(std::forward<decltype(func)>(func));
 }
 
-void task_manager::async_invoke(std::function<void()> func)
-{
-    struct async_invoke_data
-    {
-        std::function<void()> m_func;
-        tthread::thread* m_thread;
-    };
-
-    tthread::thread* async_invoke_thread = new tthread::thread(
-        [](void* ptr)
-        {
-            async_invoke_data* f = static_cast<async_invoke_data*>(ptr);
-            tthread::thread* t = f->m_thread;
-
-            try
-            {
-                f->m_func();
-            }
-            catch (std::exception& e)
-            {
-                std::cout << "async_invoke caught exception: " << e.what() << std::endl;
-            }
-
-            delete f;
-            delete t;
-        },
-        static_cast<void*>( new async_invoke_data {func} ));
-
-    async_invoke_thread->detach();
-}
-
-task* task_manager::create_task(std::function<void()> func)
+task* c_task_manager::create_task(std::function<void()> func) const
 {
     return new function_task(func);
 }
 
-task* task_manager::create_wait_task(uint32_t wait_time)
+task* c_task_manager::create_wait_task(uint32_t wait_time) const
 {
     return new wait_task(wait_time);
 }
 
-task* task_manager::create_persistent_task(std::function<bool(uint32_t)> func)
+task* c_task_manager::create_persistent_task(std::function<bool(uint32_t)> func) const
 {
     return new function_task(func);
 }

@@ -8,6 +8,8 @@
 
 namespace gg
 {
+    void async_invoke(std::function<void()> func);
+
     class c_thread : public gg::thread
     {
         struct task_helper
@@ -59,6 +61,10 @@ namespace gg
         application* get_app() const;
         thread* create_thread(std::string name);
         thread* get_thread(std::string name);
+        void async_invoke(std::function<void()> func) const;
+        task* create_task(std::function<void()> func) const;
+        task* create_wait_task(uint32_t wait_ms) const;
+        task* create_persistent_task(std::function<bool(uint32_t)> func) const;
     };
 };
 

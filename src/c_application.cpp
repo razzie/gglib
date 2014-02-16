@@ -297,8 +297,8 @@ c_remote_application::c_remote_application(c_application* app, connection* conn)
     m_conn->set_packet_handler(this);
     m_conn->set_connection_handler(this);
 
-    task_manager::async_invoke(
-    [&]{
+    async_invoke([&]
+    {
         if (wait_for_authentication(1000))
             m_app->add_client(this);
         else
@@ -668,8 +668,8 @@ optional<var> c_remote_application::send_request(var data, uint32_t timeout) con
 
 void c_remote_application::send_async_request(var data, uint32_t timeout, std::function<void(optional<var>)> callback) const
 {
-    task_manager::async_invoke(
-    [&]{
+    async_invoke([&]
+    {
         optional<var> rv = this->send_request(data, timeout);
         callback(std::move(rv));
     });

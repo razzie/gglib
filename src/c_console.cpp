@@ -561,7 +561,7 @@ void c_console::cmd_async_exec()
         c_output* exec_outp = static_cast<c_output*>(create_output());
         std::function<void()> async_exec_bound = std::bind(async_exec, m_cmd, cmd_outp, exec_outp, this, m_ctrl);
 
-        c_task_manager::async_invoke(async_exec_bound);
+        async_invoke(async_exec_bound);
     }
     else
     {
