@@ -14,7 +14,7 @@
 namespace gg
 {
     class application;
-    class event_dispatcher;
+    class remote_application;
 
     class event_type
     {
@@ -49,7 +49,7 @@ namespace gg
         typedef std::map<std::string, var> attribute_list;
         typedef attribute_list::value_type attribute;
 
-        virtual event_dispatcher* get_originator() const = 0;
+        virtual remote_application* get_originator() const = 0;
         virtual event_type get_type() const = 0;
         virtual const attribute_list& get_attributes() const = 0;
         virtual const var& operator[] (std::string) const = 0;
@@ -79,34 +79,12 @@ namespace gg
 
     typedef std::function<bool(const event&)> event_callback; // returns true if event is consumed
 
-    class event_dispatcher : public reference_counted
-    {
-    protected:
-        virtual ~event_dispatcher() {}
-
-    public:
-        virtual bool connect() = 0;
-        virtual void disconnect() = 0;
-        virtual bool is_connected() const = 0;
-        virtual std::string get_address() const = 0;
-        virtual uint16_t get_port() const = 0;
-        virtual void push_event(event_type, event::attribute_list) = 0;
-    };
-
     class event_manager
     {
     public:
         virtual application* get_app() const = 0;
         virtual void enable_remote_access() = 0;
         virtual void disable_remote_access() = 0;
-
-        virtual bool open_port(uint16_t port) = 0;
-        virtual void close_port(uint16_t port) = 0;
-        virtual void close_ports() = 0;
-        virtual event_dispatcher* create_event_dispatcher_alias() = 0;
-        virtual event_dispatcher* connect(std::string addr, uint16_t port) = 0;
-        virtual enumerator<event_dispatcher*> get_connections() = 0;
-
         virtual event_listener* add_listener(event_type, event_callback) = 0;
         virtual void add_listener(event_type, event_listener*) = 0;
         virtual void remove_listener(event_type, event_listener*) = 0;

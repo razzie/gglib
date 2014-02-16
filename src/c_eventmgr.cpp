@@ -8,89 +8,6 @@
 using namespace gg;
 
 
-class remote_event_dispatcher : public event_dispatcher, public packet_handler
-{
-    mutable tthread::mutex m_mutex;
-    c_event_manager* m_evtmgr;
-    connection* m_conn;
-
-public:
-    remote_event_dispatcher(c_event_manager* evtmgr, std::string addr, uint16_t port)
-     : m_evtmgr(evtmgr)
-     , m_conn(new c_connection(addr, port, true))
-    {
-        m_conn->set_packet_handler(this);
-        m_conn->open();
-    }
-    remote_event_dispatcher(c_event_manager* evtmgr, connection* conn)
-     : m_evtmgr(evtmgr)
-    {
-        if (conn == nullptr)
-            throw std::runtime_error("remote_event_dispatcher: connection as nullpointer");
-
-        m_conn = conn;
-        m_conn->grab();
-        m_conn->set_packet_handler(this);
-    }
-    ~remote_event_dispatcher()
-    {
-        m_conn->drop();
-    }
-
-    bool connect() { return m_conn->open(); }
-    void disconnect() { m_conn->close(); }
-    bool is_connected() const { return m_conn->is_opened(); }
-    std::string get_address() const { return m_conn->get_address(); }
-    uint16_t get_port() const { return m_conn->get_port(); }
-
-    void push_event(event_type t, event::attribute_list al)
-    {
-        tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-        serializer* srl = m_evtmgr->get_app()->get_serializer();
-
-        c_event e(this, t, std::forward<event::attribute_list>(al));
-        var v;
-        v.reference(e);
-
-        if (!srl->serialize(v, m_conn->get_output_buffer()))
-            throw std::runtime_error("event serialization error");
-    }
-
-    // inherited from packet_handler
-    void handle_packet(connection* conn)
-    {
-        tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-        if (conn != m_conn)
-            throw std::runtime_error("remote_event_dispatcher: handling unknown connection");
-
-        serializer* srl = m_evtmgr->get_app()->get_serializer();
-        optional<var> data = srl->deserialize(conn->get_input_buffer());
-
-        if (!data.is_valid() || data->get_type() != typeid(c_event)) return;
-
-        c_event& evt = data->get<c_event>();
-        evt.set_originator(this);
-        m_evtmgr->trigger_event(&evt);
-    }
-};
-
-class local_event_dispatcher : public event_dispatcher
-{
-    event_manager* m_evtmgr;
-
-public:
-    local_event_dispatcher(event_manager* evtmgr) : m_evtmgr(evtmgr) {}
-    ~local_event_dispatcher() {}
-    bool connect() { return true; }
-    void disconnect() {}
-    bool is_connected() const { return true; }
-    std::string get_address() const { return "localhost"; }
-    uint16_t get_port() const { return 0; }
-    void push_event(event_type t, event::attribute_list al) { m_evtmgr->push_event(t, std::forward<event::attribute_list>(al)); }
-};
-
 class event_task : public task
 {
     c_event_manager* m_evtmgr;
@@ -98,11 +15,11 @@ class event_task : public task
 
 public:
     event_task(c_event_manager* evtmgr,
-               event_dispatcher* orig,
+               remote_application* orig,
                event_type t,
                event::attribute_list al)
      : m_evtmgr(evtmgr)
-     , m_evt((orig == nullptr ? new local_event_dispatcher(evtmgr) : orig), t, std::forward<event::attribute_list>(al))
+     , m_evt(orig, t, std::forward<event::attribute_list>(al))
     {
     }
 
@@ -187,7 +104,7 @@ optional<var> deserialize_event(buffer* buf, const serializer* s)
 }
 
 
-c_event::c_event(event_dispatcher* orig, event_type t, event::attribute_list&& al)
+c_event::c_event(remote_application* orig, event_type t, event::attribute_list&& al)
  : m_orig(orig)
  , m_type(t)
  , m_attributes(al)
@@ -214,7 +131,7 @@ c_event::~c_event()
     if (m_orig != nullptr) m_orig->drop();
 }
 
-c_event::c_event(event_dispatcher* orig, buffer* buf, const serializer* s) // deserialize
+c_event::c_event(remote_application* orig, buffer* buf, const serializer* s) // deserialize
  : m_orig(orig)
  , m_type(static_cast<size_t>(0))
 {
@@ -277,14 +194,14 @@ bool c_event::serialize(buffer* buf, const serializer* s) const
     return true;
 }
 
-void c_event::set_originator(event_dispatcher* orig)
+void c_event::set_originator(remote_application* orig)
 {
     if (m_orig != nullptr) m_orig->drop();
     if (orig != nullptr) orig->grab();
     m_orig = orig;
 }
 
-event_dispatcher* c_event::get_originator() const
+remote_application* c_event::get_originator() const
 {
     return m_orig;
 }
@@ -451,84 +368,6 @@ bool c_event_manager::is_remote_access_enabled() const
     return m_remote_access;
 }
 
-bool c_event_manager::open_port(uint16_t port)
-{
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-    for (listener* l : m_ports)
-    {
-        if (l->get_port() == port)
-        {
-            return false;
-        }
-    }
-
-    listener* l = new c_listener(port, true);
-
-    if (!l->open())
-    {
-        l->drop();
-        return false;
-    }
-
-    l->set_connection_handler(this);
-    m_ports.push_back(l);
-    return true;
-}
-
-void c_event_manager::close_port(uint16_t port)
-{
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-    auto it = m_ports.begin(), end = m_ports.end();
-    for (; it != end; ++it)
-    {
-        if ((*it)->get_port() == port)
-        {
-            (*it)->close();
-            (*it)->drop();
-            m_ports.erase(it);
-            return;
-        }
-    }
-}
-
-void c_event_manager::close_ports()
-{
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-    for (listener* l : m_ports)
-    {
-        l->close();
-        l->drop();
-    }
-
-    m_ports.clear();
-}
-
-event_dispatcher* c_event_manager::create_event_dispatcher_alias()
-{
-    return new local_event_dispatcher(this);
-}
-
-event_dispatcher* c_event_manager::connect(std::string addr, uint16_t port)
-{
-    return new remote_event_dispatcher(this, addr, port);
-}
-
-enumerator<event_dispatcher*> c_event_manager::get_connections()
-{
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-    std::list<grab_ptr<event_dispatcher, true>> tmplist;
-    for (auto& it : m_conns) tmplist.push_back(it.second);
-
-    conversion_container<decltype(tmplist), event_dispatcher*> convlist(
-        std::move(tmplist), [](grab_ptr<event_dispatcher, true>& it)->event_dispatcher*& { return it; });
-
-    return std::move(convlist);
-}
-
 event_listener* c_event_manager::add_listener(event_type t, event_callback cb)
 {
     event_listener* l = new func_event_listener(cb);
@@ -566,7 +405,7 @@ void c_event_manager::push_event(event_type t, event::attribute_list al)
     this->push_event(t, std::forward<event::attribute_list>(al), nullptr);
 }
 
-void c_event_manager::push_event(event_type t, event::attribute_list al, event_dispatcher* orig)
+void c_event_manager::push_event(event_type t, event::attribute_list al, remote_application* orig)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
     m_thread.add_task( new event_task(this, orig, t, std::forward<event::attribute_list>(al)) );
@@ -580,12 +419,11 @@ void c_event_manager::push_event(c_event evt)
 
 bool c_event_manager::trigger_event(event_type t, event::attribute_list al)
 {
-    local_event_dispatcher orig(this);
-    c_event evt(&orig, t, std::forward<event::attribute_list>(al));
+    c_event evt(nullptr, t, std::forward<event::attribute_list>(al));
     return this->trigger_event(&evt);
 }
 
-bool c_event_manager::trigger_event(event_type t, event::attribute_list al, event_dispatcher* orig)
+bool c_event_manager::trigger_event(event_type t, event::attribute_list al, remote_application* orig)
 {
     c_event evt(orig, t, std::forward<event::attribute_list>(al));
     return this->trigger_event(&evt);
@@ -618,26 +456,4 @@ bool c_event_manager::trigger_event(const event* evt)
     }
 
     return false;
-}
-
-void c_event_manager::handle_connection_open(connection* conn)
-{
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-    remote_event_dispatcher* disp = new remote_event_dispatcher(this, conn);
-    //m_conns.insert(std::make_pair(conn, disp));
-    m_conns[conn] = disp;
-}
-
-void c_event_manager::handle_connection_close(connection* conn)
-{
-    tthread::lock_guard<tthread::mutex> guard(m_mutex);
-
-    auto it = m_conns.find(conn);
-    if (it != m_conns.end())
-    {
-        it->second->drop();
-        m_conns.erase(it);
-        return;
-    }
 }

@@ -16,30 +16,27 @@ std::ostream& operator<< (std::ostream& o, const test& t)
 int main()
 {
     gg::application* app = gg::application::create("test app");
+    app->open_port(9999, nullptr);
 
 
-    /*gg::serializer* srl = app->get_serializer();
+    gg::serializer* srl = app->get_serializer();
     srl->add_trivial_rule<test>();
 
 
     gg::event_manager* evtmgr = app->get_event_manager();
-    evtmgr->open_port(9999);
     evtmgr->add_listener("test_event_type", [](const gg::event& e)->bool
     {
         std::cout << "originator: " << e.get_originator()->get_address() << ":" << e.get_originator()->get_port() << "\n" << e << std::endl;
         return true;
     });
 
-    gg::event_dispatcher* evtd = evtmgr->connect("127.0.0.1", 9999);
-    evtd->push_event("test_event_type", {{"arg1", 123}, {"arg2", test {4,5,6}}, {"arg3", std::string("abc")}});
-    evtd->drop();*/
-
-
-    app->open_port(9999, nullptr);
 
     gg::remote_application* rem_app = app->connect("127.0.0.1", 9999, {});
     if (rem_app->connect())
+    {
         std::cout << "Successfully connected!" << std::endl;
+        rem_app->push_event("test_event_type", {{"arg1", 123}, {"arg2", test {4,5,6}}, {"arg3", std::string("abc")}});
+    }
     rem_app->drop();
 
 

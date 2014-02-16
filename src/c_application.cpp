@@ -384,9 +384,17 @@ void c_remote_application::handle_packet(connection* conn)
     }
     else if (data->get_type() == typeid(c_event))
     {
-        c_event evt = data->get<c_event>();
+        c_event_manager* evtmgr = static_cast<c_event_manager*>(m_app->get_event_manager());
+        if (!evtmgr->is_remote_access_enabled())
+        {
+            /* *m_err << "Remote end tried to push an event, but remote access is disabled ("
+                m_conn->get_address() << ":" << m_conn->get_port() << ")" << std::endl;*/
+            return;
+        }
 
-        // TODO: event handling here
+        c_event evt = data->get<c_event>();
+        evt.set_originator(this);
+        evtmgr->push_event(std::move(evt));
 
         return;
     }
