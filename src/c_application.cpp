@@ -902,7 +902,7 @@ id_manager* c_application::get_id_manager()
 console* c_application::create_console()
 {
     return new c_console(this, m_name,
-                         grab_ptr<console::controller>( m_scripteng->create_console_controller() ),
+                         auto_drop( m_scripteng->create_console_controller() ),
                          "Press TAB to list available commands");
 }
 

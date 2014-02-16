@@ -99,6 +99,12 @@ namespace gg
         const T* operator-> () const { return m_obj; }
     };
 
+    template<class T, class = reference_counted_type<T>>
+    grab_ptr<T, false> auto_drop(T* t)
+    {
+        return t;
+    }
+
     typedef grab_ptr<const reference_counted, true> grab_guard;
 };
 
