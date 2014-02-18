@@ -45,6 +45,13 @@ bool util::is_little_endian()
     return (!util::is_big_endian());
 }
 
+
+template int strcmpi<char>(std::basic_string<char>, std::basic_string<char>, std::locale);
+template int strcmpi<wchar_t>(std::basic_string<wchar_t>, std::basic_string<wchar_t>, std::locale);
+
+template int strncmpi<char>(std::basic_string<char>, std::basic_string<char>, size_t, std::locale);
+template int strncmpi<wchar_t>(std::basic_string<wchar_t>, std::basic_string<wchar_t>, size_t, std::locale);
+
 template std::basic_string<char> trim<char>(std::basic_string<char>, std::locale);
 template std::basic_string<wchar_t> trim<wchar_t>(std::basic_string<wchar_t>, std::locale);
 
