@@ -10,36 +10,25 @@ namespace gg
     {
     public:
         c_expression(std::string expr, bool auto_complete = false);
-        //c_expression(const expression& e);
-        //c_expression(c_expression&& e);
+        c_expression(const c_expression& e);
+        c_expression(c_expression&& e);
         ~c_expression();
-
-        //c_expression& operator= (const expression& e);
-        //c_expression& operator= (c_expression&& e);
-
         void set_name(std::string name);
         std::string get_name() const;
         std::string get_expression() const;
         bool is_leaf() const;
         bool is_empty() const;
-
-        expression* get_parent();
-        const expression* get_parent() const;
         enumerator<expression*> get_children();
         const_enumerator<expression*> get_children() const;
-
         void for_each(std::function<void(expression&)>);
         void for_each(std::function<void(const expression&)>) const;
 
     protected:
         c_expression(c_expression* parent, std::string expr, bool auto_complete);
-        void print(uint32_t level, std::ostream& o) const;
-        void get_expression(std::string&) const;
 
     private:
-        c_expression* m_parent;
         std::string m_name;
-        std::list<expression*> m_children;
+        std::list<grab_ptr<expression, true>> m_children;
     };
 
     class c_expression_error : public expression_error

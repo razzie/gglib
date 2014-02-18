@@ -2,7 +2,6 @@
 #include <iostream>
 #include "c_expression.hpp"
 #include "gg/util.hpp"
-//#include "gg/smart_iterator.hpp"
 
 using namespace gg;
 
@@ -71,9 +70,8 @@ expression* create(std::string expr, bool auto_complete)
 }
 
 c_expression::c_expression(c_expression* parent, std::string orig_expr, bool auto_complete)
- : m_parent(parent)
 {
-    util::scope_callback __auto_free([&]{ for (auto child : m_children) delete child; });
+    //util::scope_callback __auto_free([&]{ for (auto child : m_children) delete child; });
 
     std::string expr = util::trim(orig_expr);
 
@@ -200,9 +198,13 @@ c_expression::c_expression(c_expression* parent, std::string orig_expr, bool aut
         }
     }
 
-    if (parent != nullptr) parent->m_children.push_back(this);
+    if (parent != nullptr)
+    {
+        parent->m_children.push_back(this);
+        this->drop();
+    }
 
-    __auto_free.reset();
+    //__auto_free.reset();
 }
 
 c_expression::c_expression(std::string expr, bool auto_complete)
@@ -210,70 +212,20 @@ c_expression::c_expression(std::string expr, bool auto_complete)
 {
 }
 
-/*c_expression::c_expression(const expression& e)
- : m_parent(e.get_parent())
- , m_name(e.get_name())
+c_expression::c_expression(const c_expression& expr)
+ : m_name(expr.m_name)
+ , m_children(expr.m_children.begin(), expr.m_children.end())
 {
-    for (auto en = e.get_children(); !en.is_finished(); en.next())
-        m_children.push_back(new c_expression(*en.get()));
 }
 
-c_expression::c_expression(c_expression&& e)
- : m_parent(e.m_parent)
- , m_name(std::move(e.m_name))
- , m_children(std::move(e.m_children))
+c_expression::c_expression(c_expression&& expr)
+ : m_name(std::move(expr.m_name))
+ , m_children(std::move(expr.m_children))
 {
-    if (m_parent != nullptr)
-    {
-        for (auto child : m_parent->m_children)
-        {
-            if (child.get() == &e)
-            {
-                child = expression_ptr(this);
-            }
-        }
-    }
-}*/
+}
 
 c_expression::~c_expression()
 {
-}
-
-/*c_expression& c_expression::operator= (const expression& e)
-{
-    m_name = e.get_name();
-
-    for (auto child : m_children) delete child;
-    m_children.clear();
-    m_children.insert(m_children.begin(), e.m_children.begin(), e.m_children.end());
-
-    return *this;
-}
-
-c_expression& c_expression::operator= (c_expression&& e)
-{
-    m_name = std::move(e.m_name);
-    m_children.clear();
-    m_children = std::move(e.m_children);
-
-    for (auto child : e.m_children)
-    {
-        c_expression* ch = static_cast<c_expression*>(child.get());
-        ch->m_parent = this;
-    }
-
-    return *this;
-}*/
-
-void c_expression::print(uint32_t level, std::ostream& o) const
-{
-    for (uint32_t i = 0; i < level; ++i) o << "  ";
-    o << this->get_expression() << std::endl;
-    for (auto e : m_children)
-    {
-        c_expression* _e = static_cast<c_expression*>(e);
-        _e->print(level+1, o);
-    }
 }
 
 void c_expression::set_name(std::string name)
@@ -292,16 +244,11 @@ std::string c_expression::get_name() const
 std::string c_expression::get_expression() const
 {
     std::string expr;
-    this->get_expression(expr);
-    return expr;
-}
 
-void c_expression::get_expression(std::string& expr) const
-{
     if (this->is_leaf())
     {
-        if (!util::is_numeric(m_name)) expr += '"' + m_name + '"';
-        else expr += m_name;
+        if (m_name.empty() || util::is_numeric(m_name)) expr += m_name;
+        else expr += '"' + m_name + '"';
     }
     else
     {
@@ -310,12 +257,13 @@ void c_expression::get_expression(std::string& expr) const
         auto it = m_children.cbegin(), end = m_children.cend();
         for (; it != end; ++it)
         {
-            c_expression* e = static_cast<c_expression*>(*it);
-            e->get_expression(expr);
+            expr += (*it)->get_expression();
             if (std::next(it, 1) != end) expr += ", ";
         }
         expr += ')';
     }
+
+    return expr;
 }
 
 bool c_expression::is_leaf() const
@@ -328,25 +276,31 @@ bool c_expression::is_empty() const
     return (this->is_leaf() && util::trim(m_name).empty());
 }
 
-expression* c_expression::get_parent()
-{
-    return m_parent;
-}
-
-const expression* c_expression::get_parent() const
-{
-    return m_parent;
-}
-
 enumerator<expression*> c_expression::get_children()
 {
-    // TODO: adding a child to this enumerator would require set the child's parent to this
-    return m_children;
+    std::list<grab_ptr<expression, true>> tmplist(m_children.begin(), m_children.end());
+
+    conversion_container<decltype(tmplist), expression*> convlist(
+        std::move(tmplist), [](grab_ptr<expression, true>& it)->expression*& { return it; });
+
+    return std::move(convlist);
 }
 
 const_enumerator<expression*> c_expression::get_children() const
 {
-    return m_children;
+    /*std::list<grab_ptr<expression, true>> tmplist(m_children.cbegin(), m_children.cend());
+
+    conversion_container<decltype(tmplist), expression*> convlist(
+        std::move(tmplist), [](grab_ptr<expression, true>& it)->expression*& { return it; });*/
+
+    std::list<expression*> convlist;
+    for (auto it : m_children)
+    {
+        const expression* e = it;
+        convlist.push_back(const_cast<expression*>(e));
+    }
+
+    return std::move(convlist);
 }
 
 void c_expression::for_each(std::function<void(expression&)> func)

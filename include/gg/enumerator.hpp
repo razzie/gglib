@@ -148,7 +148,7 @@ namespace gg
 
         template<class container, class = disable_reference<container>>
         const_enumerator(container&& cont)
-         : m_enum(new container_holder_enumerator_impl<container>(cont)) {}
+         : m_enum(new container_holder_enumerator_impl<container>(std::forward<container>(cont))) {}
 
         const_enumerator() : m_enum(nullptr) {}
         const_enumerator(const const_enumerator& e) { m_enum = ((e.m_enum == nullptr) ? nullptr : e.m_enum->clone()); }
