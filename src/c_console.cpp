@@ -1,6 +1,7 @@
 #include "c_console.hpp"
 #include "c_timer.hpp"
 #include "threadglobal.hpp"
+#include "gg/application.hpp"
 #include "gg/util.hpp"
 #include "gg/taskmgr.hpp"
 
@@ -45,6 +46,7 @@ c_console::c_console(application* app, std::string name,
  , m_welcome(true)
  , m_welcome_text(nullptr)
 {
+    if (m_app != nullptr) m_app->grab();
     if (m_ctrl != nullptr) m_ctrl->grab();
 
 	INITCOMMONCONTROLSEX iccex = {
@@ -78,8 +80,9 @@ c_console::c_console(application* app, std::string name,
 c_console::~c_console()
 {
     if (m_open) close();
-    if (m_ctrl != nullptr) m_ctrl->drop();
     clear();
+    if (m_ctrl != nullptr) m_ctrl->drop();
+    if (m_app != nullptr) m_app->drop();
 }
 
 application* c_console::get_app() const

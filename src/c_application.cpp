@@ -786,11 +786,11 @@ bool c_application::open_port(uint16_t port, authentication_handler* auth_handle
 
 bool c_application::open_port(uint16_t port, std::function<bool(remote_application*, const var&)> auth_handler)
 {
-    //return this->open_port(port, grab_ptr<authentication_handler>( new func_authentication_handler(auth_handler) ));
-    authentication_handler* h = new func_authentication_handler(auth_handler);
+    return this->open_port(port, static_cast<authentication_handler*>( auto_drop(new func_authentication_handler(auth_handler)) ));
+    /*authentication_handler* h = new func_authentication_handler(auth_handler);
     bool rc = open_port(port, h);
     h->drop();
-    return rc;
+    return rc;*/
 }
 
 void c_application::close_port(uint16_t port)
