@@ -332,14 +332,6 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
                     }
                     break;
 
-                case VK_BACK:
-                    if (m_cmd_pos != m_cmd.begin())
-                    {
-                        m_cmd_pos = m_cmd.erase(m_cmd_pos - 1);
-                        update();
-                    }
-                    break;
-
                 default:
                     if (isprint(wParam))
                     {
@@ -358,6 +350,30 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
 
             switch (wParam)
             {
+                case VK_BACK:
+                    if (m_cmd_pos != m_cmd.begin())
+                    {
+                        m_cmd_pos = m_cmd.erase(m_cmd_pos - 1);
+                        update();
+                    }
+                    break;
+
+                case VK_DELETE:
+                    if (m_cmd_pos != m_cmd.end())
+                    {
+                        m_cmd_pos = m_cmd.erase(m_cmd_pos);
+                        update();
+                    }
+                    break;
+
+                case VK_HOME:
+                    m_cmd_pos = m_cmd.begin();
+                    break;
+
+                case VK_END:
+                    m_cmd_pos = m_cmd.end();
+                    break;
+
                 case VK_LEFT:
                     if (m_cmd_pos != m_cmd.begin())
                     {
@@ -574,7 +590,11 @@ void c_console::cmd_async_exec()
     }
 
     if (!m_cmd.empty())
-        m_cmd_history_pos = m_cmd_history.insert(m_cmd_history_pos, std::move(m_cmd)) + 1;
+    {
+        //m_cmd_history_pos = m_cmd_history.insert(m_cmd_history_pos, std::move(m_cmd)) + 1;
+        m_cmd_history.push_back(std::move(m_cmd));
+        m_cmd_history_pos = m_cmd_history.end();
+    }
 
     m_cmd.erase();
     m_cmd_pos = m_cmd.end();

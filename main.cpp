@@ -13,6 +13,14 @@ std::ostream& operator<< (std::ostream& o, const test& t)
 }
 
 
+std::ostream& operator<< (std::ostream& o, const gg::remote_application* rem_app)
+{
+    if (rem_app == nullptr) o << "[this machine]";
+    else o << "[" << rem_app->get_address() << ":" << rem_app->get_port() << "]";
+    return o;
+}
+
+
 int main()
 {
     gg::application* app = gg::application::create("test app");
@@ -26,7 +34,7 @@ int main()
     gg::event_manager* evtmgr = app->get_event_manager();
     evtmgr->add_listener("test_event_type", [](const gg::event& e)->bool
     {
-        std::cout << "originator: " << e.get_originator()->get_address() << ":" << e.get_originator()->get_port() << "\n" << e << std::endl;
+        std::cout << e.get_originator() << ": " << e << std::endl;
         return true;
     });
 
