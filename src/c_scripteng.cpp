@@ -311,7 +311,7 @@ void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
         e.for_each([&](expression& e)
         {
             if (!e.is_leaf() && // it's an c_expression
-                (/*e.get_parent() == nullptr || */!e.get_name().empty())) // not an array arg
+                (e.is_root() || !e.get_name().empty())) // not an array arg
             {
                 std::string name = e.get_name();
                 auto_complete(name, print);

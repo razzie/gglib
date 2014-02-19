@@ -200,8 +200,13 @@ c_expression::c_expression(c_expression* parent, std::string orig_expr, bool aut
 
     if (parent != nullptr)
     {
+        m_root = false;
         parent->m_children.push_back(this);
         this->drop();
+    }
+    else
+    {
+        m_root = true;
     }
 
     //__auto_free.reset();
@@ -215,12 +220,14 @@ c_expression::c_expression(std::string expr, bool auto_complete)
 c_expression::c_expression(const c_expression& expr)
  : m_name(expr.m_name)
  , m_children(expr.m_children.begin(), expr.m_children.end())
+ , m_root(true)
 {
 }
 
 c_expression::c_expression(c_expression&& expr)
  : m_name(std::move(expr.m_name))
  , m_children(std::move(expr.m_children))
+ , m_root(true)
 {
 }
 
@@ -264,6 +271,11 @@ std::string c_expression::get_expression() const
     }
 
     return expr;
+}
+
+bool c_expression::is_root() const
+{
+    return m_root;
 }
 
 bool c_expression::is_leaf() const

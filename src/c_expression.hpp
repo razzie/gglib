@@ -16,6 +16,7 @@ namespace gg
         void set_name(std::string name);
         std::string get_name() const;
         std::string get_expression() const;
+        bool is_root() const;
         bool is_leaf() const;
         bool is_empty() const;
         enumerator<expression*> get_children();
@@ -29,6 +30,7 @@ namespace gg
     private:
         std::string m_name;
         std::list<grab_ptr<expression, true>> m_children;
+        bool m_root;
     };
 
     class c_expression_error : public expression_error

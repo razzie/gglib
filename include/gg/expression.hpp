@@ -17,6 +17,7 @@ namespace gg
         virtual void set_name(std::string name) = 0;
         virtual std::string get_name() const = 0;
         virtual std::string get_expression() const = 0;
+        virtual bool is_root() const = 0;
         virtual bool is_leaf() const = 0;
         virtual bool is_empty() const = 0;
         virtual enumerator<expression*> get_children() = 0;
