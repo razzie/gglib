@@ -20,7 +20,7 @@ namespace gg
         virtual bool is_leaf() const = 0;
         virtual bool is_empty() const = 0;
         virtual enumerator<expression*> get_children() = 0;
-        virtual const_enumerator<expression*> get_children() const = 0;
+        virtual enumerator<expression*> get_children() const = 0;
         virtual void for_each(std::function<void(expression&)>) = 0;
         virtual void for_each(std::function<void(const expression&)>) const = 0;
 

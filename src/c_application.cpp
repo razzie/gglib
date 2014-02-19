@@ -844,13 +844,7 @@ enumerator<remote_application*> c_application::get_remote_applications()
 {
     tthread::lock_guard<tthread::mutex> guard(m_cond_mutex);
 
-    std::list<grab_ptr<remote_application, true>> tmplist;
-    for (auto& it : m_clients) tmplist.push_back(it);
-
-    conversion_container<decltype(tmplist), remote_application*> convlist(
-        std::move(tmplist), [](grab_ptr<remote_application, true>& it)->remote_application*& { return it; });
-
-    return std::move(convlist);
+    return std::move(make_enumerator<remote_application*>(m_clients));
 }
 
 void c_application::handle_connection_open(connection* conn)

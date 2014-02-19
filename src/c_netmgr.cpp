@@ -146,13 +146,7 @@ enumerator<connection*> c_listener::get_connections()
 {
     tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
-    std::list<grab_ptr<connection, true>> tmplist;
-    for (connection* conn : m_conns) tmplist.push_back(conn);
-
-    conversion_container<decltype(tmplist), connection*> convlist(
-        std::move(tmplist), [](grab_ptr<connection, true>& it)->connection*& { return it; });
-
-    return std::move(convlist);
+    return std::move(make_enumerator<connection*>(m_conns));
 }
 
 void c_listener::send_to_all(buffer* buf)

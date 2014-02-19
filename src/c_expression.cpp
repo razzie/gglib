@@ -278,29 +278,12 @@ bool c_expression::is_empty() const
 
 enumerator<expression*> c_expression::get_children()
 {
-    std::list<grab_ptr<expression, true>> tmplist(m_children.begin(), m_children.end());
-
-    conversion_container<decltype(tmplist), expression*> convlist(
-        std::move(tmplist), [](grab_ptr<expression, true>& it)->expression*& { return it; });
-
-    return std::move(convlist);
+    return std::move(make_enumerator<expression*>(m_children));
 }
 
-const_enumerator<expression*> c_expression::get_children() const
+enumerator<expression*> c_expression::get_children() const
 {
-    /*std::list<grab_ptr<expression, true>> tmplist(m_children.cbegin(), m_children.cend());
-
-    conversion_container<decltype(tmplist), expression*> convlist(
-        std::move(tmplist), [](grab_ptr<expression, true>& it)->expression*& { return it; });*/
-
-    std::list<expression*> convlist;
-    for (auto it : m_children)
-    {
-        const expression* e = it;
-        convlist.push_back(const_cast<expression*>(e));
-    }
-
-    return std::move(convlist);
+    return std::move(make_const_enumerator<expression*>(m_children));
 }
 
 void c_expression::for_each(std::function<void(expression&)> func)

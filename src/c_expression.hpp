@@ -19,7 +19,7 @@ namespace gg
         bool is_leaf() const;
         bool is_empty() const;
         enumerator<expression*> get_children();
-        const_enumerator<expression*> get_children() const;
+        enumerator<expression*> get_children() const;
         void for_each(std::function<void(expression&)>);
         void for_each(std::function<void(const expression&)>) const;
 
