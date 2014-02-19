@@ -52,6 +52,12 @@ void c_script_engine::console_controller::complete(std::string& expr, console::o
 }
 
 
+bool c_script_engine::fn_name_comparator::operator() (const std::string& s1, const std::string& s2) const
+{
+    return (util::strcmpi(s1, s2) < 0);
+}
+
+
 c_script_engine::c_script_engine(application* app)
  : m_app(app)
  , m_remote_access(true)
@@ -178,7 +184,7 @@ std::vector<std::string> c_script_engine::find_matching_functions(std::string fn
         if (it->second.m_is_hidden)
             continue;
 
-        if (it->first.compare(0, len, fn) == 0)
+        if (util::strncmpi(it->first, fn, len) == 0)
             matches.push_back(it->first);
     }
 
@@ -239,7 +245,7 @@ bool c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
         char c = (matches[0])[pos];
         for (auto it = begin+1; it != end; ++it)
         {
-            if ((*it)[pos] != c) return false;
+            if (std::tolower((*it)[pos]) != std::tolower(c)) return false;
         }
         fn += c;
     }

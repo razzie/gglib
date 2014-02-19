@@ -254,7 +254,7 @@ std::string c_expression::get_expression() const
 
     if (this->is_leaf())
     {
-        if (m_name.empty() || util::is_numeric(m_name)) expr += m_name;
+        if (m_root || util::is_numeric(m_name)) expr += m_name;
         else expr += '"' + m_name + '"';
     }
     else
@@ -290,7 +290,7 @@ bool c_expression::is_empty() const
 
 enumerator<expression*> c_expression::get_children()
 {
-    return std::move(make_enumerator<expression*>(m_children));
+    return std::move(make_ref_enumerator<expression*>(m_children));
 }
 
 enumerator<expression*> c_expression::get_children() const

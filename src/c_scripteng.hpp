@@ -28,9 +28,16 @@ namespace gg
             bool m_is_hidden;
         };
 
+        struct fn_name_comparator
+        {
+            fn_name_comparator() = default;
+            ~fn_name_comparator() = default;
+            bool operator() (const std::string&, const std::string&) const;
+        };
+
         mutable tthread::mutex m_mutex;
         mutable application* m_app;
-        std::map<std::string, function_container> m_functions;
+        std::map<std::string, function_container, fn_name_comparator> m_functions;
         bool m_remote_access;
 
     public:
