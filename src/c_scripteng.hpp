@@ -39,6 +39,7 @@ namespace gg
         mutable application* m_app;
         std::map<std::string, function_container, fn_name_comparator> m_functions;
         bool m_remote_access;
+        bool m_show_hidden;
 
     public:
         c_script_engine(application* app);
@@ -55,6 +56,8 @@ namespace gg
 
     private:
         bool is_valid_fn_name(std::string fn) const;
+        void show_hidden_functions();
+        void hide_hidden_functions();
         std::vector<std::string> find_matching_functions(std::string fn) const;
         bool auto_complete(std::string& fn, bool print = false) const;
         bool auto_complete(std::string& fn, std::vector<std::string> matches, bool print = false) const;

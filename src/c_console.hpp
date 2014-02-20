@@ -62,9 +62,20 @@ private:
         c_output(c_console*, color, int align, bool visible);
         ~c_output();
         console& get_console() const;
-
         void show();
         void hide();
+        void set_color(color);
+        color get_color() const ;
+        void align_left();
+        void align_center();
+        void align_right();
+        void valign_top();
+        void valign_center();
+        void valign_bottom();
+        void print(std::string);
+        std::string to_string() const;
+        bool is_empty() const;
+        void erase();
         void flag_dirty();
         bool is_dirty() const;
         void draw(const render_context* ctx, RECT* bounds,
@@ -72,20 +83,6 @@ private:
 
         static void draw(std::string text, const render_context* ctx,
                          RECT* bounds, int caret_pos = -1);
-
-        void set_color(color);
-        color get_color() const ;
-
-        void align_left();
-        void align_center();
-        void align_right();
-        void valign_top();
-        void valign_center();
-        void valign_bottom();
-
-        std::string to_string() const;
-        bool is_empty() const;
-        void erase();
 
     protected:
         // inherited from std::streambuf
@@ -100,6 +97,7 @@ private:
     std::string m_name;
 	bool m_open;
 	bool m_input;
+	bool m_arg_fill;
 	std::list<c_output*> m_outp;
 	std::string m_cmd;
 	std::string::iterator m_cmd_pos;
@@ -124,6 +122,7 @@ private:
     bool run();
     void cmd_async_exec();
     void cmd_complete();
+    void arg_fill_helper();
     bool prepare_render_context(render_context* ctx);
     void finish_render_context(render_context* ctx);
     void paint(const render_context* ctx);
@@ -144,6 +143,8 @@ public:
     void set_controller(controller* ctrl);
     void enable_input();
     void disable_input();
+    virtual void enable_argument_fill_helper();
+    virtual void disable_argument_fill_helper();
     void open();
     void close();
     bool is_opened() const;

@@ -39,6 +39,7 @@ c_console::c_console(application* app, std::string name,
  , m_name(name)
  , m_open(false)
  , m_input(true)
+ , m_arg_fill(true)
  , m_cmd_pos(m_cmd.end())
  , m_cmd_history_pos(m_cmd_history.end())
  , m_ctrl(ctrl)
@@ -125,6 +126,18 @@ void c_console::disable_input()
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     m_input = false;
+}
+
+void c_console::enable_argument_fill_helper()
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    m_arg_fill = true;
+}
+
+void c_console::disable_argument_fill_helper()
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    m_arg_fill = false;
 }
 
 void c_console::open()
@@ -335,7 +348,17 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
                 default:
                     if (isprint(wParam))
                     {
-                        m_cmd_pos = m_cmd.insert(m_cmd_pos, wParam) + 1;
+                        // special case if arg_fill_helper is on
+                        if (m_arg_fill && m_cmd_pos != m_cmd.end() && *m_cmd_pos == '0' && std::isdigit(wParam) &&
+                            (m_cmd_pos == m_cmd.begin() || *(m_cmd_pos-1) == '(' || *(m_cmd_pos-1) == ',' || *(m_cmd_pos-1) == ' '))
+                        {
+                            *m_cmd_pos = wParam;
+                            ++m_cmd_pos;
+                        }
+                        else
+                        {
+                            m_cmd_pos = m_cmd.insert(m_cmd_pos, wParam) + 1;
+                        }
                         update();
                     }
                     break;
@@ -394,7 +417,8 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
                     if (m_cmd_history_pos != m_cmd_history.begin())
                     {
                         m_cmd = *(--m_cmd_history_pos);
-                        m_cmd_pos = m_cmd.end();
+                        m_cmd_pos = m_cmd.begin();
+                        arg_fill_helper();
                         update();
                     }
                     break;
@@ -409,7 +433,8 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
                     else if (m_cmd_history_pos != m_cmd_history.end())
                     {
                         m_cmd = *(++m_cmd_history_pos);
-                        m_cmd_pos = m_cmd.end();
+                        m_cmd_pos = m_cmd.begin();
+                        arg_fill_helper();
                         update();
                     }
                     break;
@@ -606,6 +631,8 @@ void c_console::cmd_complete()
     {
         output* o = create_output();
 
+        size_t dist = static_cast<size_t>(std::distance(m_cmd.begin(), m_cmd_pos));
+
         try
         {
             recursive_thread_global<console*>::scope invoker(&s_invokers, this);
@@ -614,13 +641,35 @@ void c_console::cmd_complete()
         catch (std::exception& e) { *o << "\nexception: " << e.what(); }
         catch (...) { *o << "\nexception: unknown"; }
 
+        m_cmd_pos = std::next(m_cmd.begin(), (dist < m_cmd.size()) ? dist : m_cmd.size());
+
         o->drop();
 
         if (o->is_empty()) o->hide();
         //if (o->is_empty()) o->drop();
     }
 
-    m_cmd_pos = m_cmd.end();
+    arg_fill_helper();
+}
+
+void c_console::arg_fill_helper()
+{
+    if (m_ctrl != nullptr && m_arg_fill)
+    {
+        for (; m_cmd_pos != m_cmd.end(); ++m_cmd_pos)
+        {
+            if (*m_cmd_pos == '(' || *m_cmd_pos == ',')
+            {
+                ++m_cmd_pos;
+                if (*m_cmd_pos == ' ') for (; m_cmd_pos != m_cmd.end() && *m_cmd_pos == ' '; ++m_cmd_pos);
+                break;
+            }
+        }
+    }
+    else
+    {
+        m_cmd_pos = m_cmd.end();
+    }
 }
 
 
@@ -775,6 +824,96 @@ void c_console::c_output::hide()
     m_visible = false;
 }
 
+void c_console::c_output::set_color(color c)
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    m_color = c;
+}
+
+console::output::color c_console::c_output::get_color() const
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    return m_color;
+}
+
+void c_console::c_output::align_left()
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+
+    m_align |= alignment::H_LEFT;
+    m_align &= ~alignment::H_CENTER;
+    m_align &= ~alignment::H_RIGHT;
+}
+
+void c_console::c_output::align_center()
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+
+    m_align &= ~alignment::H_LEFT;
+    m_align |= alignment::H_CENTER;
+    m_align &= ~alignment::H_RIGHT;
+}
+
+void c_console::c_output::align_right()
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+
+    m_align &= ~alignment::H_LEFT;
+    m_align &= ~alignment::H_CENTER;
+    m_align |= alignment::H_RIGHT;
+}
+
+void c_console::c_output::valign_top()
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+
+    m_align |= alignment::V_TOP;
+    m_align &= ~alignment::V_CENTER;
+    m_align &= ~alignment::V_BOTTOM;
+}
+
+void c_console::c_output::valign_center()
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+
+    m_align &= ~alignment::V_TOP;
+    m_align |= alignment::V_CENTER;
+    m_align &= ~alignment::V_BOTTOM;
+}
+
+void c_console::c_output::valign_bottom()
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+
+    m_align &= ~alignment::V_TOP;
+    m_align &= ~alignment::V_CENTER;
+    m_align |= alignment::V_BOTTOM;
+}
+
+void c_console::c_output::print(std::string str)
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    m_text += str;
+}
+
+std::string c_console::c_output::to_string() const
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    return m_text;
+}
+
+bool c_console::c_output::is_empty() const
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    return (m_text.empty());
+}
+
+void c_console::c_output::erase()
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    m_text.erase();
+}
+
 void c_console::c_output::flag_dirty()
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
@@ -783,7 +922,6 @@ void c_console::c_output::flag_dirty()
 
 bool c_console::c_output::is_dirty() const
 {
-    //tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     return m_dirty;
 }
 
@@ -868,90 +1006,6 @@ void c_console::c_output::draw(std::string text, const render_context* ctx, RECT
     c_output tmp_out(nullptr);
     tmp_out.m_text = text;
     tmp_out.draw(ctx, bounds, caret_pos);
-}
-
-void c_console::c_output::set_color(color c)
-{
-    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-    m_color = c;
-}
-
-console::output::color c_console::c_output::get_color() const
-{
-    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-    return m_color;
-}
-
-void c_console::c_output::align_left()
-{
-    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-
-    m_align |= alignment::H_LEFT;
-    m_align &= ~alignment::H_CENTER;
-    m_align &= ~alignment::H_RIGHT;
-}
-
-void c_console::c_output::align_center()
-{
-    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-
-    m_align &= ~alignment::H_LEFT;
-    m_align |= alignment::H_CENTER;
-    m_align &= ~alignment::H_RIGHT;
-}
-
-void c_console::c_output::align_right()
-{
-    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-
-    m_align &= ~alignment::H_LEFT;
-    m_align &= ~alignment::H_CENTER;
-    m_align |= alignment::H_RIGHT;
-}
-
-void c_console::c_output::valign_top()
-{
-    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-
-    m_align |= alignment::V_TOP;
-    m_align &= ~alignment::V_CENTER;
-    m_align &= ~alignment::V_BOTTOM;
-}
-
-void c_console::c_output::valign_center()
-{
-    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-
-    m_align &= ~alignment::V_TOP;
-    m_align |= alignment::V_CENTER;
-    m_align &= ~alignment::V_BOTTOM;
-}
-
-void c_console::c_output::valign_bottom()
-{
-    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-
-    m_align &= ~alignment::V_TOP;
-    m_align &= ~alignment::V_CENTER;
-    m_align |= alignment::V_BOTTOM;
-}
-
-std::string c_console::c_output::to_string() const
-{
-    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-    return m_text;
-}
-
-bool c_console::c_output::is_empty() const
-{
-    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-    return (m_text.empty());
-}
-
-void c_console::c_output::erase()
-{
-    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-    m_text.erase();
 }
 
 int c_console::c_output::overflow(int c)

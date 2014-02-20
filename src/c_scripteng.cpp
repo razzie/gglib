@@ -2,6 +2,7 @@
 #include <cctype>
 #include "c_scripteng.hpp"
 #include "c_logger.hpp"
+#include "gg/application.hpp"
 #include "gg/util.hpp"
 
 using namespace gg;
@@ -10,10 +11,12 @@ using namespace gg;
 c_script_engine::console_controller::console_controller(const c_script_engine* scripteng)
  : m_scripteng(scripteng)
 {
+    m_scripteng->get_app()->application::grab();
 }
 
 c_script_engine::console_controller::~console_controller()
 {
+    m_scripteng->get_app()->application::drop();
 }
 
 console::controller::exec_result
@@ -61,6 +64,7 @@ bool c_script_engine::fn_name_comparator::operator() (const std::string& s1, con
 c_script_engine::c_script_engine(application* app)
  : m_app(app)
  , m_remote_access(true)
+ , m_show_hidden(false)
 {
     script_engine* eng = this;
 
@@ -81,6 +85,9 @@ c_script_engine::c_script_engine(application* app)
                 else
                     con->clear();
             });
+
+    eng->add_function("show_hidden", [&] { this->show_hidden_functions(); }, true);
+    eng->add_function("hide_hidden", [&] { this->hide_hidden_functions(); }, true);
 }
 
 c_script_engine::~c_script_engine()
@@ -111,6 +118,9 @@ void c_script_engine::add_function(std::string fn, dynamic_function func, std::s
 {
     if (m_functions.count(fn) > 0)
         throw std::runtime_error("function already registered");
+
+    if (!is_valid_fn_name(fn))
+        throw std::runtime_error("invalid function name");
 
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
@@ -169,6 +179,18 @@ bool c_script_engine::is_valid_fn_name(std::string fn) const
     return true;
 }
 
+void c_script_engine::show_hidden_functions()
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    m_show_hidden = true;
+}
+
+void c_script_engine::hide_hidden_functions()
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    m_show_hidden = false;
+}
+
 std::vector<std::string> c_script_engine::find_matching_functions(std::string fn) const
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
@@ -181,14 +203,14 @@ std::vector<std::string> c_script_engine::find_matching_functions(std::string fn
 
     for (; it != end; ++it)
     {
-        if (it->second.m_is_hidden)
+        if (it->second.m_is_hidden && !m_show_hidden)
             continue;
 
         if (util::strncmpi(it->first, fn, len) == 0)
             matches.push_back(it->first);
     }
 
-    return matches;
+    return std::move(matches);
 }
 
 bool c_script_engine::auto_complete(std::string& fn, bool print) const
@@ -255,27 +277,6 @@ bool c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
 
 static void fill_expr_by_sign(expression& e, const c_expression& sg)
 {
-    /*std::list<expression::expression_ptr>& e_chld = e.get_children();
-    const std::list<expression::expression_ptr>& sg_chld = sg.get_children();
-
-    size_t e_chld_size = e_chld.size();
-    size_t sg_chld_size = sg_chld.size();
-
-    if (e_chld_size < sg_chld_size)
-    {
-        for (auto it = std::next(sg_chld.begin(), sg_chld_size - e_chld_size + 1); it != sg_chld.end(); ++it)
-        {
-            e.add_child(**it);
-        }
-    }
-    else if (e_chld_size > sg_chld_size)
-    {
-        for (auto it = std::next(e_chld.begin(), e_chld_size - sg_chld_size); it != e_chld.end(); ++it)
-        {
-            e.remove_child(it);
-        }
-    }*/
-
     auto e_children = e.get_children();
     auto sg_children = sg.get_children();
 
@@ -284,14 +285,14 @@ static void fill_expr_by_sign(expression& e, const c_expression& sg)
 
     if (e_children_cnt < sg_children_cnt)
     {
-        sg_children.advance(sg_children_cnt - e_children_cnt + 1);
-        for (; !e_children.is_finished(); e_children.next()); // jump to the end
-        for (; !sg_children.is_finished(); sg_children.next()) e_children.insert(sg_children.get());
+        sg_children.advance(e_children_cnt);
+        for (; e_children.has_next(); e_children.next()); // jump to the end
+        for (; sg_children.has_next(); sg_children.next()) e_children.insert(sg_children.get());
     }
     else if (e_children_cnt > sg_children_cnt)
     {
-        e_children.advance(e_children_cnt - sg_children_cnt);
-        for (; !e_children.is_finished(); e_children.next()) e_children.erase();
+        e_children.advance(sg_children_cnt);
+        for (; e_children.has_next(); e_children.next()) e_children.erase();
     }
 }
 
@@ -309,14 +310,18 @@ void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
 
             tthread::lock_guard<tthread::mutex> guard(m_mutex);
             auto pos = m_functions.find(name);
-            if (pos != m_functions.end()) fill_expr_by_sign(e, pos->second.m_sign);
+            if (pos != m_functions.end())
+            {
+                fill_expr_by_sign(e, pos->second.m_sign);
+                e.set_as_expression();
+            }
         }
     }
     else
     {
         e.for_each([&](expression& e)
         {
-            if (!e.is_leaf() && // it's an c_expression
+            if (!e.is_leaf() && // it's an expression
                 (e.is_root() || !e.get_name().empty())) // not an array arg
             {
                 std::string name = e.get_name();
@@ -330,7 +335,7 @@ void c_script_engine::auto_complete_expr(std::string& expr, bool print) const
         });
     }
 
-    if (!e.is_empty()) expr = e.get_expression();
+    expr = e.get_expression();
 }
 
 optional<var> c_script_engine::process_expression(const expression& e) const
@@ -348,10 +353,8 @@ optional<var> c_script_engine::process_expression(const expression& e) const
 
         varlist vl;
 
-        for (auto args = e.get_children(); !args.is_finished(); args.next())
+        for (auto args = e.get_children(); args.has_next(); args.next())
         {
-            if ((*args.get())->is_empty()) continue;
-
             optional<var> v = process_expression(**args.get());
             if (v.is_valid()) vl.push_back(v);
             else return {};
@@ -365,10 +368,9 @@ optional<var> c_script_engine::process_expression(const expression& e) const
         {
             dynamic_function func;
 
-            m_mutex.lock();
+            tthread::lock_guard<tthread::mutex> guard(m_mutex);
             auto pos = m_functions.find(name);
             if (pos != m_functions.end()) func = pos->second.m_func;
-            m_mutex.unlock();
 
             if (func) return func(vl);
         }

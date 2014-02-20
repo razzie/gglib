@@ -70,9 +70,9 @@ expression* create(std::string expr, bool auto_complete)
 }
 
 c_expression::c_expression(c_expression* parent, std::string orig_expr, bool auto_complete)
+ : m_expr(false)
+ , m_root((parent == nullptr))
 {
-    //util::scope_callback __auto_free([&]{ for (auto child : m_children) delete child; });
-
     std::string expr = util::trim(orig_expr);
 
     int open_brackets = 0;
@@ -134,7 +134,15 @@ c_expression::c_expression(c_expression* parent, std::string orig_expr, bool aut
 
             else if (open_brackets == 0 && expr_mode == EXPR_INCOMPLETE)
             {
-                new c_expression(this, std::string(expr_begin, it), auto_complete);
+                m_expr = true;
+                std::string child_expr(expr_begin, it);
+                if (dbl_apost_cnt || !util::trim(child_expr).empty())
+                {
+                    expression* child = new c_expression(this, child_expr, auto_complete);
+                    m_children.push_back(child);
+                    child->drop();
+                }
+
                 expr_mode = EXPR_COMPLETE;
                 continue;
             }
@@ -149,7 +157,15 @@ c_expression::c_expression(c_expression* parent, std::string orig_expr, bool aut
 
             else if (open_brackets == 1)
             {
-                new c_expression(this, std::string(expr_begin, it), auto_complete);
+                m_expr = true;
+                std::string child_expr(expr_begin, it);
+                if (dbl_apost_cnt || !util::trim(child_expr).empty())
+                {
+                    expression* child = new c_expression(this, child_expr, auto_complete);
+                    m_children.push_back(child);
+                    child->drop();
+                }
+
                 expr_begin = it + 1;
                 dbl_apost_cnt = 0;
                 continue;
@@ -169,10 +185,17 @@ c_expression::c_expression(c_expression* parent, std::string orig_expr, bool aut
     {
         if (expr_mode == EXPR_INCOMPLETE)
         {
-            std::string child_expr = std::string(expr_begin, expr.end());
+            m_expr = true;
+            std::string child_expr(expr_begin, expr.end());
             if (dbl_apost_cnt % 2) child_expr += '"';
             if (open_brackets > 0) for (int i = open_brackets; i > 0; --i) child_expr += ')';
-            new c_expression(this, child_expr, auto_complete);
+
+            if (dbl_apost_cnt || !util::trim(child_expr).empty())
+            {
+                expression* child = new c_expression(this, child_expr, auto_complete);
+                m_children.push_back(child);
+                child->drop();
+            }
         }
         else if (expr_mode == EXPR_NONE)
         {
@@ -197,19 +220,6 @@ c_expression::c_expression(c_expression* parent, std::string orig_expr, bool aut
             this->set_name(expr);
         }
     }
-
-    if (parent != nullptr)
-    {
-        m_root = false;
-        parent->m_children.push_back(this);
-        this->drop();
-    }
-    else
-    {
-        m_root = true;
-    }
-
-    //__auto_free.reset();
 }
 
 c_expression::c_expression(std::string expr, bool auto_complete)
@@ -220,6 +230,7 @@ c_expression::c_expression(std::string expr, bool auto_complete)
 c_expression::c_expression(const c_expression& expr)
  : m_name(expr.m_name)
  , m_children(expr.m_children.begin(), expr.m_children.end())
+ , m_expr(expr.m_expr)
  , m_root(true)
 {
 }
@@ -227,6 +238,7 @@ c_expression::c_expression(const c_expression& expr)
 c_expression::c_expression(c_expression&& expr)
  : m_name(std::move(expr.m_name))
  , m_children(std::move(expr.m_children))
+ , m_expr(expr.m_expr)
  , m_root(true)
 {
 }
@@ -254,7 +266,7 @@ std::string c_expression::get_expression() const
 
     if (this->is_leaf())
     {
-        if (m_root || util::is_numeric(m_name)) expr += m_name;
+        if (m_root || util::is_numeric(m_name)/* || m_name.empty()*/) expr += m_name;
         else expr += '"' + m_name + '"';
     }
     else
@@ -273,6 +285,11 @@ std::string c_expression::get_expression() const
     return expr;
 }
 
+void c_expression::set_as_expression()
+{
+    m_expr = true;
+}
+
 bool c_expression::is_root() const
 {
     return m_root;
@@ -280,12 +297,7 @@ bool c_expression::is_root() const
 
 bool c_expression::is_leaf() const
 {
-    return m_children.empty();
-}
-
-bool c_expression::is_empty() const
-{
-    return (this->is_leaf() && util::trim(m_name).empty());
+    return (m_children.empty() && !m_expr);
 }
 
 enumerator<expression*> c_expression::get_children()

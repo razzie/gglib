@@ -70,6 +70,16 @@ int main()
                 return sum;
             });
 
+    app->get_script_engine()->add_function("color",
+            [](unsigned R, unsigned G, unsigned B)
+            {
+                gg::console* c = gg::console::get_invoker_console();
+                gg::console::output* o = c->create_output();
+                o->set_color( {(uint8_t)R, (uint8_t)G, (uint8_t)B} );
+                *o << "(R: " << R << ", G: " << G << ", B: " << B << ")";
+                o->drop();
+            });
+
 
     gg::console* con = app->create_console();
     con->open();

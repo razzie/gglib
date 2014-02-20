@@ -283,6 +283,7 @@ c_remote_application::c_remote_application(c_application* app, std::string addre
  , m_err(&std::cout)
  , m_packet_err(0)
 {
+    m_app->application::grab();
     m_conn->set_packet_handler(this);
 }
 
@@ -293,6 +294,7 @@ c_remote_application::c_remote_application(c_application* app, connection* conn)
  , m_err(&std::cout)
  , m_packet_err(0)
 {
+    m_app->application::grab();
     m_conn->grab();
     m_conn->set_packet_handler(this);
     m_conn->set_connection_handler(this);
@@ -310,6 +312,7 @@ c_remote_application::~c_remote_application()
 {
     disconnect();
     m_conn->drop();
+    m_app->application::drop();
 }
 
 application* c_remote_application::get_app() const
