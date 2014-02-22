@@ -263,6 +263,18 @@ public:
     bool authenticate(remote_application* app, const var& auth_data) { return m_auth_handler(app, auth_data); }
 };
 
+class func_connection_handler : public remote_application::connection_handler
+{
+    std::function<void(remote_application*, bool is_connection)> m_conn_handler;
+
+public:
+    func_connection_handler(decltype(m_conn_handler) h) : m_conn_handler(h) {}
+    func_connection_handler(const func_connection_handler&) = delete;
+    ~func_connection_handler() {}
+    void handle_connection_open(remote_application* rem_app) { m_conn_handler(rem_app, true); }
+    void handle_connection_close(remote_application* rem_app) { m_conn_handler(rem_app, false); }
+};
+
 class func_request_handler : public remote_application::request_handler
 {
     std::function<bool(var&)> m_req_handler;
@@ -278,6 +290,7 @@ public:
 c_remote_application::c_remote_application(c_application* app, std::string address, uint16_t port, var auth_data)
  : m_app(app)
  , m_conn(new c_connection(address, port, true))
+ , m_conn_handler(nullptr)
  , m_auth_ok(false)
  , m_auth_data(auth_data)
  , m_err(&std::cout)
@@ -290,6 +303,7 @@ c_remote_application::c_remote_application(c_application* app, std::string addre
 c_remote_application::c_remote_application(c_application* app, connection* conn)
  : m_app(app)
  , m_conn(conn)
+ , m_conn_handler(nullptr)
  , m_auth_ok(false)
  , m_err(&std::cout)
  , m_packet_err(0)
@@ -299,12 +313,19 @@ c_remote_application::c_remote_application(c_application* app, connection* conn)
     m_conn->set_packet_handler(this);
     m_conn->set_connection_handler(this);
 
-    async_invoke([&]
-    {
+    async_invoke(
+    [&]{
         if (wait_for_authentication(1000))
+        {
             m_app->add_client(this);
+
+            if (m_conn_handler != nullptr)
+                m_conn_handler->handle_connection_open(this);
+        }
         else
+        {
             this->remote_application::drop();
+        }
     });
 }
 
@@ -457,6 +478,9 @@ void c_remote_application::handle_connection_open(connection*)
 void c_remote_application::handle_connection_close(connection* conn)
 {
     if (conn != m_conn) return; // shouldn't happen
+
+    if (m_conn_handler != nullptr)
+        m_conn_handler->handle_connection_close(this);
 
     // if this is the server side connection
     if (m_conn->get_listener() != nullptr)
@@ -615,6 +639,27 @@ void c_remote_application::add_request_handler(typeinfo ti, request_handler* h)
         it->second->drop();
         it->second = h;
     }
+}
+
+void c_remote_application::set_connection_handler(remote_application::connection_handler* h)
+{
+    tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
+
+    if (m_conn_handler != nullptr) m_conn_handler->drop();
+    if (h != nullptr) h->grab();
+    m_conn_handler = h;
+}
+
+void c_remote_application::set_connection_handler(std::function<void(remote_application*, bool is_connection)> f)
+{
+    remote_application::connection_handler* h = new func_connection_handler(f);
+    this->set_connection_handler(h);
+    h->drop();
+}
+
+remote_application::connection_handler* c_remote_application::get_connection_handler() const
+{
+    return m_conn_handler;
 }
 
 void c_remote_application::add_request_handler(typeinfo ti, std::function<bool(var&)> f)

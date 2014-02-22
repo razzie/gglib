@@ -17,6 +17,7 @@ namespace gg
         mutable c_application* m_app;
         mutable tthread::recursive_mutex m_mutex;
         connection* m_conn;
+        remote_application::connection_handler* m_conn_handler;
         volatile bool m_auth_ok;
         std::string m_name;
         var m_auth_data;
@@ -42,6 +43,9 @@ namespace gg
         bool connect();
         void disconnect();
         bool is_connected() const;
+        void set_connection_handler(remote_application::connection_handler*);
+        void set_connection_handler(std::function<void(remote_application*, bool is_connection)>);
+        remote_application::connection_handler* get_connection_handler() const;
         void add_request_handler(typeinfo, request_handler*);
         void add_request_handler(typeinfo, std::function<bool(var&)>);
         void remove_request_handler(typeinfo);
