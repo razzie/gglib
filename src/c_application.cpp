@@ -712,6 +712,8 @@ void c_remote_application::set_error_stream(std::ostream& err)
 }
 
 
+atomic<uint32_t> c_application::sm_inst_cnt(0);
+
 application* application::create(std::string name)
 {
     return new c_application(name);
@@ -721,8 +723,6 @@ c_application::c_application(std::string name)
  : m_name(name)
 {
     setlocale(LC_ALL, "");
-
-    c_logger::get_instance()->enable_cout_hook();
 
     m_serializer = new c_serializer(this);
     m_eventmgr = new c_event_manager(this);
@@ -737,12 +737,21 @@ c_application::c_application(std::string name)
     m_serializer->add_rule_ex(typeid(exec_request), &exec_request::serialize, &exec_request::deserialize);
     m_serializer->add_rule_ex(typeid(parse_and_exec_request), &parse_and_exec_request::serialize, &parse_and_exec_request::deserialize);
     m_serializer->add_rule_ex(typeid(exec_response), &exec_response::serialize, &exec_response::deserialize);
+
+    if (sm_inst_cnt++ == 0) // first instance
+        c_logger::get_instance()->enable_cout_hook();
 }
 
 c_application::~c_application()
 {
     m_exit_code = 0;
     m_cond.notify_all();
+
+    if (--sm_inst_cnt == 0) // last instance
+    {
+        std::cout << std::flush;
+        c_logger::get_instance()->disable_cout_hook();
+    }
 
     delete m_idman;
     delete m_netmgr;

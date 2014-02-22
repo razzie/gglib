@@ -68,6 +68,7 @@ namespace gg
 
     class c_application : public application, public connection_handler
     {
+        static atomic<uint32_t> sm_inst_cnt;
         mutable tthread::mutex m_mutex;
         std::string m_name;
         c_event_manager* m_eventmgr;
