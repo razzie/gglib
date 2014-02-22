@@ -368,9 +368,11 @@ optional<var> c_script_engine::process_expression(const expression& e) const
         {
             dynamic_function func;
 
-            tthread::lock_guard<tthread::mutex> guard(m_mutex);
+            //tthread::lock_guard<tthread::mutex> guard(m_mutex);
+            m_mutex.lock();
             auto pos = m_functions.find(name);
             if (pos != m_functions.end()) func = pos->second.m_func;
+            m_mutex.unlock();
 
             if (func) return func(vl);
         }
