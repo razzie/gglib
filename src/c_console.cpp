@@ -661,7 +661,11 @@ void c_console::arg_fill_helper()
             if (*m_cmd_pos == '(' || *m_cmd_pos == ',')
             {
                 ++m_cmd_pos;
-                if (*m_cmd_pos == ' ') for (; m_cmd_pos != m_cmd.end() && *m_cmd_pos == ' '; ++m_cmd_pos);
+                if (m_cmd_pos != m_cmd.end())
+                {
+                    if (*m_cmd_pos == ' ') for (; m_cmd_pos != m_cmd.end() && *m_cmd_pos == ' '; ++m_cmd_pos);
+                    if (*m_cmd_pos == '"') ++m_cmd_pos;
+                }
                 break;
             }
         }
