@@ -607,6 +607,9 @@ bool c_remote_application::connect()
         return false;
     }
 
+    if (m_conn_handler != nullptr)
+        m_conn_handler->handle_connection_open(this);
+
     return true;
 }
 
