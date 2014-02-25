@@ -108,7 +108,7 @@ optional<var> gg::deserialize_varlist(buffer* buf, const serializer* s)
     for (uint16_t i = 0; i < vlsize; ++i)
     {
         optional<var> v = s->deserialize(buf);
-        if (!v.is_valid()) return {};
+        if (!v) return {};
         vl.push_back(std::move(*v));
     }
 
@@ -368,10 +368,10 @@ optional<var> c_serializer::deserialize(buffer* buf) const
     if (rule != m_rules.end())
     {
         optional<var> v = std::move(rule->second.m_dfunc(&sbuf, this));
-        if (v.is_valid())
+        if (v)
         {
             sbuf.finalize();
-            return std::move(v.get());
+            return std::move(*v);
         }
     }
 
@@ -386,7 +386,7 @@ varlist c_serializer::deserialize_all(buffer* buf) const
     for(;;)
     {
         optional<var> v = std::move(deserialize(buf));
-        if (v.is_valid()) vl.push_back( std::move(v.get()) );
+        if (v) vl.push_back( std::move(*v) );
         else break;
     }
 

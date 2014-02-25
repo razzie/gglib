@@ -113,7 +113,7 @@ int c_logger::sync()
     if (msg.empty()) return 0;
 
     optional<std::ostream*> o = m_hooks.get();
-    if (o.is_valid() && o.get() != &std::cout)
+    if (o && o.get() != &std::cout)
     {
         o.get()->write(msg.c_str(), msg.size());
     }

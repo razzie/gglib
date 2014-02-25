@@ -64,10 +64,10 @@ public:
         buf->pop(reinterpret_cast<uint8_t*>(&magic), sizeof(uint32_t));
 
         optional<var> str = deserialize_string(buf);
-        if (!str.is_valid()) return {};
+        if (!str) return {};
 
         optional<var> data = s->deserialize(buf);
-        if (!data.is_valid()) return {};
+        if (!data) return {};
 
         return std::move(authentication(magic, std::move(str->get<std::string>()), std::move(*data)));
     }
@@ -116,7 +116,7 @@ public:
         buf->pop(reinterpret_cast<uint8_t*>(&_id), sizeof(uint32_t));
 
         optional<var> data = s->deserialize(buf);
-        if (!data.is_valid()) return {};
+        if (!data) return {};
 
         return std::move(request_or_response(_id, *data));
     }
@@ -159,10 +159,10 @@ public:
         if (buf == nullptr || s == nullptr) return {};
 
         optional<var> v_fn = deserialize_string(buf);
-        if (!v_fn.is_valid()) return {};
+        if (!v_fn) return {};
 
         optional<var> v_vl = deserialize_varlist(buf, s);
-        if (!v_vl.is_valid()) return {};
+        if (!v_vl) return {};
 
         return std::move( exec_request(std::move(v_fn->get<std::string>()), std::move(v_vl->get<varlist>())) );
     }
@@ -198,7 +198,7 @@ public:
         if (buf == nullptr || s == nullptr) return {};
 
         optional<var> v_fn = deserialize_string(buf);
-        if (!v_fn.is_valid()) return {};
+        if (!v_fn) return {};
 
         return std::move( parse_and_exec_request(std::move(v_fn->get<std::string>())) );
     }
@@ -242,10 +242,10 @@ public:
         if (buf == nullptr || s == nullptr) return {};
 
         optional<var> v_retval = s->deserialize(buf);
-        if (!v_retval.is_valid()) return {};
+        if (!v_retval) return {};
 
         optional<var> v_outp = deserialize_string(buf);
-        if (!v_outp.is_valid()) return {};
+        if (!v_outp) return {};
 
         return std::move( exec_response(std::move(*v_retval), std::move(v_outp->get<std::string>())) );
     }
@@ -348,7 +348,7 @@ void c_remote_application::handle_packet(connection* conn)
     //tthread::lock_guard<tthread::recursive_mutex> guard(m_mutex);
 
     optional<var> data = m_app->get_serializer()->deserialize(conn->get_input_buffer());
-    if (!data.is_valid())
+    if (!data)
     {
         if (++m_packet_err > 3)
         {
@@ -513,7 +513,7 @@ bool c_remote_application::handle_request(var& data) const
 
         // doing the actual exec
         optional<var> rv = se->exec(req.get_function(), req.get_varlist(), ss);
-        if (!rv.is_valid()) return false;
+        if (!rv) return false;
 
         // responding in case of success
         data = std::move( exec_response(std::move(*rv), ss) );
@@ -534,7 +534,7 @@ bool c_remote_application::handle_request(var& data) const
 
         // doing the actual exec
         optional<var> rv = se->parse_and_exec(req.get_expression(), ss);
-        if (!rv.is_valid()) return false;
+        if (!rv) return false;
 
         // responding in case of success
         data = std::move( exec_response(std::move(*rv), ss) );

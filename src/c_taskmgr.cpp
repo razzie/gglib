@@ -282,7 +282,7 @@ c_task_manager::~c_task_manager()
 thread* task_manager::get_current_thread()
 {
     optional<thread*> t = s_threads.get();
-    return (t.is_valid() ? t.get() : nullptr);
+    return (t ? *t : nullptr);
 }
 
 application* c_task_manager::get_app() const

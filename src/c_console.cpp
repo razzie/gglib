@@ -13,7 +13,7 @@ static recursive_thread_global<console*> s_invokers;
 console* console::get_invoker_console()
 {
     optional<console*> con = s_invokers.get();
-    if (con.is_valid()) return con;
+    if (con) return *con;
     else return nullptr;
 }
 

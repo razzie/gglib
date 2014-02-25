@@ -32,10 +32,9 @@ console::controller::exec_result
         c_expression e(expr);
         r = m_scripteng->parse_and_exec(expr, out);
 
-        if (r.is_valid() && !r->is_empty()
-             && out.is_empty() && !e.is_leaf())
+        if (r && !r->is_empty() && out.is_empty() && !e.is_leaf())
         {
-            out << r/*->to_stream()*/;
+            out << r;
         }
     }
     catch (expression_error& e)
@@ -44,7 +43,7 @@ console::controller::exec_result
         return exec_result::EXEC_FAIL;
     }
 
-    return (r.is_valid() ? exec_result::EXEC_SUCCESS : exec_result::EXEC_FAIL);
+    return (r ? exec_result::EXEC_SUCCESS : exec_result::EXEC_FAIL);
 }
 
 void c_script_engine::console_controller::complete(std::string& expr, console::output& out)
@@ -287,7 +286,7 @@ static void fill_expr_by_sign(expression& e, const c_expression& sg)
     {
         sg_children.advance(e_children_cnt);
         for (; e_children.has_next(); e_children.next()); // jump to the end
-        for (; sg_children.has_next(); sg_children.next()) e_children.insert(sg_children.get());
+        for (; sg_children.has_next(); sg_children.next()) e_children.insert( *(sg_children.get()) );
     }
     else if (e_children_cnt > sg_children_cnt)
     {
@@ -356,7 +355,7 @@ optional<var> c_script_engine::process_expression(const expression& e) const
         for (auto args = e.get_children(); args.has_next(); args.next())
         {
             optional<var> v = process_expression(**args.get());
-            if (v.is_valid()) vl.push_back(v);
+            if (v) vl.push_back(*v);
             else return {};
         }
 

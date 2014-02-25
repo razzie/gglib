@@ -71,7 +71,7 @@ optional<var> deserialize_event_type(buffer* buf)
     if (buf->pop(reinterpret_cast<uint8_t*>(&hash_code), sizeof(size_t)) != sizeof(size_t)) return {};
 
     optional<var> opt_name = deserialize_string(buf);
-    if (!opt_name.is_valid() || opt_name->get_type() != typeid(std::string)) return {};
+    if (!opt_name || opt_name->get_type() != typeid(std::string)) return {};
     std::string name = opt_name->get<std::string>();
 
     if (name.empty()) return event_type(hash_code);
@@ -147,13 +147,13 @@ c_event::c_event(remote_application* orig, buffer* buf, const serializer* s) // 
     m_type = event_type(hash_code);*/
 
     optional<var> opt_event_type = deserialize_event_type(buf);
-    if (!opt_event_type.is_valid() || opt_event_type->get_type() != typeid(event_type))
+    if (!opt_event_type || opt_event_type->get_type() != typeid(event_type))
         throw std::runtime_error("unable to deserialize event");
 
     m_type = opt_event_type->get<event_type>();
 
     optional<uint8_t> attrcnt = buf->pop();
-    if (!attrcnt.is_valid())
+    if (!attrcnt)
         throw std::runtime_error("unable to deserialize event");
 
     uint8_t attr_count = attrcnt.get();
@@ -163,8 +163,7 @@ c_event::c_event(remote_application* orig, buffer* buf, const serializer* s) // 
         optional<var> attr = deserialize_string(buf);
         optional<var> val = s->deserialize(buf);
 
-        if (!attr.is_valid() || !val.is_valid()
-            || attr->get_type() != typeid(std::string))
+        if (!attr || !val || attr->get_type() != typeid(std::string))
             throw std::runtime_error("unable to deserialize event");
 
         add(std::move(attr->get<std::string>()), std::move(*val));
