@@ -1,19 +1,61 @@
 #ifndef GG_UTIL_HPP_INCLUDED
 #define GG_UTIL_HPP_INCLUDED
 
-#include <assert.h>
+#include <cassert>
 #include <cstdint>
+#include <iostream>
+#include <sstream>
 #include <locale>
 #include <string>
 #include <vector>
+#include <tuple>
 #include <functional>
 #include <type_traits>
 #include <stdexcept>
+#include "gg/optional.hpp"
 
 namespace gg
 {
 namespace util
 {
+    class delimiter
+    {
+        const char delim;
+
+    public:
+        delimiter(char d) : delim(d) {}
+        friend std::istream& operator<< (std::istream&, const delimiter&);
+    };
+
+    std::istream& operator<< (std::istream&, const delimiter&);
+
+    template<class Arg>
+    std::tuple<Arg> parse(std::istream& i, optional<char> delim = {})
+    {
+        Arg a;
+        if (delim) i << delimiter(*delim);
+        if ( !(i >> a) ) throw std::runtime_error("can't extract arg");
+        return std::tuple<Arg> { a };
+    }
+
+    template<class Arg1, class Arg2, class... Args>
+    std::tuple<Arg1, Arg2, Args...> parse(std::istream& i, optional<char> delim = {})
+    {
+        if (delim) i << delimiter(*delim);
+        auto a = parse<Arg1>(i);
+        auto b = parse<Arg2, Args...>(i);
+        return std::tuple_cat(a,b);
+    }
+
+    template<class... Args>
+    std::tuple<Args...> parse(std::string str, optional<char> delim = {})
+    {
+        std::stringstream ss(str);
+        if (delim) ss << delimiter(*delim);
+        return parse<Args...>(ss);
+    }
+
+
     class scope_callback
     {
         std::function<void()> m_func;

@@ -27,6 +27,10 @@ int main()
     app->open_port(9999, nullptr);
 
 
+    /*auto args = gg::util::parse<float,float,float>("123;456;-1.23", ';');
+    std::cout << std::get<0>(args) << "; " << std::get<1>(args) << "; " << std::get<2>(args) << std::endl;*/
+
+
     gg::serializer* srl = app->get_serializer();
     srl->add_trivial_rule<test>();
 

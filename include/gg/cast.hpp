@@ -65,16 +65,17 @@ namespace gg
     }
 
     template<class T>
-    void istream_extract(std::istream& o, T& t,
+    bool istream_extract(std::istream& o, T& t,
         typename std::enable_if<meta::has_extract_op<T>::value>::type* = 0)
     {
-        o >> t;
+        return (o >> t);
     }
 
     template<class T>
-    void istream_extract(std::istream& o, T& t,
+    bool istream_extract(std::istream& o, T& t,
         typename std::enable_if<!meta::has_extract_op<T>::value>::type* = 0)
     {
+        return false;
     }
 
     template<class From, class To>

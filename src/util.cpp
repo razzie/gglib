@@ -3,6 +3,33 @@
 using namespace gg;
 using namespace gg::util;
 
+struct delimiter_is_space : std::ctype<char>
+{
+    char m_delim;
+    std::vector<std::ctype_base::mask> m_rc;
+
+//public:
+    delimiter_is_space(char delim)
+     : std::ctype<char>(get_table())
+     , m_delim(delim)
+     , m_rc(table_size, std::ctype_base::mask())
+    {
+        m_rc[m_delim] = std::ctype_base::space;
+        m_rc['\n'] = std::ctype_base::space;
+    }
+
+    const std::ctype_base::mask* get_table()
+    {
+        return m_rc.data();
+    }
+};
+
+std::istream& gg::util::operator<< (std::istream& i, const delimiter& d)
+{
+    i.imbue(std::locale(i.getloc(), new delimiter_is_space(d.delim)));
+    return i;
+}
+
 
 scope_callback::scope_callback()
 {
