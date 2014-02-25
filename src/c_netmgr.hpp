@@ -99,6 +99,8 @@ namespace gg
         ~c_network_manager();
         application* get_app() const;
         std::string get_hostname() const;
+        bool is_big_endian() const;
+        bool is_little_endian() const;
         listener* create_tcp_listener(uint16_t port) const;
         listener* create_udp_listener(uint16_t port) const;
         connection* create_tcp_connection(std::string address, uint16_t port) const;

@@ -691,6 +691,22 @@ std::string c_network_manager::get_hostname() const
     else return {};
 }
 
+bool c_network_manager::is_big_endian() const
+{
+    union
+    {
+        uint32_t i;
+        char c[4];
+    } chk = { 0x01020304 };
+
+    return (chk.c[0] == 1);
+}
+
+bool c_network_manager::is_little_endian() const
+{
+    return (!is_big_endian());
+}
+
 listener* c_network_manager::create_tcp_listener(uint16_t port) const
 {
     return new c_listener(port, true);

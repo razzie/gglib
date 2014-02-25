@@ -3,6 +3,7 @@
 using namespace gg;
 using namespace gg::util;
 
+
 struct delimiter_is_space : std::ctype<char>
 {
     char m_delim;
@@ -53,23 +54,6 @@ scope_callback& scope_callback::operator= (std::function<void()> func)
 void scope_callback::reset()
 {
     m_func = nullptr;
-}
-
-
-bool util::is_big_endian()
-{
-    union
-    {
-        uint32_t i;
-        char c[4];
-    } chk = { 0x01020304 };
-
-    return (chk.c[0] == 1);
-}
-
-bool util::is_little_endian()
-{
-    return (!util::is_big_endian());
 }
 
 
