@@ -13,6 +13,7 @@
 #include <type_traits>
 #include <stdexcept>
 #include "gg/optional.hpp"
+#include "gg/streamops.hpp"
 
 namespace gg
 {
@@ -49,7 +50,7 @@ namespace util
     {
         Arg a;
         if (delim) i << delimiter(*delim);
-        if ( !(i >> a) ) throw std::runtime_error("can't extract arg");
+        if (!istream_extract(i, a)) throw std::runtime_error("can't extract arg");
         return std::tuple<Arg> { a };
     }
 
@@ -68,6 +69,33 @@ namespace util
         std::stringstream ss(str);
         if (delim) ss << delimiter(*delim);
         return parse<Args...>(ss);
+    }
+
+
+    template<class From, class To>
+    typename std::enable_if<std::is_convertible<From, To>::value, To>::type
+    cast(const From& from)
+    {
+        return To(from);
+    }
+
+    template<class From, class To>
+    typename std::enable_if<!std::is_convertible<From, To>::value, To>::type
+    cast(const From& from)
+    {
+        if (!meta::has_insert_op<From>::value
+            || !meta::has_extract_op<To>::value)
+        {
+            throw std::runtime_error("unable to cast");
+        }
+
+        To result;
+        std::stringstream ss;
+
+        ostream_insert(ss, from);
+        istream_extract(ss, result);
+
+        return result;
     }
 
 
