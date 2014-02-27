@@ -84,6 +84,14 @@ namespace gg
             if (opt) return (o << opt->to_stream());
             else return (o << "(invalid)");
         }
+
+        friend std::istream& operator>> (std::istream& i, optional& opt)
+        {
+            if (opt.m_val.is_empty()) opt.m_val.construct();
+            opt.m_valid = istream_extract(i, *opt);
+            if (!opt.m_valid) opt.m_val.clear();
+            return i;
+        }
     };
 
     extern template class optional<var>;
