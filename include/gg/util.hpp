@@ -25,40 +25,42 @@ namespace util
 
     public:
         scope_callback();
-        scope_callback(std::function<void()> func);
+        scope_callback(std::function<void()>);
         scope_callback(const scope_callback&) = delete;
         scope_callback(scope_callback&&) = delete;
         ~scope_callback();
-        scope_callback& operator= (std::function<void()> func);
+        scope_callback& operator= (std::function<void()>);
         void reset();
     };
 
 
+    ostream_manipulator<const char*> format(const char*);
     istream_manipulator<char> delimiter(char);
 
+
     template<class Arg>
-    std::tuple<Arg> parse(std::istream& i, optional<char> delim = {})
+    std::tuple<Arg> parse(std::istream& i, optional<char> d = {})
     {
         Arg a;
-        if (delim) i << delimiter(*delim);
+        if (d) i << delimiter(*d);
         if (!istream_extract(i, a)) throw std::runtime_error("can't extract arg");
         return std::tuple<Arg> { a };
     }
 
     template<class Arg1, class Arg2, class... Args>
-    std::tuple<Arg1, Arg2, Args...> parse(std::istream& i, optional<char> delim = {})
+    std::tuple<Arg1, Arg2, Args...> parse(std::istream& i, optional<char> d = {})
     {
-        if (delim) i << delimiter(*delim);
+        if (d) i << delimiter(*d);
         auto a = parse<Arg1>(i);
         auto b = parse<Arg2, Args...>(i);
         return std::tuple_cat(a,b);
     }
 
     template<class... Args>
-    std::tuple<Args...> parse(std::string str, optional<char> delim = {})
+    std::tuple<Args...> parse(std::string str, optional<char> d = {})
     {
         std::stringstream ss(str);
-        if (delim) ss << delimiter(*delim);
+        if (d) ss << delimiter(*d);
         return parse<Args...>(ss);
     }
 
