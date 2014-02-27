@@ -7,13 +7,26 @@
 
 using namespace gg;
 
-static recursive_thread_global<console*> s_invokers;
+struct invoker_data
+{
+    console* con;
+    console::output* outp;
+};
+
+static recursive_thread_global<invoker_data> s_invokers;
 
 
 console* console::get_invoker_console()
 {
-    optional<console*> con = s_invokers.get();
-    if (con) return *con;
+    optional<invoker_data> i = s_invokers.get();
+    if (i) return i->con;
+    else return nullptr;
+}
+
+console::output* console::get_invoker_output()
+{
+    optional<invoker_data> i = s_invokers.get();
+    if (i) return i->outp;
     else return nullptr;
 }
 
@@ -208,7 +221,7 @@ void c_console::async_close()
 
     if (m_close_cb)
     {
-        recursive_thread_global<console*>::scope invoker(&s_invokers, this);
+        recursive_thread_global<invoker_data>::scope invoker(&s_invokers, {this, nullptr});
         m_close_cb();
     }
 
@@ -568,7 +581,7 @@ void c_console::cmd_async_exec()
     auto async_exec = [](std::string m_cmd, c_output* m_cmd_outp, c_output* m_exec_outp,
                          c_console* m_con, controller* m_ctrl)
     {
-        recursive_thread_global<console*>::scope invoker(&s_invokers, m_con);
+        recursive_thread_global<invoker_data>::scope invoker(&s_invokers, {m_con, m_exec_outp});
 
         m_con->grab();
         *m_cmd_outp << m_cmd;
@@ -635,7 +648,7 @@ void c_console::cmd_complete()
 
         try
         {
-            recursive_thread_global<console*>::scope invoker(&s_invokers, this);
+            recursive_thread_global<invoker_data>::scope invoker(&s_invokers, {this, o});
             m_ctrl->complete(m_cmd, *o);
         }
         catch (std::exception& e) { *o << "\nexception: " << e.what(); }
