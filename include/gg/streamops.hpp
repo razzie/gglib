@@ -8,6 +8,67 @@
 
 namespace gg
 {
+    template<class T>
+    class ios_manipulator
+    {
+    public:
+        typedef std::ios&(*manipulator)(std::ios&, T);
+
+        ios_manipulator(manipulator m, T v)
+         : m_manip(m), m_value(v) {}
+        ~ios_manipulator() {}
+
+        friend std::ios& operator<< (std::ios& io, const ios_manipulator<T>& m)
+        {
+            return m.m_manip(io, m.m_value);
+        }
+
+    private:
+        manipulator m_manip;
+        T m_value;
+    };
+
+    template<class T>
+    class istream_manipulator
+    {
+    public:
+        typedef std::istream&(*manipulator)(std::istream&, T);
+
+        istream_manipulator(manipulator m, T v)
+         : m_manip(m), m_value(v) {}
+        ~istream_manipulator() {}
+
+        friend std::istream& operator<< (std::istream& io, const istream_manipulator<T>& m)
+        {
+            return m.m_manip(io, m.m_value);
+        }
+
+    private:
+        manipulator m_manip;
+        T m_value;
+    };
+
+    template<class T>
+    class ostream_manipulator
+    {
+    public:
+        typedef std::ostream&(*manipulator)(std::ostream&, T);
+
+        ostream_manipulator(manipulator m, T v)
+         : m_manip(m), m_value(v) {}
+        ~ostream_manipulator() {}
+
+        friend std::ostream& operator<< (std::ostream& io, const ostream_manipulator<T>& m)
+        {
+            return m.m_manip(io, m.m_value);
+        }
+
+    private:
+        manipulator m_manip;
+        T m_value;
+    };
+
+
     namespace meta
     {
         namespace sfinae
@@ -49,6 +110,7 @@ namespace gg
             typedef std::integral_constant<bool, value> type;
         };
     };
+
 
     template<class T>
     void ostream_insert(std::ostream& o, const T& t,

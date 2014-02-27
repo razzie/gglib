@@ -34,16 +34,7 @@ namespace util
     };
 
 
-    class delimiter
-    {
-        const char m_delimiter;
-
-    public:
-        delimiter(char d) : m_delimiter(d) {}
-        friend std::istream& operator<< (std::istream&, const delimiter&);
-    };
-
-    std::istream& operator<< (std::istream&, const delimiter&);
+    istream_manipulator<char> delimiter(char);
 
     template<class Arg>
     std::tuple<Arg> parse(std::istream& i, optional<char> delim = {})

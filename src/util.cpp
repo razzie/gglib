@@ -21,10 +21,15 @@ struct delimiter_is_space : std::ctype<char>
     }
 };
 
-std::istream& gg::util::operator<< (std::istream& i, const delimiter& d)
+static std::istream& __delimiter(std::istream& i, char d)
 {
-    i.imbue(std::locale(i.getloc(), new delimiter_is_space(d.m_delimiter)));
+    i.imbue(std::locale(i.getloc(), new delimiter_is_space(d)));
     return i;
+}
+
+istream_manipulator<char> util::delimiter(char d)
+{
+    return istream_manipulator<char>(__delimiter, d);
 }
 
 
