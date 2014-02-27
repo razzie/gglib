@@ -10,6 +10,15 @@
 
 namespace gg
 {
+    class nullstream : public std::streambuf, public std::ostream
+    {
+    public:
+        nullstream();
+        ~nullstream();
+        int overflow(int c = std::char_traits<char>::eof());
+        int sync();
+    };
+
     class c_logger : public std::streambuf, public logger
     {
         mutable tthread::fast_mutex m_mutex;
@@ -22,6 +31,7 @@ namespace gg
         console* m_console;
         bool m_log_to_file;
         bool m_timestamp;
+        mutable nullstream m_nullstream;
 
         friend class logger::scoped_hook;
 
@@ -56,6 +66,7 @@ namespace gg
         void log_to_stream(std::ostream& = std::cout);
         void log_to_file(std::string);
         void log_to_console(console*);
+        std::ostream& get_nullstream() const;
     };
 };
 

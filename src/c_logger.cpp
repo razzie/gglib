@@ -7,6 +7,26 @@
 using namespace gg;
 
 
+nullstream::nullstream()
+ : std::ostream(this)
+{
+}
+
+nullstream::~nullstream()
+{
+}
+
+int nullstream::overflow(int c)
+{
+    return c;
+}
+
+int nullstream::sync()
+{
+    return 0;
+}
+
+
 c_logger* c_logger::get_instance()
 {
     static c_logger s_instance;
@@ -82,6 +102,11 @@ void c_logger::log_to_console(console* c)
     if (m_console != nullptr) { m_console->drop(); m_console = nullptr; }
     m_console = c;
     m_console->grab();
+}
+
+std::ostream& c_logger::get_nullstream() const
+{
+    return m_nullstream;
 }
 
 void c_logger::push_hook(std::ostream& o)
