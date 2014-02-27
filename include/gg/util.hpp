@@ -36,10 +36,10 @@ namespace util
 
     class delimiter
     {
-        const char delim;
+        const char m_delimiter;
 
     public:
-        delimiter(char d) : delim(d) {}
+        delimiter(char d) : m_delimiter(d) {}
         friend std::istream& operator<< (std::istream&, const delimiter&);
     };
 

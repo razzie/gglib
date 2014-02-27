@@ -6,28 +6,24 @@ using namespace gg::util;
 
 struct delimiter_is_space : std::ctype<char>
 {
-    char m_delim;
-    std::vector<std::ctype_base::mask> m_rc;
+    std::ctype_base::mask m_rc[table_size];
 
-//public:
     delimiter_is_space(char delim)
-     : std::ctype<char>(get_table())
-     , m_delim(delim)
-     , m_rc(table_size, std::ctype_base::mask())
+     : std::ctype<char>(get_table(static_cast<unsigned char>(delim)))
     {
-        m_rc[m_delim] = std::ctype_base::space;
-        m_rc['\n'] = std::ctype_base::space;
     }
 
-    const std::ctype_base::mask* get_table()
+    const std::ctype_base::mask* get_table(unsigned char delim)
     {
-        return m_rc.data();
+        m_rc[delim] = std::ctype_base::space;
+        m_rc['\n'] = std::ctype_base::space;
+        return &m_rc[0];
     }
 };
 
 std::istream& gg::util::operator<< (std::istream& i, const delimiter& d)
 {
-    i.imbue(std::locale(i.getloc(), new delimiter_is_space(d.delim)));
+    i.imbue(std::locale(i.getloc(), new delimiter_is_space(d.m_delimiter)));
     return i;
 }
 
