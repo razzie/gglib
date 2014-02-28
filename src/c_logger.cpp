@@ -128,6 +128,11 @@ std::ostream& c_logger::get_nullstream() const
     return m_nullstream;
 }
 
+std::ostream& c_logger::get_cout() const
+{
+    return *m_cout;
+}
+
 void c_logger::push_hook(std::ostream& o)
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);

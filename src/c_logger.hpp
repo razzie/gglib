@@ -70,6 +70,7 @@ namespace gg
         void log_to_file(std::string);
         void log_to_console(console*);
         std::ostream& get_nullstream() const;
+        std::ostream& get_cout() const;
     };
 };
 

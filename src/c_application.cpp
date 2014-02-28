@@ -293,7 +293,7 @@ c_remote_application::c_remote_application(c_application* app, std::string addre
  , m_conn_handler(nullptr)
  , m_auth_ok(false)
  , m_auth_data(auth_data)
- , m_err(&std::cout)
+ , m_err(c_logger::get_instance())
  , m_packet_err(0)
 {
     m_app->application::grab();
@@ -305,7 +305,7 @@ c_remote_application::c_remote_application(c_application* app, connection* conn)
  , m_conn(conn)
  , m_conn_handler(nullptr)
  , m_auth_ok(false)
- , m_err(&std::cout)
+ , m_err(c_logger::get_instance())
  , m_packet_err(0)
 {
     m_app->application::grab();
@@ -763,11 +763,6 @@ void c_remote_application::set_error_stream(std::ostream& err)
 atomic<uint32_t> c_application::sm_inst_cnt(0);
 c_application::init_callback c_application::sm_init_cb = nullptr;
 
-application* application::create(std::string name)
-{
-    return new c_application(name);
-}
-
 void c_application::set_init_callback(init_callback cb)
 {
     sm_init_cb = cb;
@@ -806,8 +801,9 @@ c_application::~c_application()
 
     if (--sm_inst_cnt == 0) // last instance
     {
-        std::cout << std::flush;
-        c_logger::get_instance()->disable_cout_hook();
+        c_logger* l = c_logger::get_instance();
+        l->get_cout() << std::flush;
+        l->disable_cout_hook();
     }
 
     delete m_idman;

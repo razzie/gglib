@@ -71,7 +71,7 @@ c_script_engine::c_script_engine(application* app)
             [&] {
                 console* con = console::get_invoker_console();
                 if (con == nullptr)
-                    std::cout << "This function can only be used from a console" << std::endl;
+                    *c_logger::get_instance() << "This function can only be used from a console" << std::endl;
                 else
                     con->close();
             });
@@ -80,7 +80,7 @@ c_script_engine::c_script_engine(application* app)
             [&] {
                 console* con = console::get_invoker_console();
                 if (con == nullptr)
-                    std::cout << "This function can only be used from a console" << std::endl;
+                    *c_logger::get_instance() << "This function can only be used from a console" << std::endl;
                 else
                     con->clear();
             });
@@ -238,10 +238,10 @@ bool c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
                      {
                          if (s.size() != 0)
                          {
-                             std::cout << "\n> " << s;
+                             *c_logger::get_instance() << "\n> " << s;
                          }
                      });
-            //std::cout.flush();
+            //*c_logger::get_instance() << std::flush;
         }
     });
 

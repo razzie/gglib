@@ -1,6 +1,7 @@
 #include <iostream>
 #include "threadglobal.hpp"
 #include "c_taskmgr.hpp"
+#include "c_logger.hpp"
 
 using namespace gg;
 
@@ -65,7 +66,7 @@ void gg::async_invoke(std::function<void()> func)
             }
             catch (std::exception& e)
             {
-                std::cout << "async_invoke caught exception: " << e.what() << std::endl;
+                *c_logger::get_instance() << "async_invoke caught exception: " << e.what() << std::endl;
             }
 
             delete f;
@@ -224,11 +225,11 @@ void c_thread::mainloop()
             }
             catch (std::exception& e)
             {
-                std::cout << "exception caught while running task '" << it->m_task->get_name() << "': " << e.what() << std::endl;
+                *c_logger::get_instance() << "exception caught while running task '" << it->m_task->get_name() << "': " << e.what() << std::endl;
             }
             catch (...)
             {
-                std::cout << "unknown exception caught while running task '" << it->m_task->get_name() << "'" << std::endl;
+                *c_logger::get_instance() << "unknown exception caught while running task '" << it->m_task->get_name() << "'" << std::endl;
             }
 
             if (result) // run() returned 'true', so let's remove it

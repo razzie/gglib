@@ -4,6 +4,7 @@
 #include <cstdio>
 #include <stdexcept>
 #include "c_netmgr.hpp"
+#include "c_logger.hpp"
 #include "c_buffer.hpp"
 
 using namespace gg;
@@ -58,7 +59,7 @@ public:
         m_status = WSAStartup(MAKEWORD(2,2), &m_wsaData);
         if (m_status != 0)
         {
-            std::cout << "WSAStartup failed: " << m_status << std::endl;
+            *c_logger::get_instance() << "WSAStartup failed: " << m_status << std::endl;
         }
     }
 
@@ -106,7 +107,7 @@ c_listener::c_listener(uint16_t port, bool is_tcp)
  , m_open(false)
  , m_tcp(is_tcp)
  , m_thread("listener thread")
- , m_err(&std::cout)
+ , m_err(c_logger::get_instance())
 {
 }
 
@@ -348,7 +349,7 @@ c_connection::c_connection(std::string address, uint16_t port, bool is_tcp)
  , m_open(false)
  , m_tcp(is_tcp)
  , m_thread("connection thread")
- , m_err(&std::cout)
+ , m_err(c_logger::get_instance())
 {
 }
 
@@ -364,7 +365,7 @@ c_connection::c_connection(c_listener* l, SOCKET sock, SOCKADDR_STORAGE* addr, b
  , m_open(true)
  , m_tcp(is_tcp)
  , m_thread("connection thread")
- , m_err(&std::cout)
+ , m_err(c_logger::get_instance())
 {
     /*int addrlen = sizeof(SOCKADDR_STORAGE);
     if (getpeername(m_socket, reinterpret_cast<struct sockaddr*>(&m_sockaddr), &addrlen) == SOCKET_ERROR)
