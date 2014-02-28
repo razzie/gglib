@@ -1,6 +1,7 @@
 #include <fstream>
 #include <sstream>
 #include <iomanip>
+#include <cstdio>
 #include "c_logger.hpp"
 #include "gg/console.hpp"
 
@@ -35,6 +36,7 @@ c_logger* c_logger::get_instance()
 
 c_logger::c_logger()
  : std::ostream(this)
+ , m_cout(&std::cout)
  , m_cout_rdbuf(nullptr)
  , m_stream(nullptr)
  , m_file(nullptr)
@@ -49,18 +51,35 @@ c_logger::~c_logger()
     if (m_file != nullptr) delete m_file;
 }
 
+void c_logger::register_cout(std::ostream& o)
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+
+    if (m_cout_rdbuf != nullptr)
+        throw std::runtime_error("can't change cout while hook is enabled");
+
+    m_cout = &o;
+}
+
 void c_logger::enable_cout_hook()
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     if (m_cout_rdbuf != nullptr) return; // already enabled
-    m_cout_rdbuf = std::cout.rdbuf(new c_logger::wrapper(this));
+
+    // inject own hook
+    m_cout_rdbuf = m_cout->rdbuf(new c_logger::wrapper(this));
 }
 
 void c_logger::disable_cout_hook()
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
     if (m_cout_rdbuf == nullptr) return; // already disabled
-    std::cout.rdbuf(m_cout_rdbuf);
+
+    //flush all thread buffers
+    for (auto& it : m_sync_log) flush_thread(it.first);
+
+    // inject original hook
+    m_cout->rdbuf(m_cout_rdbuf);
 }
 
 void c_logger::enable_timestamp()
@@ -122,23 +141,13 @@ void c_logger::pop_hook()
     m_hooks.end();
 }
 
-int c_logger::overflow (int c)
+void c_logger::flush_thread(tthread::thread::id t)
 {
-    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-    char _c = c;
-    m_sync_log[tthread::this_thread::get_id()].append(&_c, 1);
-    return c;
-}
-
-int c_logger::sync()
-{
-    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
-
-    std::string& msg = m_sync_log[tthread::this_thread::get_id()];
-    if (msg.empty()) return 0;
+    std::string& msg = m_sync_log[t];
+    if (msg.empty()) return;
 
     optional<std::ostream*> o = m_hooks.get();
-    if (o && o.get() != &std::cout)
+    if (o && o.get() != m_cout)
     {
         o.get()->write(msg.c_str(), msg.size());
     }
@@ -167,7 +176,20 @@ int c_logger::sync()
     }
 
     msg.erase();
+}
 
+int c_logger::overflow (int c)
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    char _c = c;
+    m_sync_log[tthread::this_thread::get_id()].append(&_c, 1);
+    return c;
+}
+
+int c_logger::sync()
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    flush_thread(tthread::this_thread::get_id());
     return 0;
 }
 

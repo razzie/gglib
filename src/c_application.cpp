@@ -12,7 +12,7 @@
 
 using namespace gg;
 
-const uint32_t gglib_magic_code = 0xdeadbeef;
+static const uint32_t gglib_magic_code = 0xdeadbeef;
 
 
 class authentication
@@ -761,10 +761,16 @@ void c_remote_application::set_error_stream(std::ostream& err)
 
 
 atomic<uint32_t> c_application::sm_inst_cnt(0);
+c_application::init_callback c_application::sm_init_cb = nullptr;
 
 application* application::create(std::string name)
 {
     return new c_application(name);
+}
+
+void c_application::set_init_callback(init_callback cb)
+{
+    sm_init_cb = cb;
 }
 
 c_application::c_application(std::string name)
@@ -787,7 +793,10 @@ c_application::c_application(std::string name)
     m_serializer->add_rule_ex(typeid(exec_response), &exec_response::serialize, &exec_response::deserialize);
 
     if (sm_inst_cnt++ == 0) // first instance
+    {
+        if (sm_init_cb != nullptr) sm_init_cb();
         c_logger::get_instance()->enable_cout_hook();
+    }
 }
 
 c_application::~c_application()

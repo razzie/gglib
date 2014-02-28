@@ -25,6 +25,7 @@ namespace gg
         std::map<tthread::thread::id, std::string> m_sync_log;
         recursive_thread_global<std::ostream*> m_hooks;
         c_timer m_timer;
+        std::ostream* m_cout;
         std::streambuf* m_cout_rdbuf;
         std::ostream* m_stream;
         std::fstream* m_file;
@@ -53,12 +54,14 @@ namespace gg
     protected:
         void push_hook(std::ostream&);
         void pop_hook();
+        void flush_thread(tthread::thread::id);
         // inherited from std::streambuf
         int overflow(int c = std::char_traits<char>::eof());
         int sync();
 
     public:
         static c_logger* get_instance();
+        void register_cout(std::ostream&);
         void enable_cout_hook();
         void disable_cout_hook();
         void enable_timestamp();

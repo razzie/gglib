@@ -73,6 +73,7 @@ namespace gg
     class c_application : public application, public connection_handler
     {
         static atomic<uint32_t> sm_inst_cnt;
+        static void(*sm_init_cb)(void);
         mutable tthread::mutex m_mutex;
         std::string m_name;
         c_event_manager* m_eventmgr;
@@ -95,6 +96,9 @@ namespace gg
         authentication_handler* get_auth_handler(listener*);
 
     public:
+        typedef void(*init_callback)(void);
+        static void set_init_callback(init_callback);
+
         c_application(std::string name);
         ~c_application();
 
