@@ -78,6 +78,122 @@ void gg::async_invoke(std::function<void()> func)
 }
 
 
+mutex::guard&& mutex::get_guard()
+{
+    return std::move(guard(this));
+}
+
+mutex::guard::guard(mutex* m)
+ : m_mutex(m)
+{
+    m_mutex->lock();
+}
+
+mutex::guard::guard(guard&& g)
+ : m_mutex(g.m_mutex)
+{
+    g.m_mutex = nullptr;
+}
+
+mutex::guard::~guard()
+{
+    if (m_mutex != nullptr) m_mutex->unlock();
+}
+
+
+c_condition::c_condition()
+{
+}
+
+c_condition::~c_condition()
+{
+    trigger();
+}
+
+void c_condition::interrupt(void* _data)
+{
+    timeout_data* data = static_cast<timeout_data*>(_data);
+    tthread::this_thread::sleep_for(tthread::chrono::milliseconds(data->timeout));
+    data->cond->notify_all();
+}
+
+void c_condition::wait()
+{
+    cond_data cdata {};
+
+    m_mutex.lock();
+    m_conds.insert(&cdata);
+    m_mutex.unlock();
+
+    cdata.cond_mutex.lock();
+    cdata.cond.wait(cdata.cond_mutex);
+    cdata.cond_mutex.unlock();
+
+    m_mutex.lock();
+    m_conds.erase(&cdata);
+    m_mutex.unlock();
+}
+
+void c_condition::wait(uint32_t timeout_ms)
+{
+    cond_data cdata {};
+    timeout_data tdata {&cdata.cond, timeout_ms};
+
+    m_mutex.lock();
+    m_conds.insert(&cdata);
+    m_mutex.unlock();
+
+    tthread::thread interrupt_thread(interrupt, static_cast<void*>(&tdata));
+
+    cdata.cond_mutex.lock();
+    cdata.cond.wait(cdata.cond_mutex);
+    cdata.cond_mutex.unlock();
+
+    m_mutex.lock();
+    m_conds.erase(&cdata);
+    m_mutex.unlock();
+}
+
+void c_condition::trigger()
+{
+    tthread::lock_guard<tthread::mutex> guard(m_mutex);
+    for (auto it : m_conds) it->cond.notify_all();
+}
+
+
+task::task()
+ : m_name("unknown")
+{
+}
+
+task::task(std::string name)
+ : m_name(name)
+{
+}
+
+void task::rename(std::string name)
+{
+    m_name = name;
+}
+
+void task::add_child(task* t)
+{
+    t->grab();
+    m_children.push_back(t);
+}
+
+const std::list<task*>& task::get_children() const
+{
+    return m_children;
+}
+
+std::string task::get_name() const
+{
+    return std::string("unknown");
+}
+
+
+
 c_thread::c_thread(std::string name)
  : m_name(name)
  , m_thread(
@@ -332,4 +448,19 @@ task* c_task_manager::create_wait_task(uint32_t wait_time) const
 task* c_task_manager::create_persistent_task(std::function<bool(uint32_t)> func) const
 {
     return new function_task(func);
+}
+
+mutex* c_task_manager::create_mutex() const
+{
+    return new c_mutex<tthread::mutex>();
+}
+
+mutex* c_task_manager::create_recursive_mutex() const
+{
+    return new c_mutex<tthread::recursive_mutex>();
+}
+
+condition* c_task_manager::create_condition() const
+{
+    return new c_condition();
 }

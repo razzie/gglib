@@ -2,6 +2,7 @@
 #define C_TASKMGR_HPP_INCLUDED
 
 #include <map>
+#include <set>
 #include "tinythread.h"
 #include "gg/taskmgr.hpp"
 #include "c_timer.hpp"
@@ -9,6 +10,49 @@
 namespace gg
 {
     void async_invoke(std::function<void()> func);
+
+    template<class M>
+    class c_mutex : public mutex
+    {
+        M m_mutex;
+
+    public:
+        c_mutex() {}
+        c_mutex(const c_mutex&) = delete;
+        c_mutex(c_mutex&&) = delete;
+        ~c_mutex() {}
+        void lock() { m_mutex.lock(); }
+        void unlock() { m_mutex.unlock(); }
+    };
+
+    class c_condition : public condition
+    {
+        struct cond_data
+        {
+            tthread::condition_variable cond;
+            tthread::mutex cond_mutex;
+        };
+
+        struct timeout_data
+        {
+            tthread::condition_variable* cond;
+            uint32_t timeout;
+        };
+
+        static void interrupt(void*); // timeout_data*
+
+        tthread::mutex m_mutex;
+        std::set<cond_data*> m_conds;
+
+    public:
+        c_condition();
+        c_condition(const c_condition&) = delete;
+        c_condition(c_condition&&) = delete;
+        ~c_condition();
+        void wait();
+        void wait(uint32_t timeout_ms);
+        void trigger();
+    };
 
     class c_thread : public gg::thread
     {
@@ -65,6 +109,9 @@ namespace gg
         task* create_task(std::function<void()> func) const;
         task* create_wait_task(uint32_t wait_ms) const;
         task* create_persistent_task(std::function<bool(uint32_t)> func) const;
+        mutex* create_mutex() const;
+        mutex* create_recursive_mutex() const;
+        condition* create_condition() const;
     };
 };
 
