@@ -27,11 +27,6 @@ int main()
     app->open_port(9999, nullptr);
 
 
-    float f1, f2, f3;
-    std::tie(f1, f2, f3) = gg::util::parse<float,float,float>("123;456;-1.23", ';');
-    std::cout << f1 << "; " << f2 << "; " << f3 << std::endl;
-
-
     gg::serializer* srl = app->get_serializer();
     srl->add_trivial_rule<test>();
 
@@ -48,7 +43,9 @@ int main()
     if (rem_app->connect())
     {
         std::cout << "Successfully connected!" << std::endl;
-        rem_app->push_event("test_event_type", {{"arg1", 123}, {"arg2", test {4,5,6}}, {"arg3", std::string("abc")}});
+        test arg2;
+        std::tie(arg2.a, arg2.b, arg2.c) = gg::util::parse<int,int,int>("4:5:6", ':');
+        rem_app->push_event("test_event_type", {{"arg1", 123}, {"arg2", arg2}, {"arg3", std::string("abc")}});
     }
     rem_app->drop();
 
