@@ -117,6 +117,7 @@
 		<Unit filename="include/gg/enumerator.hpp" />
 		<Unit filename="include/gg/eventmgr.hpp" />
 		<Unit filename="include/gg/expression.hpp" />
+		<Unit filename="include/gg/filesystem.hpp" />
 		<Unit filename="include/gg/function.hpp" />
 		<Unit filename="include/gg/idman.hpp" />
 		<Unit filename="include/gg/iniparser.hpp" />
@@ -157,6 +158,8 @@
 		<Unit filename="src/c_eventmgr.hpp" />
 		<Unit filename="src/c_expression.cpp" />
 		<Unit filename="src/c_expression.hpp" />
+		<Unit filename="src/c_filesystem.cpp" />
+		<Unit filename="src/c_filesystem.hpp" />
 		<Unit filename="src/c_idman.cpp" />
 		<Unit filename="src/c_idman.hpp" />
 		<Unit filename="src/c_iniparser.cpp" />
