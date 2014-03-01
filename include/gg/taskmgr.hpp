@@ -6,6 +6,7 @@
 #include <list>
 #include <functional>
 #include "gg/refcounted.hpp"
+#include "gg/enumerator.hpp"
 
 namespace gg
 {
@@ -46,7 +47,7 @@ namespace gg
     class task : public reference_counted
     {
         std::string m_name;
-        std::list<task*> m_children;
+        std::list<grab_ptr<task*, true>> m_children;
 
     protected:
         virtual ~task() {}
@@ -56,7 +57,7 @@ namespace gg
         task(std::string name);
         void rename(std::string name);
         void add_child(task* t);
-        const std::list<task*>& get_children() const;
+        enumerator<task*> get_children();
         virtual std::string get_name() const;
         virtual bool run(uint32_t elapsed) = 0; // returns true if task is finished
     };

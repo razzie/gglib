@@ -9,9 +9,9 @@ reference_counted::reference_counted()
 {
 }
 
-reference_counted::~reference_counted()
+/*reference_counted::~reference_counted()
 {
-}
+}*/
 
 void reference_counted::grab() const
 {

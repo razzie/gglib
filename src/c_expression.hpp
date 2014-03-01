@@ -29,7 +29,7 @@ namespace gg
 
     private:
         std::string m_name;
-        std::list<grab_ptr<expression, true>> m_children;
+        std::list<grab_ptr<expression*, true>> m_children;
         bool m_expr;
         bool m_root;
     };

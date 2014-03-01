@@ -178,20 +178,18 @@ void task::rename(std::string name)
 
 void task::add_child(task* t)
 {
-    t->grab();
     m_children.push_back(t);
 }
 
-const std::list<task*>& task::get_children() const
+enumerator<task*> task::get_children()
 {
-    return m_children;
+    return std::move(make_ref_enumerator<task*>(m_children));
 }
 
 std::string task::get_name() const
 {
     return std::string("unknown");
 }
-
 
 
 c_thread::c_thread(std::string name)
@@ -352,7 +350,11 @@ void c_thread::mainloop()
             {
                 // adding child tasks to the pool
                 auto subs = it->m_task->get_children();
-                for (task* t : subs) m_task_pool.push_back({t, new c_timer()});
+                for (; subs.has_next(); subs.next())
+                {
+                    task* t = *subs.get();
+                    m_task_pool.push_back( {t, new c_timer()} );
+                }
 
                 // deleting task (and its timer) as it is finished now
                 delete it->m_timer;
