@@ -1,39 +1,10 @@
+#include <limits>
 #include <cstdlib>
 #include <cstring>
 #include "gg/util.hpp"
 
 using namespace gg;
 using namespace gg::util;
-
-
-struct delimiter_is_space : std::ctype<char>
-{
-    std::ctype_base::mask m_rc[table_size];
-
-    delimiter_is_space(char delim)
-     : std::ctype<char>(get_table(static_cast<unsigned char>(delim)))
-    {
-    }
-
-    const std::ctype_base::mask* get_table(unsigned char delim)
-    {
-        memset(m_rc, 0, sizeof(std::ctype_base::mask) * table_size);
-        m_rc[delim] = std::ctype_base::space;
-        m_rc['\n'] = std::ctype_base::space;
-        return &m_rc[0];
-    }
-};
-
-static std::istream& __delimiter(std::istream& i, char d)
-{
-    i.imbue(std::locale(i.getloc(), new delimiter_is_space(d)));
-    return i;
-}
-
-istream_manipulator<char> util::delimiter(char d)
-{
-    return istream_manipulator<char>(__delimiter, d);
-}
 
 
 static std::ostream& __format(std::ostream& os, const char* fmt)
@@ -162,6 +133,54 @@ static std::ostream& __format(std::ostream& os, const char* fmt)
 ostream_manipulator<const char*> util::format(const char* fmt)
 {
     return ostream_manipulator<const char*>(__format, fmt);
+}
+
+
+struct delimiter_is_space : std::ctype<char>
+{
+    std::ctype_base::mask m_rc[table_size];
+
+    delimiter_is_space(char delim)
+     : std::ctype<char>(get_table(static_cast<unsigned char>(delim)))
+    {
+    }
+
+    const std::ctype_base::mask* get_table(unsigned char delim)
+    {
+        memset(m_rc, 0, sizeof(std::ctype_base::mask) * table_size);
+        m_rc[delim] = std::ctype_base::space;
+        m_rc['\n'] = std::ctype_base::space;
+        return &m_rc[0];
+    }
+};
+
+static std::istream& __delimiter(std::istream& i, char d)
+{
+    i.imbue(std::locale(i.getloc(), new delimiter_is_space(d)));
+    return i;
+}
+
+istream_manipulator<char> util::delimiter(char d)
+{
+    return istream_manipulator<char>(__delimiter, d);
+}
+
+
+static std::istream& __next(std::istream& i, char d)
+{
+    i.ignore(std::numeric_limits<std::streamsize>::max(), d);
+    return i;
+}
+
+istream_manipulator<char> util::next(char d)
+{
+    return istream_manipulator<char>(__next, d);
+}
+
+
+std::istream& util::next_line(std::istream& i)
+{
+    return (i << util::next('\n'));
 }
 
 
