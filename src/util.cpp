@@ -1,4 +1,5 @@
 #include <cstdlib>
+#include <cstring>
 #include "gg/util.hpp"
 
 using namespace gg;
@@ -16,6 +17,7 @@ struct delimiter_is_space : std::ctype<char>
 
     const std::ctype_base::mask* get_table(unsigned char delim)
     {
+        memset(m_rc, 0, sizeof(std::ctype_base::mask) * table_size);
         m_rc[delim] = std::ctype_base::space;
         m_rc['\n'] = std::ctype_base::space;
         return &m_rc[0];
