@@ -37,15 +37,11 @@ namespace gg
         mutable application* m_app;
         std::map<event_type, std::list<event_listener*>, event_type::comparator> m_listeners;
         c_thread m_thread;
-        bool m_remote_access;
 
     public:
         c_event_manager(application* app);
         ~c_event_manager();
         application* get_app() const;
-        void enable_remote_access();
-        void disable_remote_access();
-        bool is_remote_access_enabled() const;
         event_listener* add_listener(event_type, event_callback);
         void add_listener(event_type, event_listener*);
         void remove_listener(event_type, event_listener*);

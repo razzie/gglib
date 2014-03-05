@@ -23,6 +23,8 @@ namespace gg
         var m_auth_data;
         std::map<typeinfo, request_handler*> m_req_handlers;
         mutable std::map<id, var> m_responses;
+        bool m_remote_events;
+        bool m_remote_exec;
         std::ostream* m_err;
         uint8_t m_packet_err;
 
@@ -54,6 +56,10 @@ namespace gg
         void push_event(event_type, event::attribute_list) const;
         optional<var> exec(std::string fn, varlist vl, std::ostream&) const;
         optional<var> parse_and_exec(std::string expr, std::ostream&) const;
+        void enable_remote_events();
+        void disable_remote_events();
+        void enable_remote_exec();
+        void disable_remote_exec();
         void set_error_stream(std::ostream&);
 
         // inherited from packet_handler

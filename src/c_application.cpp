@@ -305,6 +305,8 @@ c_remote_application::c_remote_application(c_application* app, connection* conn)
  , m_conn(conn)
  , m_conn_handler(nullptr)
  , m_auth_ok(false)
+ , m_remote_events(true)
+ , m_remote_exec(true)
  , m_err(c_logger::get_instance())
  , m_packet_err(0)
 {
@@ -421,7 +423,8 @@ void c_remote_application::handle_packet(connection* conn)
     else if (data->get_type() == typeid(c_event))
     {
         c_event_manager* evtmgr = static_cast<c_event_manager*>(m_app->get_event_manager());
-        if (!evtmgr->is_remote_access_enabled())
+
+        if (!m_remote_events)
         {
             /* *m_err << "Remote end tried to push an event, but remote access is disabled ("
                 m_conn->get_address() << ":" << m_conn->get_port() << ")" << std::endl;*/
@@ -501,7 +504,8 @@ bool c_remote_application::handle_request(var& data) const
     if (data.get_type() == typeid(exec_request))
     {
         c_script_engine* se = static_cast<c_script_engine*>(m_app->get_script_engine());
-        if (!se->is_remote_access_enabled())
+
+        if (!m_remote_exec)
         {
             /* *m_err << "Remote end tried to execute a function, but remote access is disabled ("
                 m_conn->get_address() << ":" << m_conn->get_port() << ")" << std::endl;*/
@@ -522,7 +526,8 @@ bool c_remote_application::handle_request(var& data) const
     else if (data.get_type() == typeid(parse_and_exec_request))
     {
         c_script_engine* se = static_cast<c_script_engine*>(m_app->get_script_engine());
-        if (!se->is_remote_access_enabled())
+
+        if (!m_remote_exec)
         {
             /* *m_err << "Remote end tried to execute a function, but remote access is disabled ("
                 m_conn->get_address() << ":" << m_conn->get_port() << ")" << std::endl;*/
@@ -750,6 +755,26 @@ optional<var> c_remote_application::parse_and_exec(std::string expr, std::ostrea
 {
     if (!is_connected()) throw std::runtime_error("not connected to remote application");
     return {};
+}
+
+void c_remote_application::enable_remote_events()
+{
+    m_remote_events = true;
+}
+
+void c_remote_application::disable_remote_events()
+{
+    m_remote_events = false;
+}
+
+void c_remote_application::enable_remote_exec()
+{
+    m_remote_exec = true;
+}
+
+void c_remote_application::disable_remote_exec()
+{
+    m_remote_exec = false;
 }
 
 void c_remote_application::set_error_stream(std::ostream& err)

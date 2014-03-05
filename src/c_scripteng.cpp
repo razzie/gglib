@@ -62,7 +62,6 @@ bool c_script_engine::fn_name_comparator::operator() (const std::string& s1, con
 
 c_script_engine::c_script_engine(application* app)
  : m_app(app)
- , m_remote_access(true)
  , m_show_hidden(false)
 {
     script_engine* eng = this;
@@ -96,21 +95,6 @@ c_script_engine::~c_script_engine()
 application* c_script_engine::get_app() const
 {
     return m_app;
-}
-
-void c_script_engine::enable_remote_access()
-{
-    m_remote_access = true;
-}
-
-void c_script_engine::disable_remote_access()
-{
-    m_remote_access = false;
-}
-
-bool c_script_engine::is_remote_access_enabled() const
-{
-    return m_remote_access;
 }
 
 void c_script_engine::add_function(std::string fn, dynamic_function func, std::string args, bool hidden)

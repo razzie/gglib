@@ -83,8 +83,6 @@ namespace gg
     {
     public:
         virtual application* get_app() const = 0;
-        virtual void enable_remote_access() = 0;
-        virtual void disable_remote_access() = 0;
         virtual event_listener* add_listener(event_type, event_callback) = 0;
         virtual void add_listener(event_type, event_listener*) = 0;
         virtual void remove_listener(event_type, event_listener*) = 0;

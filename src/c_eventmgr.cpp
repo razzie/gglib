@@ -337,7 +337,6 @@ bool event_type::comparator::operator() (const event_type& a, const event_type& 
 c_event_manager::c_event_manager(application* app)
  : m_app(app)
  , m_thread("event manager")
- , m_remote_access(true)
 {
     m_app->get_serializer()->add_rule<event_type>(serialize_event_type, deserialize_event_type);
     m_app->get_serializer()->add_rule_ex<c_event>(serialize_event, deserialize_event);
@@ -350,21 +349,6 @@ c_event_manager::~c_event_manager()
 application* c_event_manager::get_app() const
 {
     return m_app;
-}
-
-void c_event_manager::enable_remote_access()
-{
-    m_remote_access = true;
-}
-
-void c_event_manager::disable_remote_access()
-{
-    m_remote_access = false;
-}
-
-bool c_event_manager::is_remote_access_enabled() const
-{
-    return m_remote_access;
 }
 
 event_listener* c_event_manager::add_listener(event_type t, event_callback cb)
