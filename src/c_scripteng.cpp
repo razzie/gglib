@@ -86,6 +86,20 @@ c_script_engine::c_script_engine(application* app)
 
     eng->add_function("show_hidden", [&] { this->show_hidden_functions(); }, true);
     eng->add_function("hide_hidden", [&] { this->hide_hidden_functions(); }, true);
+
+    eng->add_function("show_all",
+            [&] {
+                tthread::lock_guard<tthread::mutex> guard(m_mutex);
+                for (auto& it : m_functions)
+                {
+                    if (!it.second.m_is_hidden || m_show_hidden)
+                    {
+                        std::cout << it.second.m_sign.get_expression();
+                        if (it.second.m_is_hidden) std::cout << " *";
+                        std::cout << std::endl;
+                    }
+                }
+            });
 }
 
 c_script_engine::~c_script_engine()
@@ -325,7 +339,7 @@ optional<var> c_script_engine::process_expression(const expression& e) const
 {
     std::string name = e.get_name();
 
-    if (e.is_leaf())
+    if (e.is_leaf() && !e.is_root())
     {
         return var(name);
     }
