@@ -141,6 +141,8 @@ public:
     void set_name(std::string name);
     controller* get_controller() const;
     void set_controller(controller* ctrl);
+    void enable_always_on_top();
+    void disable_always_on_top();
     void enable_input();
     void disable_input();
     virtual void enable_argument_fill_helper();

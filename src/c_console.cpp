@@ -129,6 +129,18 @@ void c_console::set_controller(controller* ctrl)
     m_ctrl = ctrl;
 }
 
+void c_console::enable_always_on_top()
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    SetWindowPos(m_hWnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_ASYNCWINDOWPOS | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
+}
+
+void c_console::disable_always_on_top()
+{
+    tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
+    SetWindowPos(m_hWnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_ASYNCWINDOWPOS | SWP_NOMOVE | SWP_NOSIZE | SWP_NOZORDER);
+}
+
 void c_console::enable_input()
 {
     tthread::lock_guard<tthread::fast_mutex> guard(m_mutex);
@@ -187,7 +199,7 @@ void c_console::async_open()
     if (m_open) return; // already opened
     m_open = true;
 
-	m_hWnd = CreateWindowEx(WS_EX_APPWINDOW, m_wndClassEx.lpszClassName,
+	m_hWnd = CreateWindowEx(WS_EX_APPWINDOW | WS_EX_TOPMOST, m_wndClassEx.lpszClassName,
 		TEXT(m_name.c_str()), WS_OVERLAPPEDWINDOW, 200, 200,
 		400, 400, HWND_DESKTOP, NULL, m_hInst, NULL);
 

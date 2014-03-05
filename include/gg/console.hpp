@@ -66,6 +66,8 @@ namespace gg
         virtual void set_name(std::string name) = 0;
         virtual controller* get_controller() const = 0;
         virtual void set_controller(controller* ctrl) = 0;
+        virtual void enable_always_on_top() = 0;
+        virtual void disable_always_on_top() = 0;
         virtual void enable_input() = 0;
         virtual void disable_input() = 0;
         virtual void enable_argument_fill_helper() = 0;
