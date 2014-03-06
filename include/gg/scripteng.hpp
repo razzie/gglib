@@ -1,6 +1,7 @@
 #ifndef GG_SCRIPTENG_HPP_INCLUDED
 #define GG_SCRIPTENG_HPP_INCLUDED
 
+#include <iostream>
 #include <type_traits>
 #include "gg/function.hpp"
 #include "gg/optional.hpp"

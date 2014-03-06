@@ -1,3 +1,4 @@
+#include <iostream>
 #include "c_application.hpp"
 #include "c_logger.hpp"
 

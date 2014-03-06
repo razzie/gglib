@@ -3,8 +3,7 @@
 
 #include <cassert>
 #include <cstdint>
-#include <iostream>
-#include <sstream>
+#include <iosfwd>
 #include <locale>
 #include <string>
 #include <vector>

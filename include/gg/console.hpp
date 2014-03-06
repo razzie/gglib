@@ -1,7 +1,7 @@
 #ifndef GG_CONSOLE_HPP_INCLUDED
 #define GG_CONSOLE_HPP_INCLUDED
 
-#include <iostream>
+#include <iosfwd>
 #include <cstdint>
 #include <string>
 #include <functional>

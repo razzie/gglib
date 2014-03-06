@@ -1,5 +1,6 @@
 #include <dirent.h>
 #include <windows.h>
+#include <fstream>
 #include "c_filesystem.hpp"
 
 using namespace gg;

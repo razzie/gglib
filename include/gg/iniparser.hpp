@@ -1,10 +1,9 @@
 #ifndef GG_INIPARSER_HPP_INCLUDED
 #define GG_INIPARSER_HPP_INCLUDED
 
-#include <iostream>
+#include <iosfwd>
 #include <list>
 #include <string>
-#include <memory>
 #include "gg/refcounted.hpp"
 #include "gg/optional.hpp"
 

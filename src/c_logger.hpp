@@ -66,7 +66,7 @@ namespace gg
         void disable_cout_hook();
         void enable_timestamp();
         void disable_timestamp();
-        void log_to_stream(std::ostream& = std::cout);
+        void log_to_stream(std::ostream&);
         void log_to_file(std::string);
         void log_to_console(console*);
         std::ostream& get_nullstream() const;

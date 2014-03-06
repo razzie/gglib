@@ -1,5 +1,4 @@
 #include <cctype>
-#include <iostream>
 #include "c_expression.hpp"
 #include "gg/util.hpp"
 

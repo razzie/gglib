@@ -2,7 +2,7 @@
 #define GG_EVENTMGR_HPP_INCLUDED
 
 #include <cstdint>
-#include <iostream>
+#include <iosfwd>
 #include <string>
 #include <map>
 #include <list>
