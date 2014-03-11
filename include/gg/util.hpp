@@ -66,6 +66,27 @@ namespace util
     }
 
 
+    template<size_t I = 0, class... Args>
+    typename std::enable_if<I == sizeof...(Args), void>::type
+    tuple_to_varlist(const std::tuple<Args...>& tup, varlist& vl) {}
+
+    template<size_t I = 0, class... Args>
+    typename std::enable_if<I < sizeof...(Args), void>::type
+    tuple_to_varlist(const std::tuple<Args...>& tup, varlist& vl)
+    {
+        vl.push_back(std::get<I>(tup));
+        tuple_to_varlist<I+1, Args...>(tup, vl);
+    }
+
+    template<class... Args>
+    varlist tuple_to_varlist(const std::tuple<Args...>& tup)
+    {
+        varlist vl;
+        tuple_to_varlist(tup, vl);
+        return std::move(vl);
+    }
+
+
     template<class From, class To>
     typename std::enable_if<std::is_convertible<From, To>::value, To>::type
     cast(const From& from)
