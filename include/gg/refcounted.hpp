@@ -84,6 +84,11 @@ namespace gg
 
         P operator-> () { return m_obj; }
         const P operator-> () const { return m_obj; }
+
+        bool operator== (const grab_ptr& p) const { return m_obj == p.m_obj; }
+        bool operator!= (const grab_ptr& p) const { return m_obj != p.m_obj; }
+        bool operator== (P p) const { return m_obj == p; }
+        bool operator!= (P p) const { return m_obj != p; }
     };
 
     template<class P, class = reference_counted_type<P>>
