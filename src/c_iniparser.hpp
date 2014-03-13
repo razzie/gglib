@@ -1,6 +1,7 @@
 #ifndef C_INIPARSER_HPP_INCLUDED
 #define C_INIPARSER_HPP_INCLUDED
 
+#include <list>
 #include "tinythread.h"
 #include "gg/iniparser.hpp"
 
@@ -14,7 +15,7 @@ namespace gg
 
     private:
         mutable tthread::mutex m_mutex;
-        std::list<section*> m_sections;
+        std::list<grab_ptr<section*, true>> m_sections;
 
         void parse(std::istream&);
 
@@ -23,11 +24,11 @@ namespace gg
         {
             mutable tthread::mutex m_mutex;
             std::string m_name;
-            std::list<entry*> m_entries;
+            std::list<grab_ptr<entry*, true>> m_entries;
 
         public:
             c_section(std::string);
-            c_section(std::string, std::list<entry*>&&);
+            c_section(std::string, std::list<grab_ptr<entry*, true>>&&);
             c_section(c_section&&);
             ~c_section();
             std::string get_name() const;
@@ -38,8 +39,8 @@ namespace gg
             entry* add_entry(std::string, std::string);
             void remove_entry(std::string);
             void remove_entry(entry*);
-            std::list<entry*>& get_entries();
-            const std::list<entry*>& get_entries() const;
+            enumerator<entry*> get_entries();
+            enumerator<entry*> get_entries() const;
         };
 
         class c_entry : public entry
@@ -76,11 +77,11 @@ namespace gg
         section* create_section(std::string);
         void remove_section(std::string);
         void remove_section(section*);
-        std::list<section*>& get_sections();
-        const std::list<section*>& get_sections() const;
+        enumerator<section*> get_sections();
+        enumerator<section*> get_sections() const;
 
-        void save(std::string file);
-        void save(std::ostream&);
+        void save(std::string file) const;
+        void save(std::ostream&) const;
     };
 };
 

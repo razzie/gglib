@@ -4,15 +4,13 @@
 
 using namespace gg;
 
-/*
- * c_section
- */
+
 c_ini_parser::c_section::c_section(std::string name)
  : m_name(name)
 {
 }
 
-c_ini_parser::c_section::c_section(std::string name, std::list<entry*>&& entries)
+c_ini_parser::c_section::c_section(std::string name, std::list<grab_ptr<entry*, true>>&& entries)
  : m_name(name)
  , m_entries(std::move(entries))
 {
@@ -26,8 +24,6 @@ c_ini_parser::c_section::c_section(c_ini_parser::c_section&& s)
 
 c_ini_parser::c_section::~c_section()
 {
-    for (auto e : m_entries)
-        delete static_cast<c_entry*>(e);
 }
 
 std::string c_ini_parser::c_section::get_name() const
@@ -46,18 +42,20 @@ ini_parser::entry& c_ini_parser::c_section::operator[] (std::string key)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (auto e : m_entries)
+    for (auto& e : m_entries)
         if (e->get_key() == key) return *e;
 
-    m_entries.push_back(new c_entry(this, key));
-    return *(m_entries.back());
+    entry* e = new c_entry(this, key);
+    m_entries.push_back(e);
+    e->drop();
+    return *e;
 }
 
 ini_parser::entry* c_ini_parser::c_section::get_entry(std::string key)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (auto e : m_entries)
+    for (auto& e : m_entries)
         if (e->get_key() == key) return e;
 
     return nullptr;
@@ -67,7 +65,7 @@ const ini_parser::entry* c_ini_parser::c_section::get_entry(std::string key) con
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (auto e : m_entries)
+    for (auto& e : m_entries)
         if (e->get_key() == key) return e;
 
     return nullptr;
@@ -77,8 +75,10 @@ ini_parser::entry* c_ini_parser::c_section::add_entry(std::string key, std::stri
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    m_entries.push_back(new c_entry(this, key, value));
-    return m_entries.back();
+    entry* e = new c_entry(this, key, value);
+    m_entries.push_back(e);
+    e->drop();
+    return e;
 }
 
 void c_ini_parser::c_section::remove_entry(std::string key)
@@ -111,20 +111,18 @@ void c_ini_parser::c_section::remove_entry(ini_parser::entry* e)
     }
 }
 
-std::list<ini_parser::entry*>& c_ini_parser::c_section::get_entries()
+enumerator<ini_parser::entry*> c_ini_parser::c_section::get_entries()
 {
-    return m_entries;
+    return make_ref_enumerator<entry*>(m_entries);
 }
 
-const std::list<ini_parser::entry*>& c_ini_parser::c_section::get_entries() const
+enumerator<ini_parser::entry*> c_ini_parser::c_section::get_entries() const
 {
-    return m_entries;
+    //return make_const_ref_enumerator<entry*>(m_entries);
+    return make_const_enumerator<entry*>(m_entries);
 }
 
 
-/*
- * c_entry
- */
 c_ini_parser::c_entry::c_entry(section* s, std::string key, std::string value)
  : m_section(s)
  , m_key(key)
@@ -180,9 +178,6 @@ ini_parser* ini_parser::create(std::istream& in)
 }
 
 
-/*
- * static helper functions
- */
 static bool is_section(std::string line)
 {
     bool first_char_is_open_bracket = false;
@@ -229,9 +224,6 @@ static std::string get_value(std::string line)
 }
 
 
-/*
- * c_ini_parser
- */
 void c_ini_parser::parse(std::istream& in)
 {
     std::string line;
@@ -250,6 +242,7 @@ void c_ini_parser::parse(std::istream& in)
             size_t open_pos = line.find('['), close_pos = line.find(']');
             curr_section = new c_section(line.substr(open_pos + 1, close_pos - 1));
             m_sections.push_back(curr_section);
+            curr_section->drop();
             continue;
         }
         else
@@ -258,6 +251,7 @@ void c_ini_parser::parse(std::istream& in)
             {
                 curr_section = new c_section("");
                 m_sections.push_back(curr_section);
+                curr_section->drop();
             }
             curr_section->add_entry(get_key(line), get_value(line));
             continue;
@@ -284,7 +278,7 @@ ini_parser::entry* c_ini_parser::get_entry(std::string section_name, std::string
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (auto s : m_sections)
+    for (auto& s : m_sections)
         if (s->get_name() == section_name) return s->get_entry(key);
 
     return nullptr;
@@ -294,7 +288,7 @@ const ini_parser::entry* c_ini_parser::get_entry(std::string section_name, std::
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (auto s : m_sections)
+    for (auto& s : m_sections)
         if (s->get_name() == section_name) return s->get_entry(key);
 
     return nullptr;
@@ -304,7 +298,7 @@ ini_parser::entry* c_ini_parser::add_entry(std::string section_name, std::string
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (auto s : m_sections)
+    for (auto& s : m_sections)
         if (s->get_name() == section_name) return s->add_entry(key, value);
 
     return nullptr;
@@ -314,7 +308,7 @@ void c_ini_parser::remove_entry(std::string section_name, std::string key)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (auto s : m_sections)
+    for (auto& s : m_sections)
     {
         if (s->get_name() == section_name)
         {
@@ -328,11 +322,11 @@ void c_ini_parser::remove_entry(ini_parser::entry* e)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (auto s : m_sections)
+    for (auto& s : m_sections)
     {
         if (s == e->get_section())
         {
-            e->get_section()->remove_entry(e);
+            s->remove_entry(e);
             return;
         }
     }
@@ -342,18 +336,20 @@ ini_parser::section& c_ini_parser::operator[] (std::string name)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (auto s : m_sections)
+    for (auto& s : m_sections)
         if (s->get_name() == name) return *s;
 
-    m_sections.push_back(new c_section(name));
-    return *(m_sections.back());
+    section* s = new c_section(name);
+    m_sections.push_back(s);
+    s->drop();
+    return *s;
 }
 
 ini_parser::section* c_ini_parser::get_section(std::string name)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (auto s : m_sections)
+    for (auto& s : m_sections)
         if (s->get_name() == name) return s;
 
     return nullptr;
@@ -363,7 +359,7 @@ const ini_parser::section* c_ini_parser::get_section(std::string name) const
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (auto s : m_sections)
+    for (auto& s : m_sections)
         if (s->get_name() == name) return s;
 
     return nullptr;
@@ -373,7 +369,7 @@ ini_parser::section* c_ini_parser::create_section(std::string name)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (auto s : m_sections)
+    for (auto& s : m_sections)
         if (s->get_name() == name) return s;
 
     m_sections.push_back(new c_section(name));
@@ -395,14 +391,14 @@ void c_ini_parser::remove_section(std::string name)
     }
 }
 
-void c_ini_parser::remove_section(section* g)
+void c_ini_parser::remove_section(section* s)
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
     auto it = m_sections.begin(), end = m_sections.end();
     for (; it != end; ++it)
     {
-        if (*it == g)
+        if (*it == s)
         {
             it = std::prev(m_sections.erase(it), 1);
             continue;
@@ -410,33 +406,34 @@ void c_ini_parser::remove_section(section* g)
     }
 }
 
-std::list<ini_parser::section*>& c_ini_parser::get_sections()
+enumerator<ini_parser::section*> c_ini_parser::get_sections()
 {
-    return m_sections;
+    return make_ref_enumerator<section*>(m_sections);
 }
 
-const std::list<ini_parser::section*>& c_ini_parser::get_sections() const
+enumerator<ini_parser::section*> c_ini_parser::get_sections() const
 {
-    return m_sections;
+    //return make_const_ref_enumerator<section*>(m_sections);
+    return make_const_enumerator<section*>(m_sections);
 }
 
-void c_ini_parser::save(std::string file)
+void c_ini_parser::save(std::string file) const
 {
     std::fstream f(file, std::ios_base::in);
     this->save(f);
 }
 
-void c_ini_parser::save(std::ostream& out)
+void c_ini_parser::save(std::ostream& out) const
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    for (auto s : m_sections)
+    for (auto& s : m_sections)
     {
         out << "[" << s->get_name() << "]\n";
 
-        for (auto e : s->get_entries())
+        for (auto e = s->get_entries(); e.has_next(); e.next())
         {
-            out << e->get_key() << " = " << e->get_value() << "\n";
+            out << e.get().get()->get_key() << " = " << e.get().get()->get_value() << "\n";
         }
     }
 
