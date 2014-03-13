@@ -16,16 +16,21 @@ namespace gg
         template<class U>
         using make_ref = typename std::conditional<std::is_pointer<U>::value, U, U&>::type;
 
+        template<class U>
+        using make_ptr = typename std::conditional<std::is_pointer<U>::value, U, U*>::type;
+
     public:
         typedef T value_type;
         typedef make_ref<value_type> value_type_ref;
+        typedef make_ptr<value_type> value_type_ptr;
+
         typedef typename container::value_type container_value_type;
         typedef make_ref<container_value_type> container_value_type_ref;
-        typedef std::function<value_type_ref(container_value_type_ref)> extractor;
-
         typedef decltype(((container*)0)->begin()) container_iterator;
         typedef typename std::remove_reference<container>::type container_noref;
         typedef typename std::decay<container>::type container_decay;
+
+        typedef std::function<value_type_ref(container_value_type_ref)> extractor;
 
         class iterator : public std::iterator<std::forward_iterator_tag, value_type>
         {
@@ -61,11 +66,39 @@ namespace gg
         container_noref* m_cont;
         extractor m_extr;
 
+        template<bool is_const_iterator>
+        typename std::enable_if<!is_const_iterator, iterator>::type
+        _insert(iterator it, value_type val)
+        {
+            return iterator(m_cont->insert(it.get_internal_iterator(), val), m_extr);
+        }
+
+        template<bool is_const_iterator>
+        typename std::enable_if<!is_const_iterator, iterator>::type
+        _erase(iterator it)
+        {
+            return iterator(m_cont->erase(it.get_internal_iterator()), m_extr);
+        }
+
+        template<bool is_const_iterator>
+        typename std::enable_if<is_const_iterator, iterator>::type
+        _insert(iterator it, value_type val)
+        {
+            throw std::runtime_error("container is const");
+            //return it;
+        }
+
+        template<bool is_const_iterator>
+        typename std::enable_if<is_const_iterator, iterator>::type
+        _erase(iterator it)
+        {
+            throw std::runtime_error("container is const");
+            //return it;
+        }
+
     public:
         container_wrapper(container_decay&& cont, extractor extr = {})
         {
-            //static_assert(is_reference, "can't take reference of xvalue");
-            //static_assert(is_const, "can't take xvalue of const");
             if (is_reference) throw std::runtime_error("can't take reference of xvalue");
             m_cont = new container_decay(cont);
             if (!m_extr) m_extr = [](container_value_type_ref it)->value_type_ref { return static_cast<value_type_ref>(it); };
@@ -103,17 +136,8 @@ namespace gg
         iterator begin() { return iterator(m_cont->begin(), m_extr); }
         iterator end() { return iterator(m_cont->end(), m_extr); }
 
-        iterator insert(iterator it, value_type val)
-        {
-            if (is_const) throw std::runtime_error("container is const");
-            return iterator(m_cont->insert(it.get_internal_iterator(), val), m_extr);
-        }
-
-        iterator erase(iterator it)
-        {
-            if (is_const) throw std::runtime_error("container is const");
-            return iterator(m_cont->erase(it.get_internal_iterator()), m_extr);
-        }
+        iterator insert(iterator it, value_type val) { return _insert<is_const>(it, val); }
+        iterator erase(iterator it) { return _erase<is_const>(it); }
     };
 
 
