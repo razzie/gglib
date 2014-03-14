@@ -91,6 +91,12 @@ namespace gg
         bool operator!= (P p) const { return m_obj != p; }
     };
 
+    template<class>
+    struct is_grab_ptr : std::false_type {};
+
+    template<class P, bool auto_grab>
+    struct is_grab_ptr<grab_ptr<P, auto_grab>> : std::true_type {};
+
     template<class P, class = reference_counted_type<P>>
     grab_ptr<P, false> auto_drop(P t)
     {
