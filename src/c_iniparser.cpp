@@ -118,8 +118,7 @@ enumerator<ini_parser::entry*> c_ini_parser::c_section::get_entries()
 
 enumerator<ini_parser::entry*> c_ini_parser::c_section::get_entries() const
 {
-    //return make_const_ref_enumerator<entry*>(m_entries);
-    return make_const_enumerator<entry*>(m_entries);
+    return make_const_ref_enumerator<entry*>(m_entries);
 }
 
 
@@ -413,8 +412,7 @@ enumerator<ini_parser::section*> c_ini_parser::get_sections()
 
 enumerator<ini_parser::section*> c_ini_parser::get_sections() const
 {
-    //return make_const_ref_enumerator<section*>(m_sections);
-    return make_const_enumerator<section*>(m_sections);
+    return make_const_ref_enumerator<section*>(m_sections);
 }
 
 void c_ini_parser::save(std::string file) const
@@ -433,7 +431,7 @@ void c_ini_parser::save(std::ostream& out) const
 
         for (auto e = s->get_entries(); e.has_next(); e.next())
         {
-            out << e.get().get()->get_key() << " = " << e.get().get()->get_value() << "\n";
+            out << e->get_key() << " = " << e->get_value() << "\n";
         }
     }
 
