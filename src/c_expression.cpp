@@ -1,13 +1,13 @@
 #include <cctype>
 #include "c_expression.hpp"
-#include "gg/util.hpp"
+#include "gg/stringutil.hpp"
 
 using namespace gg;
 
 
 static bool is_valid_leaf_expr(std::string expr)
 {
-    if (expr.empty() || util::is_numeric(expr)) return true;
+    if (expr.empty() || is_numeric(expr)) return true;
 
     int dbl_apost_cnt = 0;
     auto it = expr.begin(), end = expr.end();
@@ -36,7 +36,7 @@ static bool is_valid_leaf_expr(std::string expr)
             return false;
     }
 
-    if (dbl_apost_cnt == 0 && util::contains_space(expr))
+    if (dbl_apost_cnt == 0 && contains_space(expr))
         return false;
 
     return true;
@@ -44,7 +44,7 @@ static bool is_valid_leaf_expr(std::string expr)
 
 static void make_valid_leaf_expr(std::string& expr)
 {
-    if (expr.empty() || util::is_numeric(expr)) return;
+    if (expr.empty() || is_numeric(expr)) return;
 
     for (auto it = expr.begin(); it != expr.end(); ++it)
     {
@@ -72,7 +72,7 @@ c_expression::c_expression(c_expression* parent, std::string orig_expr, bool aut
  : m_expr(false)
  , m_root((parent == nullptr))
 {
-    std::string expr = util::trim(orig_expr);
+    std::string expr = trim(orig_expr);
 
     int open_brackets = 0;
     int dbl_apost_cnt = 0;
@@ -135,7 +135,7 @@ c_expression::c_expression(c_expression* parent, std::string orig_expr, bool aut
             {
                 m_expr = true;
                 std::string child_expr(expr_begin, it);
-                if (dbl_apost_cnt || !util::trim(child_expr).empty())
+                if (dbl_apost_cnt || !trim(child_expr).empty())
                 {
                     expression* child = new c_expression(this, child_expr, auto_complete);
                     m_children.push_back(child);
@@ -158,7 +158,7 @@ c_expression::c_expression(c_expression* parent, std::string orig_expr, bool aut
             {
                 m_expr = true;
                 std::string child_expr(expr_begin, it);
-                if (dbl_apost_cnt || !util::trim(child_expr).empty())
+                if (dbl_apost_cnt || !trim(child_expr).empty())
                 {
                     expression* child = new c_expression(this, child_expr, auto_complete);
                     m_children.push_back(child);
@@ -189,7 +189,7 @@ c_expression::c_expression(c_expression* parent, std::string orig_expr, bool aut
             if (dbl_apost_cnt % 2) child_expr += '"';
             if (open_brackets > 0) for (int i = open_brackets; i > 0; --i) child_expr += ')';
 
-            if (dbl_apost_cnt || !util::trim(child_expr).empty())
+            if (dbl_apost_cnt || !trim(child_expr).empty())
             {
                 expression* child = new c_expression(this, child_expr, auto_complete);
                 m_children.push_back(child);
@@ -248,10 +248,10 @@ c_expression::~c_expression()
 
 void c_expression::set_name(std::string name)
 {
-    if (!this->is_leaf() && util::contains_space(name))
+    if (!this->is_leaf() && contains_space(name))
         throw c_expression_error("non-leaf expressions cannot contain space");
 
-    m_name = util::trim(name);
+    m_name = trim(name);
 }
 
 std::string c_expression::get_name() const
@@ -265,7 +265,7 @@ std::string c_expression::get_expression() const
 
     if (this->is_leaf())
     {
-        if (m_root || util::is_numeric(m_name)/* || m_name.empty()*/) expr += m_name;
+        if (m_root || is_numeric(m_name)/* || m_name.empty()*/) expr += m_name;
         else expr += '"' + m_name + '"';
     }
     else

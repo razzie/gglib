@@ -113,6 +113,7 @@
 		<Unit filename="include/gg/application.hpp" />
 		<Unit filename="include/gg/atomic.hpp" />
 		<Unit filename="include/gg/buffer.hpp" />
+		<Unit filename="include/gg/cast.hpp" />
 		<Unit filename="include/gg/console.hpp" />
 		<Unit filename="include/gg/enumerator.hpp" />
 		<Unit filename="include/gg/eventmgr.hpp" />
@@ -124,16 +125,15 @@
 		<Unit filename="include/gg/logger.hpp" />
 		<Unit filename="include/gg/netmgr.hpp" />
 		<Unit filename="include/gg/optional.hpp" />
+		<Unit filename="include/gg/parse.hpp" />
 		<Unit filename="include/gg/refcounted.hpp" />
 		<Unit filename="include/gg/scripteng.hpp" />
 		<Unit filename="include/gg/serializer.hpp" />
-		<Unit filename="include/gg/streamops.hpp" />
+		<Unit filename="include/gg/streamutil.hpp" />
+		<Unit filename="include/gg/stringutil.hpp" />
 		<Unit filename="include/gg/taskmgr.hpp" />
 		<Unit filename="include/gg/timer.hpp" />
 		<Unit filename="include/gg/typeinfo.hpp" />
-		<Unit filename="include/gg/util.hpp">
-			<Option weight="60" />
-		</Unit>
 		<Unit filename="include/gg/var.hpp" />
 		<Unit filename="include/gglib.hpp" />
 		<Unit filename="main.cpp">
@@ -179,9 +179,11 @@
 		<Unit filename="src/function.cpp" />
 		<Unit filename="src/optional.cpp" />
 		<Unit filename="src/refcounted.cpp" />
+		<Unit filename="src/scope_callback.cpp" />
+		<Unit filename="src/scope_callback.hpp" />
+		<Unit filename="src/streamutil.cpp" />
 		<Unit filename="src/threadglobal.hpp" />
 		<Unit filename="src/typeinfo.cpp" />
-		<Unit filename="src/util.cpp" />
 		<Unit filename="src/var.cpp" />
 		<Unit filename="src/win32_aero.hpp" />
 		<Extensions>

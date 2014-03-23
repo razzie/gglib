@@ -2,8 +2,9 @@
 #include <cctype>
 #include "c_scripteng.hpp"
 #include "c_logger.hpp"
+#include "scope_callback.hpp"
 #include "gg/application.hpp"
-#include "gg/util.hpp"
+#include "gg/stringutil.hpp"
 
 using namespace gg;
 
@@ -56,7 +57,7 @@ void c_script_engine::console_controller::complete(std::string& expr, console::o
 
 bool c_script_engine::fn_name_comparator::operator() (const std::string& s1, const std::string& s2) const
 {
-    return (util::strcmpi(s1, s2) < 0);
+    return (strcmpi(s1, s2) < 0);
 }
 
 
@@ -195,7 +196,7 @@ std::vector<std::string> c_script_engine::find_matching_functions(std::string fn
 {
     tthread::lock_guard<tthread::mutex> guard(m_mutex);
 
-    fn = util::trim(fn);
+    fn = trim(fn);
 
     std::vector<std::string> matches;
     size_t len = fn.size();
@@ -206,7 +207,7 @@ std::vector<std::string> c_script_engine::find_matching_functions(std::string fn
         if (it->second.m_is_hidden && !m_show_hidden)
             continue;
 
-        if (util::strncmpi(it->first, fn, len) == 0)
+        if (strncmpi(it->first, fn, len) == 0)
             matches.push_back(it->first);
     }
 
@@ -228,9 +229,9 @@ bool c_script_engine::auto_complete(std::string& fn, std::vector<std::string> ma
         return true;
     }
 
-    fn = util::trim(fn);
+    fn = trim(fn);
 
-    util::scope_callback o([&]
+    scope_callback o([&]
     {
         if (print && matches.size() > 1)
         {

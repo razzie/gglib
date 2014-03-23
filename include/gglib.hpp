@@ -1,14 +1,16 @@
 #ifndef GGLIB_HPP_INCLUDED
 #define GGLIB_HPP_INCLUDED
 
-#include "gg/streamops.hpp"
+#include "gg/streamutil.hpp"
+#include "gg/stringutil.hpp"
+#include "gg/parse.hpp"
+#include "gg/cast.hpp"
 #include "gg/var.hpp"
 #include "gg/atomic.hpp"
 #include "gg/refcounted.hpp"
 #include "gg/optional.hpp"
 #include "gg/buffer.hpp"
 #include "gg/typeinfo.hpp"
-#include "gg/util.hpp"
 #include "gg/timer.hpp"
 #include "gg/expression.hpp"
 #include "gg/enumerator.hpp"

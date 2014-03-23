@@ -4,10 +4,11 @@
 #include <iosfwd>
 #include <string>
 #include <vector>
+#include <tuple>
 #include <typeinfo>
 #include <type_traits>
 #include <stdexcept>
-#include "gg/streamops.hpp"
+#include "gg/streamutil.hpp"
 
 namespace gg
 {
@@ -190,9 +191,30 @@ namespace gg
         friend std::ostream& operator<< (std::ostream& o, const gg::var::view& vw);
     };
 
+
     typedef std::vector<var> varlist;
 
     std::ostream& operator<< (std::ostream& o, const varlist& vl);
+
+    template<size_t I = 0, class... Args>
+    typename std::enable_if<I == sizeof...(Args), void>::type
+    tuple_to_varlist(const std::tuple<Args...>& tup, varlist& vl) {}
+
+    template<size_t I = 0, class... Args>
+    typename std::enable_if<I < sizeof...(Args), void>::type
+    tuple_to_varlist(const std::tuple<Args...>& tup, varlist& vl)
+    {
+        vl.push_back(std::get<I>(tup));
+        tuple_to_varlist<I+1, Args...>(tup, vl);
+    }
+
+    template<class... Args>
+    varlist tuple_to_varlist(const std::tuple<Args...>& tup)
+    {
+        varlist vl;
+        tuple_to_varlist(tup, vl);
+        return std::move(vl);
+    }
 };
 
 extern template class std::vector<gg::var>;

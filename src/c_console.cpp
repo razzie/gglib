@@ -1,8 +1,9 @@
 #include "c_console.hpp"
 #include "c_timer.hpp"
 #include "threadglobal.hpp"
+#include "scope_callback.hpp"
 #include "gg/application.hpp"
-#include "gg/util.hpp"
+#include "gg/stringutil.hpp"
 #include "gg/taskmgr.hpp"
 
 using namespace gg;
@@ -324,7 +325,7 @@ LRESULT c_console::handle_wnd_message(UINT uMsg, WPARAM wParam, LPARAM lParam)
         return 0;
     }
 
-    util::scope_callback([&]{ m_mutex.unlock(); });
+    scope_callback([&]{ m_mutex.unlock(); });
 
 	switch(uMsg)
     {
@@ -962,7 +963,7 @@ void c_console::c_output::draw(const render_context* ctx, RECT* bounds, int care
 
     if (m_dirty)
     {
-        m_wrapped_text = util::convert_string<char, wchar_t>(m_text);
+        m_wrapped_text = convert_string<char, wchar_t>(m_text);
         m_last_height = wrap_text(ctx->secondary, m_wrapped_text, bounds);
 
         m_dirty = false;

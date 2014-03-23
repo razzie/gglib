@@ -44,7 +44,7 @@ int main()
     {
         std::cout << "Successfully connected!" << std::endl;
         test arg2;
-        std::tie(arg2.a, arg2.b, arg2.c) = gg::util::parse<int,int,int>("4:5:6", ':');
+        std::tie(arg2.a, arg2.b, arg2.c) = gg::parse<int,int,int>("4:5:6", ':');
         rem_app->push_event("test_event_type", {{"arg1", 123}, {"arg2", arg2}, {"arg3", std::string("abc")}});
     }
     rem_app->drop();
@@ -57,11 +57,11 @@ int main()
             [](std::string str) { return str; });
 
     app->get_script_engine()->add_function("is_integer",
-            [](std::string i) { return (gg::util::is_integer(i) ? "true" : "false"); },
+            [](std::string i) { return (gg::is_integer(i) ? "true" : "false"); },
             true);
 
     app->get_script_engine()->add_function("is_float",
-            [](std::string i) { return (gg::util::is_float(i) ? "true" : "false"); },
+            [](std::string i) { return (gg::is_float(i) ? "true" : "false"); },
             true);
 
     app->get_script_engine()->add_function("sum",
