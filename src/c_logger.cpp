@@ -60,6 +60,10 @@ void c_logger::register_cout(std::ostream& o)
         throw std::runtime_error("can't change cout while hook is enabled");
 
     m_cout = &o;
+
+    // it's a hack: injecting our hook to the dll's cout
+    if (&std::cout != m_cout)
+        std::cout.rdbuf(new c_logger::wrapper(this));
 }
 
 void c_logger::enable_cout_hook()
