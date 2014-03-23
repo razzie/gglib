@@ -73,7 +73,8 @@ c_script_engine::c_script_engine(application* app)
                     *c_logger::get_instance() << "This function can only be used from a console" << std::endl;
                 else
                     con->close();
-            });
+            },
+            true);
 
     eng->add_function("clear",
             [&] {
@@ -82,7 +83,8 @@ c_script_engine::c_script_engine(application* app)
                     *c_logger::get_instance() << "This function can only be used from a console" << std::endl;
                 else
                     con->clear();
-            });
+            },
+            true);
 
     eng->add_function("show_hidden", [&] { this->show_hidden_functions(); }, true);
     eng->add_function("hide_hidden", [&] { this->hide_hidden_functions(); }, true);
@@ -99,7 +101,8 @@ c_script_engine::c_script_engine(application* app)
                         std::cout << std::endl;
                     }
                 }
-            });
+            },
+            true);
 }
 
 c_script_engine::~c_script_engine()
